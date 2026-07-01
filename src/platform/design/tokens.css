@@ -86,4 +86,11 @@
 
   /* minimum touch target */
   --touch: 44px;
+
+  /* game-content palette (Simon pads etc.) — content colors, not chrome.
+     These stay fixed across accent themes so game pieces remain distinct. */
+  --play-1: #30d158;
+  --play-2: #ff453a;
+  --play-3: #ffd60a;
+  --play-4: #0a84ff;
 }

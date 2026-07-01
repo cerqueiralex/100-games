@@ -1,12 +1,20 @@
+import { useState } from 'react';
 import { useAppState } from '../AppState';
 import { GAMES } from '../registry';
 import { computeStats, formatDuration } from '../stats';
+import { SearchIcon } from '../design/icons';
 
 export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void }) {
   const { profile, history } = useAppState();
+  const [query, setQuery] = useState('');
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? GAMES.filter((g) => `${g.name} ${g.tagline}`.toLowerCase().includes(q))
+    : GAMES;
 
   return (
     <div className="screen">
@@ -20,8 +28,25 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
         <span className="home-avatar">{profile.emoji}</span>
       </header>
 
+      <div className="search-bar">
+        <SearchIcon />
+        <input
+          type="search"
+          className="search-input"
+          placeholder="Search games…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="Search games"
+        />
+        {query && (
+          <button className="search-clear" onClick={() => setQuery('')} aria-label="Clear search">
+            ×
+          </button>
+        )}
+      </div>
+
       <div className="game-cards">
-        {GAMES.map((game) => {
+        {visible.map((game) => {
           const stats = computeStats(history.filter((r) => r.gameId === game.id));
           return (
             <button key={game.id} className="game-card" onClick={() => onOpenGame(game.id)}>
@@ -46,13 +71,19 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
           );
         })}
 
-        <div className="game-card coming-soon">
-          <span className="game-card-icon">…</span>
-          <span className="game-card-body">
-            <span className="game-card-name">More classics coming</span>
-            <span className="game-card-tag">Cryptogram, Solitaire, Minesweeper…</span>
-          </span>
-        </div>
+        {visible.length === 0 && (
+          <p className="empty-note">No games match “{query}”.</p>
+        )}
+
+        {!q && (
+          <div className="game-card coming-soon">
+            <span className="game-card-icon">…</span>
+            <span className="game-card-body">
+              <span className="game-card-name">More classics coming</span>
+              <span className="game-card-tag">Cryptogram, Solitaire, Minesweeper…</span>
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

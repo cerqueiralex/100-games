@@ -175,6 +175,48 @@ p {
   font-size: 34px;
 }
 
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 0 14px;
+  height: 48px;
+  margin-bottom: 16px;
+  color: var(--text-dim);
+}
+
+.search-bar:focus-within {
+  border-color: var(--accent);
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.search-input::placeholder {
+  color: var(--text-dim);
+}
+
+.search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search-clear {
+  font-size: 22px;
+  color: var(--text-dim);
+  padding: 0 2px;
+  line-height: 1;
+}
+
 .game-cards {
   display: flex;
   flex-direction: column;
@@ -1385,6 +1427,229 @@ p {
 .cw-key-wide {
   max-width: 66px;
   flex: 1.5;
+}
+
+/* ===== memory match ===== */
+
+.memory {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.mm-board {
+  display: grid;
+  gap: 8px;
+}
+
+.mm-card {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.mm-card:active {
+  transform: scale(0.95);
+}
+
+.mm-back {
+  width: 22%;
+  height: 22%;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.mm-card.up {
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+
+.mm-face {
+  font-size: clamp(20px, 7vw, 34px);
+  line-height: 1;
+}
+
+.mm-card.matched {
+  border-color: var(--good);
+  background: var(--good-soft);
+  opacity: 0.55;
+}
+
+.board-hidden .mm-board {
+  visibility: hidden;
+}
+
+/* ===== simon ===== */
+
+.simon {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.simon-status {
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  min-height: 18px;
+}
+
+.simon-board {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: min(100%, 340px);
+  margin: 8px auto;
+  aspect-ratio: 1;
+}
+
+.simon-board.watching {
+  pointer-events: none;
+}
+
+.simon-pad {
+  border-radius: var(--radius-l);
+  border: 1px solid var(--border);
+  opacity: 0.45;
+  transition: opacity 0.1s, transform 0.1s, box-shadow 0.1s;
+}
+
+.simon-pad.p0 {
+  background: var(--play-1);
+  border-top-left-radius: 46%;
+}
+
+.simon-pad.p1 {
+  background: var(--play-2);
+  border-top-right-radius: 46%;
+}
+
+.simon-pad.p2 {
+  background: var(--play-3);
+  border-bottom-left-radius: 46%;
+}
+
+.simon-pad.p3 {
+  background: var(--play-4);
+  border-bottom-right-radius: 46%;
+}
+
+.simon-pad.lit {
+  opacity: 1;
+  transform: scale(0.97);
+  box-shadow: 0 0 34px color-mix(in srgb, currentColor 0%, rgba(255, 255, 255, 0.25));
+}
+
+.board-hidden .simon-board {
+  visibility: hidden;
+}
+
+/* ===== n-back / dual n-back ===== */
+
+.nback {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.nb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: min(100%, 300px);
+  margin: 8px auto;
+  aspect-ratio: 1;
+}
+
+.nb-cell {
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  transition: background 0.1s;
+}
+
+.nb-cell.active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.nb-cell.ghost {
+  border: 2px dashed var(--accent);
+}
+
+.nb-letter {
+  font-size: clamp(22px, 8vw, 36px);
+  font-weight: 800;
+  color: var(--bg);
+}
+
+.nb-feedback {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 16px;
+}
+
+.nb-feedback.good {
+  color: var(--good);
+}
+
+.nb-feedback.bad {
+  color: var(--bad);
+}
+
+.nb-ghost-letter {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.nb-match {
+  height: 56px;
+  width: min(100%, 300px);
+  margin: 0 auto;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.nb-match.armed {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.nb-dual-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: min(100%, 340px);
+  margin: 0 auto;
+}
+
+.nb-dual-actions .nb-match {
+  width: 100%;
+}
+
+.board-hidden .nb-grid {
+  visibility: hidden;
 }
 
 /* ===== share card ===== */

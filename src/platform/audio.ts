@@ -38,6 +38,11 @@ function tone(freq: number, durMs: number, type: OscillatorType, gainMul = 1, de
   osc.stop(t0 + durMs / 1000 + 0.05);
 }
 
+/** Play a single musical tone (used by games like Simon). Respects sound settings. */
+export function playNote(freq: number, durMs = 300, type: OscillatorType = 'sine'): void {
+  tone(freq, durMs, type);
+}
+
 export const sfx = {
   tap: () => tone(700, 50, 'sine', 0.7),
   place: () => tone(520, 80, 'triangle'),

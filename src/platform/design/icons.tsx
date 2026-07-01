@@ -159,6 +159,24 @@ export function CheckIcon({ size = 16 }: IconProps) {
   );
 }
 
+export function SearchIcon({ size = 18 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.35-4.35" />
+    </Svg>
+  );
+}
+
+export function EyeIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M1 12s4-7.5 11-7.5S23 12 23 12s-4 7.5-11 7.5S1 12 1 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </Svg>
+  );
+}
+
 export function ShareIcon({ size = 16 }: IconProps) {
   return (
     <Svg size={size}>
