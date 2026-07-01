@@ -5,7 +5,8 @@ import { useAppState } from '../AppState';
 import { resolveAssists } from '../storage';
 import { formatDuration } from '../stats';
 import { sfx } from '../audio';
-import { BackIcon, Chip, Modal, PauseIcon, PlayIcon, Toggle } from './ui';
+import { BackIcon, Chip, Modal, PauseIcon, PlayIcon, RestartIcon, ShareIcon, Toggle } from './ui';
+import { ShareCardModal } from './ShareCard';
 
 type Phase = 'setup' | 'playing' | 'finished';
 
@@ -22,7 +23,7 @@ const emptyStats: LiveStats = { score: 0, errors: 0, hintsUsed: 0, assistsUsed: 
  * timing, pause, quit, result recording and the completion screen.
  */
 export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () => void }) {
-  const { settings, updateSettings, setGameAssist, recordResult } = useAppState();
+  const { settings, updateSettings, setGameAssist, recordResult, profile } = useAppState();
 
   const [phase, setPhase] = useState<Phase>('setup');
   const [difficulty, setDifficulty] = useState<Difficulty>(
@@ -33,6 +34,8 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   const [session, setSession] = useState(0);
   const [finish, setFinish] = useState<FinishPayload | null>(null);
   const [confirmQuit, setConfirmQuit] = useState(false);
+  const [confirmRestart, setConfirmRestart] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const liveStats = useRef<LiveStats>(emptyStats);
   const startedAt = useRef(0);
@@ -57,6 +60,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
     setElapsedSec(0);
     setPaused(false);
     setFinish(null);
+    setShowShare(false);
     setSession((s) => s + 1);
     setPhase('playing');
   };
@@ -107,6 +111,14 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
       recordResult(buildResult('abandoned', liveStats.current));
     }
     onExit();
+  };
+
+  const restart = () => {
+    if (phase === 'playing' && !finished.current) {
+      recordResult(buildResult('abandoned', liveStats.current));
+    }
+    setConfirmRestart(false);
+    start();
   };
 
   const GameComponent = game.component;
@@ -182,12 +194,21 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         <button className="icon-btn" onClick={() => setConfirmQuit(true)} aria-label="Quit game">
           <BackIcon />
         </button>
+        <span className="header-spacer" />
         <div className="game-header-mid">
           <span className="game-header-title">{game.name}</span>
           <span className="game-header-sub">
             {DIFFICULTY_LABEL[difficulty]} · {formatDuration(elapsedSec)}
           </span>
         </div>
+        <button
+          className="icon-btn"
+          onClick={() => setConfirmRestart(true)}
+          aria-label="Restart game"
+          disabled={phase === 'finished'}
+        >
+          <RestartIcon />
+        </button>
         <button
           className="icon-btn"
           onClick={() => setPaused((p) => !p)}
@@ -206,6 +227,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           paused={paused || phase === 'finished'}
           elapsedSec={elapsedSec}
           events={events}
+          onToggleAssist={(assistId, on) => setGameAssist(game.id, assistId, on)}
         />
         {paused && phase === 'playing' && (
           <div className="pause-overlay">
@@ -217,6 +239,21 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           </div>
         )}
       </div>
+
+      <Modal open={confirmRestart} onClose={() => setConfirmRestart(false)} title="Restart game?">
+        <p className="modal-text">
+          A fresh puzzle will be dealt. The current game will be saved in your history as
+          abandoned.
+        </p>
+        <div className="modal-actions">
+          <button className="ghost-btn" onClick={() => setConfirmRestart(false)}>
+            Keep playing
+          </button>
+          <button className="primary-btn" onClick={restart}>
+            Restart
+          </button>
+        </div>
+      </Modal>
 
       <Modal open={confirmQuit} onClose={() => setConfirmQuit(false)} title="Quit this game?">
         <p className="modal-text">It will be saved in your history as abandoned.</p>
@@ -269,6 +306,12 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
                 Help used: {finish.assistsUsed.map((a) => assistNames.get(a) ?? a).join(', ')}
               </p>
             )}
+            {finish.outcome === 'won' && (
+              <button className="share-btn" onClick={() => setShowShare(true)}>
+                <ShareIcon />
+                <span>Share this win</span>
+              </button>
+            )}
             <div className="modal-actions">
               <button className="ghost-btn" onClick={() => quit(false)}>
                 Home
@@ -283,6 +326,23 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           </div>
         )}
       </Modal>
+
+      {showShare && finish && (
+        <ShareCardModal
+          data={{
+            gameName: game.name,
+            difficultyLabel: DIFFICULTY_LABEL[difficulty],
+            timeStr: formatDuration(elapsedSec),
+            score: finish.score,
+            errors: finish.errors,
+            hintsUsed: finish.hintsUsed,
+            cleanWin: finish.hintsUsed === 0 && finish.assistsUsed.length === 0,
+            playerName: profile.name,
+            playerEmoji: profile.emoji
+          }}
+          onClose={() => setShowShare(false)}
+        />
+      )}
     </div>
   );
 }

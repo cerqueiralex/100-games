@@ -43,6 +43,8 @@ export interface GameProps {
   paused: boolean;
   elapsedSec: number;
   events: GameEvents;
+  /** Flip an assist while playing; the change persists to settings. */
+  onToggleAssist: (assistId: string, on: boolean) => void;
 }
 
 /** The contract each game folder exports to plug into the platform. */
@@ -78,8 +80,12 @@ export interface GameResult {
 
 export type ThemeId = 'black' | 'dim' | 'light';
 
+/** Accent color themes — see src/platform/design/DESIGN.md. */
+export type AccentId = 'orange' | 'blue' | 'green' | 'red' | 'purple';
+
 export interface PlatformSettings {
   theme: ThemeId;
+  accent: AccentId;
   soundEnabled: boolean;
   volume: number; // 0..1
   /** gameId -> assistId -> enabled */

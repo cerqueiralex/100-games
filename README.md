@@ -26,6 +26,8 @@ npm run validate   # verify crossword puzzles + sudoku generator integrity
 ```
 src/
   platform/            ← everything shared by ALL games
+    design/            ← DESIGN SYSTEM: tokens.css (colors/themes), icons.tsx,
+                          DESIGN.md — the rules every new feature must follow
     types.ts           ← GameDefinition contract, GameResult, settings types
     registry.ts        ← the list of games (add new games here)
     storage.ts         ← on-device persistence (history, settings, profile)

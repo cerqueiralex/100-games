@@ -27,6 +27,7 @@ function write(key: string, value: unknown): void {
 
 export const DEFAULT_SETTINGS: PlatformSettings = {
   theme: 'black',
+  accent: 'orange',
   soundEnabled: true,
   volume: 0.6,
   gameAssists: {},

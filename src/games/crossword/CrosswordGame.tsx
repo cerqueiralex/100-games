@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
+import { BulbIcon, CheckIcon } from '../../platform/design/icons';
 import { buildPuzzle, type Dir, type Slot } from './logic/engine';
 import { pickPuzzle } from './logic/puzzles';
 
@@ -367,16 +368,19 @@ export function CrosswordGame({ difficulty, assists, paused, elapsedSec, events 
         <div className="cw-tools">
           {assists.checkPuzzle && (
             <button className="pad-tool" onClick={checkPuzzle}>
-              ✓ Check
+              <CheckIcon />
+              <span>Check</span>
             </button>
           )}
           {assists.reveal && (
             <>
               <button className="pad-tool" onClick={() => revealCell([sel], 'reveal')}>
-                💡 Letter
+                <BulbIcon />
+                <span>Letter</span>
               </button>
               <button className="pad-tool" onClick={() => revealCell(currentSlot.cells, 'reveal')}>
-                💡 Word
+                <BulbIcon />
+                <span>Word</span>
               </button>
             </>
           )}

@@ -34,7 +34,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     configureAudio(settings.soundEnabled, settings.volume);
     document.documentElement.dataset.theme = settings.theme;
-  }, [settings.soundEnabled, settings.volume, settings.theme]);
+    document.documentElement.dataset.accent = settings.accent;
+  }, [settings.soundEnabled, settings.volume, settings.theme, settings.accent]);
 
   const value = useMemo<AppState>(
     () => ({

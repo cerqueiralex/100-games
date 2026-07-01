@@ -1,47 +1,7 @@
-/* ===== 100 Games — all-black minimalist design system ===== */
-
-:root,
-:root[data-theme='black'] {
-  --bg: #000000;
-  --surface: #101012;
-  --surface-2: #1a1a1e;
-  --border: #232328;
-  --text: #f5f5f7;
-  --text-dim: #98989f;
-  --accent: #0a84ff;
-  --accent-soft: rgba(10, 132, 255, 0.16);
-  --good: #30d158;
-  --good-soft: rgba(48, 209, 88, 0.14);
-  --bad: #ff453a;
-  --bad-soft: rgba(255, 69, 58, 0.14);
-  --warn: #ffd60a;
-  --cell-peer: #17171b;
-  --cell-same: #123054;
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
-}
-
-:root[data-theme='dim'] {
-  --bg: #121316;
-  --surface: #1c1d21;
-  --surface-2: #26272c;
-  --border: #303138;
-  --cell-peer: #222327;
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-}
-
-:root[data-theme='light'] {
-  --bg: #f4f4f6;
-  --surface: #ffffff;
-  --surface-2: #ececf0;
-  --border: #d9d9e0;
-  --text: #121216;
-  --text-dim: #6a6a72;
-  --accent: #0a6cff;
-  --accent-soft: rgba(10, 108, 255, 0.12);
-  --cell-peer: #eaeef5;
-  --cell-same: #cfe3ff;
-  --shadow: 0 8px 24px rgba(20, 20, 40, 0.12);
-}
+/* ===== 100 Games — all-black minimalist design system =====
+   Color/theme tokens live in the design system; see
+   src/platform/design/DESIGN.md for the rules. */
+@import '../platform/design/tokens.css';
 
 * {
   box-sizing: border-box;
@@ -985,6 +945,39 @@ p {
   font-weight: 650;
 }
 
+.accent-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.accent-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 13px 2px;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.accent-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.accent-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
 .theme-desc {
   font-size: 10.5px;
   color: var(--text-dim);
@@ -1104,7 +1097,9 @@ p {
 }
 
 .cell.same {
-  background: var(--cell-same);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 750;
 }
 
 .cell.dimmed {
@@ -1151,26 +1146,39 @@ p {
   line-height: 1;
 }
 
-.sudoku-controls {
-  display: flex;
-  justify-content: center;
+/* equal-width, equal-height toolbar rows (see DESIGN.md) */
+.sudoku-controls,
+.cw-tools {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: 8px;
 }
 
 .pad-tool {
-  padding: 10px 14px;
-  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 46px;
+  padding: 0 8px;
+  border-radius: var(--radius-s);
   background: var(--surface);
   border: 1px solid var(--border);
   font-size: 13px;
   font-weight: 600;
   color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.pad-tool svg {
+  flex-shrink: 0;
 }
 
 .pad-tool.active {
   background: var(--accent-soft);
   border-color: var(--accent);
-  color: var(--text);
+  color: var(--accent);
 }
 
 .sudoku-pad {
@@ -1344,12 +1352,6 @@ p {
   line-height: 1.35;
 }
 
-.cw-tools {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-
 .cw-keyboard {
   display: flex;
   flex-direction: column;
@@ -1383,6 +1385,79 @@ p {
 .cw-key-wide {
   max-width: 66px;
   flex: 1.5;
+}
+
+/* ===== share card ===== */
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 14.5px;
+  margin-top: 4px;
+}
+
+.share-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.share-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.share-img {
+  width: 100%;
+  max-height: 62dvh;
+  object-fit: contain;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.7);
+}
+
+.share-loading {
+  color: var(--text-dim);
+  padding: 80px 0;
+}
+
+.share-hint {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.45;
+  max-width: 300px;
+}
+
+.share-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.share-actions .primary-btn {
+  width: auto;
+  padding: 12px 26px;
+  font-size: 14px;
 }
 
 /* desktop niceties */

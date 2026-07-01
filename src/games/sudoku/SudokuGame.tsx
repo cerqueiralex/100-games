@@ -2,6 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import {
+  BulbIcon,
+  DropletIcon,
+  EraseIcon,
+  PencilIcon,
+  SameIcon,
+  TargetIcon
+} from '../../platform/design/icons';
+import {
   boxOf,
   colOf,
   findNakedSingle,
@@ -16,7 +24,14 @@ const ERROR_LIMIT = 3;
 /** Passive assists count as "help used" for the whole game when enabled. */
 const PASSIVE_ASSISTS = ['colorAssist', 'regionHighlight', 'highlightSame', 'remainingNumbers'];
 
-export function SudokuGame({ difficulty, assists, paused, elapsedSec, events }: GameProps) {
+export function SudokuGame({
+  difficulty,
+  assists,
+  paused,
+  elapsedSec,
+  events,
+  onToggleAssist
+}: GameProps) {
   const { puzzle, solution } = useMemo(() => generatePuzzle(difficulty), [difficulty]);
 
   const [values, setValues] = useState<Grid>(() => [...puzzle]);
@@ -50,8 +65,10 @@ export function SudokuGame({ difficulty, assists, paused, elapsedSec, events }: 
   );
 
   useEffect(() => {
+    // passive assists toggled on mid-game still count as help for this game
+    for (const a of PASSIVE_ASSISTS) if (assists[a]) assistsUsed.current.add(a);
     reportStats(score, errors, hintsUsed);
-  }, [score, errors, hintsUsed, reportStats]);
+  }, [score, errors, hintsUsed, assists, reportStats]);
 
   const finish = useCallback(
     (outcome: 'won' | 'lost', finalScore: number, e: number, h: number) => {
@@ -247,7 +264,9 @@ export function SudokuGame({ difficulty, assists, paused, elapsedSec, events }: 
           (rowOf(i) === selRow || colOf(i) === selCol || boxOf(i) === selBox)) {
         classes.push('peer');
       }
-      if (assists.highlightSame && activeDigit !== 0 && v === activeDigit) classes.push('same');
+      if (assists.highlightSame && activeDigit !== 0 && v === activeDigit && !wrong) {
+        classes.push('same');
+      }
     }
     if (dimmedBoxes.has(boxOf(i))) classes.push('dimmed');
     if (flash === i) classes.push('flash');
@@ -304,21 +323,48 @@ export function SudokuGame({ difficulty, assists, paused, elapsedSec, events }: 
       <div className="sudoku-controls">
         <button
           className={`pad-tool ${notesMode ? 'active' : ''}`}
+          aria-pressed={notesMode}
           onClick={() => {
             sfx.tap();
             setNotesMode((m) => !m);
           }}
         >
-          ✏️ Notes {notesMode ? 'on' : 'off'}
+          <PencilIcon />
+          <span>Notes</span>
         </button>
         <button className="pad-tool" onClick={erase}>
-          ⌫ Erase
+          <EraseIcon />
+          <span>Erase</span>
         </button>
         {assists.smartHints && (
           <button className="pad-tool" onClick={useHint}>
-            💡 Hint
+            <BulbIcon />
+            <span>Hint</span>
           </button>
         )}
+      </div>
+
+      <div className="sudoku-controls">
+        {(
+          [
+            ['colorAssist', 'Colors', DropletIcon],
+            ['regionHighlight', 'Region', TargetIcon],
+            ['highlightSame', 'Same', SameIcon]
+          ] as const
+        ).map(([id, label, Icon]) => (
+          <button
+            key={id}
+            className={`pad-tool ${assists[id] ? 'active' : ''}`}
+            aria-pressed={assists[id]}
+            onClick={() => {
+              sfx.tap();
+              onToggleAssist(id, !assists[id]);
+            }}
+          >
+            <Icon />
+            <span>{label}</span>
+          </button>
+        ))}
       </div>
 
       <div className="sudoku-pad">
