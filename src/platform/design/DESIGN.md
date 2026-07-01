@@ -76,6 +76,26 @@ Transitions 0.12–0.2s ease. Press feedback: `scale(0.98)`. Every meaningful
 action can play a `sfx` sound (respecting sound settings). Board state
 changes (correct placement) may flash `--good-soft` briefly.
 
+## Tutorials (required for every game)
+
+Every game ships an illustrated how-to-play, declared as `tutorial` on its
+`GameDefinition` (the field is required — a game without one won't compile).
+Convention: a `tutorial.tsx` file in the game's folder exporting
+`TutorialStep[]`.
+
+- **3–6 steps**, each with a short title (2–5 words), 1–2 sentences of text,
+  and an illustration.
+- Illustrations are **composed from the `.tut-*` CSS primitives** in
+  `global.css` (`tut-cell`, `tut-key`, `tut-pads`, `tut-mcard`, `tut-grid`,
+  `tut-row/col`, `tut-arrow`, `tut-label`, `tut-big`, plus the standard
+  `chip` tones) — never static images or screenshots, so every tutorial
+  follows the active theme automatically.
+- Step order tells a story: the goal → how to interact → scoring/special
+  mechanics → assists (and that they count as help).
+- The platform shows tutorials in two places automatically: a "How to play"
+  button on the game's setup screen and a help icon in the in-game header
+  (which pauses the game). Games never render tutorials themselves.
+
 ## Games
 
 Games must consume `GameProps` and express all their UI with these tokens

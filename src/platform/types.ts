@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
@@ -47,6 +47,17 @@ export interface GameProps {
   onToggleAssist: (assistId: string, on: boolean) => void;
 }
 
+/**
+ * One step of a game's how-to-play tutorial. `art` is a small illustration
+ * composed from the .tut-* CSS primitives (see design/DESIGN.md) so it
+ * follows the active theme — never a static image.
+ */
+export interface TutorialStep {
+  title: string;
+  text: string;
+  art: ReactNode;
+}
+
 /** The contract each game folder exports to plug into the platform. */
 export interface GameDefinition {
   id: string;
@@ -57,6 +68,8 @@ export interface GameDefinition {
   assistFeatures: AssistFeature[];
   component: ComponentType<GameProps>;
   scoringNote: string;
+  /** Required: every game ships an illustrated how-to-play (3–6 steps). */
+  tutorial: TutorialStep[];
 }
 
 /** A finished (or abandoned) play, persisted in history. */

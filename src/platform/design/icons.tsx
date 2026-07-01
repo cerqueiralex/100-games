@@ -159,6 +159,16 @@ export function CheckIcon({ size = 16 }: IconProps) {
   );
 }
 
+export function HelpIcon({ size = 18 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.1 9.2a2.9 2.9 0 0 1 5.7.8c0 1.9-2.8 2.3-2.8 3.8" />
+      <path d="M12 17.1v.1" />
+    </Svg>
+  );
+}
+
 export function SearchIcon({ size = 18 }: IconProps) {
   return (
     <Svg size={size}>

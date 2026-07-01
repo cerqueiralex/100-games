@@ -1,5 +1,6 @@
 import type { GameDefinition } from '../../platform/types';
 import { SudokuGame } from './SudokuGame';
+import { sudokuTutorial } from './tutorial';
 
 export const sudokuDefinition: GameDefinition = {
   id: 'sudoku',
@@ -7,6 +8,7 @@ export const sudokuDefinition: GameDefinition = {
   tagline: 'Fill the grid so every row, column and box has 1–9.',
   icon: '9×9',
   component: SudokuGame,
+  tutorial: sudokuTutorial,
   scoringNote:
     'Scoring: +50/75/100 points per correct cell (easy/medium/hard), −50 per error, −25 per hint. Finish under par time (8/15/25 min) for a time bonus.',
   assistFeatures: [

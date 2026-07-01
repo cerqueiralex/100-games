@@ -16,6 +16,7 @@ A minimalist, all-black platform for classic puzzle and brain games. Built as a 
 ## Platform features (shared by every game)
 
 - **Difficulty levels** (easy / medium / hard), pause, restart, quit — all via the standard game shell
+- **Illustrated tutorials**: every game ships a step-by-step "How to play" with theme-aware illustrations, on the game's start screen and behind the help button while playing
 - **Assist / help tracking**: every assist is toggleable (some in-game); whatever you use is stored per game, so history and stats always distinguish **clean wins** from **wins with help**
 - **Statistics & history**: win rate, best/avg time, best/avg score, streaks, errors, hints, time played, high scores per difficulty, filterable per game (Profile tab)
 - **Profile**: name + avatar, totals across games
@@ -71,8 +72,9 @@ src/
 
 1. Create `src/games/<id>/` with all of the game's logic and UI.
 2. Export a `GameDefinition` from its `index.ts` — name, icon, assist
-   features, scoring note, and a component that takes standard `GameProps`
-   and reports upward via `events.onStats(...)` / `events.onFinish(...)`.
+   features, scoring note, an illustrated tutorial (`tutorial.tsx`,
+   required), and a component that takes standard `GameProps` and reports
+   upward via `events.onStats(...)` / `events.onFinish(...)`.
 3. Register it in `src/platform/registry.ts`.
 
 Difficulty selection, timing, pause/restart, scoring history, statistics,

@@ -1,5 +1,6 @@
 import type { GameDefinition } from '../../platform/types';
 import { NBackGame } from './NBackGame';
+import { nBackTutorial } from './tutorial';
 
 export const nBackDefinition: GameDefinition = {
   id: 'n-back',
@@ -7,6 +8,7 @@ export const nBackDefinition: GameDefinition = {
   tagline: 'Press Match when the position repeats from N steps back.',
   icon: 'n−1',
   component: NBackGame,
+  tutorial: nBackTutorial,
   scoringNote:
     'Squares light up one by one. Press Match when the position equals the one N steps back (N = 1/2/3 by difficulty). +20/30/40 per hit, +5 per correct pass, −10 per mistake. Reach 70% accuracy to win.',
   assistFeatures: [

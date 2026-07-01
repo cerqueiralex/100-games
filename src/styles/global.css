@@ -1652,6 +1652,397 @@ p {
   visibility: hidden;
 }
 
+/* ===== tutorials (see DESIGN.md — every game ships one) ===== */
+
+.howto-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius-m);
+  padding: 14px 16px;
+  font-weight: 650;
+  font-size: 14.5px;
+  margin-bottom: 22px;
+}
+
+.howto-text {
+  flex: 1;
+}
+
+.howto-go {
+  font-size: 20px;
+  opacity: 0.7;
+}
+
+.tut-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.tut-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 88dvh;
+  overflow-y: auto;
+}
+
+.tut-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tut-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tut-close {
+  font-size: 26px;
+  line-height: 1;
+  color: var(--text-dim);
+  padding: 2px 6px;
+}
+
+.tut-art {
+  min-height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 16px;
+}
+
+.tut-step-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--accent);
+}
+
+.tut-step-title {
+  font-size: 18px;
+  font-weight: 750;
+  margin: 4px 0 6px;
+}
+
+.tut-step-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.tut-dots {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+}
+
+.tut-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 0;
+}
+
+.tut-dot.active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tut-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.tut-nav .ghost-btn {
+  flex: 1;
+}
+
+.tut-nav .primary-btn {
+  flex: 2;
+  padding: 13px;
+}
+
+/* --- tutorial illustration primitives (compose these for art) --- */
+
+.tut-grid {
+  display: grid;
+  gap: 4px;
+}
+
+.tut-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tut-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.tut-cell {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.tut-cell.mini {
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+}
+
+.tut-cell.big {
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+}
+
+.tut-cell.sel {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.tut-cell.hl {
+  background: var(--cell-peer);
+}
+
+.tut-cell.same {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tut-cell.lit {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+.tut-cell.good {
+  background: var(--good-soft);
+  color: var(--good);
+  border-color: var(--good);
+}
+
+.tut-cell.bad {
+  background: var(--bad-soft);
+  color: var(--bad);
+  border-color: var(--bad);
+  text-decoration: line-through;
+}
+
+.tut-cell.ghost {
+  border: 2px dashed var(--accent);
+}
+
+.tut-cell.dim {
+  opacity: 0.5;
+}
+
+.tut-cell.blank {
+  visibility: hidden;
+}
+
+.tut-notes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+  padding: 3px;
+}
+
+.tut-notes i {
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-dim);
+  display: grid;
+  place-items: center;
+}
+
+.tut-key {
+  min-width: 34px;
+  height: 38px;
+  padding: 0 10px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.tut-key.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tut-key.wide {
+  min-width: 96px;
+}
+
+.tut-arrow {
+  color: var(--text-dim);
+  font-size: 18px;
+  min-width: 14px;
+  text-align: center;
+}
+
+.tut-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tut-big {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.tut-pads {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.tut-pad {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  opacity: 0.45;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.tut-pad.lit {
+  opacity: 1;
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.25);
+}
+
+.tut-pad.g {
+  background: var(--play-1);
+}
+
+.tut-pad.r {
+  background: var(--play-2);
+}
+
+.tut-pad.y {
+  background: var(--play-3);
+}
+
+.tut-pad.b {
+  background: var(--play-4);
+}
+
+.tut-mcard {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.tut-mcard.good {
+  border-color: var(--good);
+  background: var(--good-soft);
+}
+
+.tut-mcard.bad {
+  border-color: var(--bad);
+  background: var(--bad-soft);
+}
+
+.tut-mcard.dim {
+  opacity: 0.55;
+}
+
+.tut-mdot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.tut-face {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.tut-cluebar-demo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tut-clue-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 16px;
+}
+
+.tut-clue-demo b {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.tut-clue-demo span {
+  font-size: 13.5px;
+}
+
 /* ===== share card ===== */
 
 .share-btn {

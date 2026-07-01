@@ -1,5 +1,6 @@
 import type { GameDefinition } from '../../platform/types';
 import { CrosswordGame } from './CrosswordGame';
+import { crosswordTutorial } from './tutorial';
 
 export const crosswordDefinition: GameDefinition = {
   id: 'crossword',
@@ -7,6 +8,7 @@ export const crosswordDefinition: GameDefinition = {
   tagline: 'Solve the clues and fill the crossing words.',
   icon: 'A–Z',
   component: CrosswordGame,
+  tutorial: crosswordTutorial,
   scoringNote:
     'Scoring: +15/20/30 points per correct letter (easy/medium/hard), −10 per error, −25 per reveal. Finish under par time (6/12/20 min) for a time bonus.',
   assistFeatures: [

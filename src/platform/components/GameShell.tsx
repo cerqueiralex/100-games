@@ -5,8 +5,9 @@ import { useAppState } from '../AppState';
 import { resolveAssists } from '../storage';
 import { formatDuration } from '../stats';
 import { sfx } from '../audio';
-import { BackIcon, Chip, Modal, PauseIcon, PlayIcon, RestartIcon, ShareIcon, Toggle } from './ui';
+import { BackIcon, Chip, HelpIcon, Modal, PauseIcon, PlayIcon, RestartIcon, ShareIcon, Toggle } from './ui';
 import { ShareCardModal } from './ShareCard';
+import { TutorialModal } from './Tutorial';
 
 type Phase = 'setup' | 'playing' | 'finished';
 
@@ -36,6 +37,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   const [confirmQuit, setConfirmQuit] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const liveStats = useRef<LiveStats>(emptyStats);
   const startedAt = useRef(0);
@@ -139,6 +141,18 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           <span className="header-spacer" />
         </header>
 
+        <button
+          className="howto-btn"
+          onClick={() => {
+            sfx.tap();
+            setShowTutorial(true);
+          }}
+        >
+          <HelpIcon />
+          <span className="howto-text">How to play {game.name}</span>
+          <span className="howto-go">›</span>
+        </button>
+
         <section className="setup-section">
           <h3 className="section-title">Difficulty</h3>
           <div className="difficulty-row">
@@ -183,6 +197,8 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         <button className="primary-btn start-btn" onClick={start}>
           Start game
         </button>
+
+        {showTutorial && <TutorialModal game={game} onClose={() => setShowTutorial(false)} />}
       </div>
     );
   }
@@ -194,13 +210,23 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         <button className="icon-btn" onClick={() => setConfirmQuit(true)} aria-label="Quit game">
           <BackIcon />
         </button>
-        <span className="header-spacer" />
         <div className="game-header-mid">
           <span className="game-header-title">{game.name}</span>
           <span className="game-header-sub">
             {DIFFICULTY_LABEL[difficulty]} · {formatDuration(elapsedSec)}
           </span>
         </div>
+        <button
+          className="icon-btn"
+          onClick={() => {
+            sfx.tap();
+            if (phase === 'playing') setPaused(true);
+            setShowTutorial(true);
+          }}
+          aria-label="How to play"
+        >
+          <HelpIcon />
+        </button>
         <button
           className="icon-btn"
           onClick={() => setConfirmRestart(true)}
@@ -326,6 +352,8 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           </div>
         )}
       </Modal>
+
+      {showTutorial && <TutorialModal game={game} onClose={() => setShowTutorial(false)} />}
 
       {showShare && finish && (
         <ShareCardModal

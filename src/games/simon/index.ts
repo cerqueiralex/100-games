@@ -1,5 +1,6 @@
 import type { GameDefinition } from '../../platform/types';
 import { SimonGame } from './SimonGame';
+import { simonTutorial } from './tutorial';
 
 export const simonDefinition: GameDefinition = {
   id: 'simon',
@@ -7,6 +8,7 @@ export const simonDefinition: GameDefinition = {
   tagline: 'Repeat ever-longer color and sound sequences.',
   icon: '◉◉',
   component: SimonGame,
+  tutorial: simonTutorial,
   scoringNote:
     'Scoring: round length × 10 × difficulty multiplier for every sequence you repeat. Reach round 8/12/16 (easy/medium/hard) to win. One wrong pad ends the game — unless Second chances is on.',
   assistFeatures: [
