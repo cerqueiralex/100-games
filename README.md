@@ -18,6 +18,8 @@ A minimalist, flat frosted-glass platform for classic puzzle and brain games. Bu
 | **Tic-Tac-Toe** | Race the robot to 3 round wins; AI scales from sloppy to near-perfect minimax |
 | **Image Puzzle** | Sliding photo tiles (3×3/4×4/5×5), always solvable — add your own photos (see below) |
 | **Maze** | Generated labyrinths with corridor-run movement; beat the BFS-optimal path for max score |
+| **Cryptogram** | Crack a random substitution cipher to reveal a hidden phrase; frequency and reveal assists |
+| **Minesweeper** | Classic mines with protected first tap, flag mode, long-press flags and chording |
 
 ## Platform features (shared by every game)
 
@@ -89,7 +91,8 @@ src/
     pages/               ← Home (+ search), Profile (stats + history), Settings
   games/                 ← one isolated folder per game, all its logic inside
     sudoku/  crossword/  word-wheel/  memory-match/  simon/  nback/
-    dual-nback/  number-merge/  color-connect/  tic-tac-toe/  image-puzzle/  maze/
+    dual-nback/  number-merge/  color-connect/  tic-tac-toe/  image-puzzle/
+    maze/  cryptogram/  minesweeper/
 ```
 
 ### Adding a new game

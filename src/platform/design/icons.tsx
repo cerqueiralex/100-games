@@ -187,6 +187,24 @@ export function EyeIcon({ size = 16 }: IconProps) {
   );
 }
 
+export function FlagIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M5 21V4" />
+      <path d="M5 4h11l-2.6 4L16 12H5" />
+    </Svg>
+  );
+}
+
+export function MineIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <circle cx="12" cy="12" r="5" />
+      <path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" />
+    </Svg>
+  );
+}
+
 export function SaveIcon({ size = 18 }: IconProps) {
   return (
     <Svg size={size}>

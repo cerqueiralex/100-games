@@ -57,6 +57,21 @@ for (const [difficulty, levels] of Object.entries(LEVELS)) {
   }
 }
 
+console.log('— Cryptogram phrases —');
+const { PHRASES } = await import('../src/games/cryptogram/logic/phrases');
+for (const [difficulty, phrases] of Object.entries(PHRASES)) {
+  for (const phrase of phrases) {
+    const bad = /[^A-Z ]/.test(phrase.text);
+    const unique = new Set(phrase.text.replace(/ /g, '')).size;
+    if (bad || unique < 6) {
+      failed = true;
+      console.error(`✗ ${difficulty}/${phrase.id}: ${bad ? 'invalid characters' : 'too few unique letters'}`);
+    } else {
+      console.log(`✓ ${difficulty}/${phrase.id} — ${phrase.text.length} chars, ${unique} unique letters`);
+    }
+  }
+}
+
 console.log('— Color Connect generator —');
 for (const difficulty of ['easy', 'medium', 'hard'] as const) {
   let ok = 0;

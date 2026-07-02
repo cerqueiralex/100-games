@@ -11,6 +11,8 @@ import { colorConnectDefinition } from '../games/color-connect';
 import { ticTacToeDefinition } from '../games/tic-tac-toe';
 import { imagePuzzleDefinition } from '../games/image-puzzle';
 import { mazeDefinition } from '../games/maze';
+import { cryptogramDefinition } from '../games/cryptogram';
+import { minesweeperDefinition } from '../games/minesweeper';
 
 /**
  * Central game registry. To add a new game to the platform:
@@ -31,7 +33,9 @@ export const GAMES: GameDefinition[] = [
   colorConnectDefinition,
   ticTacToeDefinition,
   imagePuzzleDefinition,
-  mazeDefinition
+  mazeDefinition,
+  cryptogramDefinition,
+  minesweeperDefinition
 ];
 
 export function getGame(id: string): GameDefinition | undefined {

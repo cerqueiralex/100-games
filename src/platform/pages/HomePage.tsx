@@ -131,7 +131,7 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
             <span className="game-card-icon">…</span>
             <span className="game-card-body">
               <span className="game-card-name">More classics coming</span>
-              <span className="game-card-tag">Cryptogram, Solitaire, Minesweeper…</span>
+              <span className="game-card-tag">Solitaire, 2048, Nonograms…</span>
             </span>
           </div>
         )}

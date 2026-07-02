@@ -2451,6 +2451,159 @@ p {
   visibility: hidden;
 }
 
+/* ===== cryptogram ===== */
+
+.cryptogram {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cg-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.cg-word {
+  display: flex;
+  gap: 3px;
+}
+
+.cg-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 26px;
+  padding: 3px 0 4px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.cg-guess {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 24px;
+  border-bottom: 2px solid var(--border);
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.cg-cipher {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.cg-cell.sel {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.cg-cell.sel .cg-cipher {
+  color: var(--accent);
+}
+
+.cg-cell.locked .cg-guess {
+  color: var(--good);
+  border-bottom-color: var(--good);
+}
+
+.cg-cell.wrong .cg-guess {
+  color: var(--bad);
+  border-bottom-color: var(--bad);
+}
+
+.cg-freq {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.cw-key.dim {
+  opacity: 0.45;
+}
+
+.board-hidden .cg-board {
+  visibility: hidden;
+}
+
+.cg-demo .tut-cell {
+  border-bottom-width: 2px;
+}
+
+/* ===== minesweeper ===== */
+
+.minesweeper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ms-board {
+  display: grid;
+  gap: 3px;
+  aspect-ratio: 1;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.ms-cell {
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: clamp(11px, 3vw, 16px);
+  font-weight: 800;
+  color: var(--accent);
+  padding: 0;
+}
+
+.ms-cell.open {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--border) 45%, transparent);
+}
+
+.ms-cell.mine {
+  color: var(--bad);
+}
+
+.ms-cell.boom {
+  background: var(--bad-soft);
+  border-color: var(--bad);
+}
+
+.ms-cell .ms-flag {
+  color: var(--accent);
+}
+
+.ms-n1 { color: var(--play-4); }
+.ms-n2 { color: var(--play-1); }
+.ms-n3 { color: var(--play-2); }
+.ms-n4 { color: var(--play-5); }
+.ms-n5 { color: var(--play-7); }
+.ms-n6 { color: var(--play-6); }
+.ms-n7 { color: var(--play-8); }
+.ms-n8 { color: var(--text); }
+
+.ms-hint-text {
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.board-hidden .ms-board {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* ===== tutorials (see DESIGN.md — every game ships one) ===== */
 
 .howto-btn {
