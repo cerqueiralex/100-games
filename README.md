@@ -47,7 +47,17 @@ npm run validate   # verify crossword puzzles + sudoku generator integrity
 
 **Same Wi-Fi (quick test):** run `npm run dev`, note the "Network" URL it prints (e.g. `http://192.168.1.x:5173`), and open it in Safari on your iPhone.
 
-**Real install (recommended):** deploy `dist/` to any free static host (Vercel, Netlify, GitHub Pages, Cloudflare Pages — build command `npm run build`, output `dist`). Open the HTTPS URL in Safari → Share → **Add to Home Screen**. It launches full-screen with the app icon and works offline. (iOS only activates the offline service worker over HTTPS, which is why a deploy beats the LAN URL.)
+**Real install (recommended):** the app auto-deploys to GitHub Pages on
+every push to `main` (see `.github/workflows/deploy.yml`) at:
+
+> **https://cerqueiralex.github.io/100-games/**
+
+Open that URL in Safari on your iPhone → Share → **Add to Home Screen**.
+It launches full-screen with the app icon and works offline. (iOS only
+activates the offline service worker over HTTPS, which is why the deploy
+beats the LAN URL.) The workflow builds with `VITE_BASE=/100-games/`;
+in-app URLs must use `import.meta.env.BASE_URL` rather than absolute `/`
+paths so they survive subpath hosting.
 
 ## Architecture
 

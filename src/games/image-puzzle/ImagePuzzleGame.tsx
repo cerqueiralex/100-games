@@ -14,10 +14,11 @@ const PAR_SEC: Record<Difficulty, number> = { easy: 2 * 60, medium: 5 * 60, hard
  */
 async function pickImage(): Promise<string | null> {
   try {
-    const res = await fetch('/puzzles/manifest.json');
+    const base = import.meta.env.BASE_URL;
+    const res = await fetch(`${base}puzzles/manifest.json`);
     const data = (await res.json()) as { images: string[] };
     if (!data.images?.length) return null;
-    return `/puzzles/${data.images[Math.floor(Math.random() * data.images.length)]}`;
+    return `${base}puzzles/${data.images[Math.floor(Math.random() * data.images.length)]}`;
   } catch {
     return null;
   }

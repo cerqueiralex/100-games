@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // GitHub Pages serves the app under /100-games/ — the deploy workflow
+  // sets VITE_BASE; local dev and LAN play keep the root path.
+  base: process.env.VITE_BASE ?? '/',
   plugins: [
     react(),
     VitePWA({
