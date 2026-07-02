@@ -137,32 +137,63 @@ export function ColorConnectGame({ difficulty, assists, paused, elapsedSec, even
     if (cell === null) return;
     const color = active.current;
     setPaths((ps) => {
-      const p = ps[color];
-      if (p.length === 0) return ps;
-      const last = p[p.length - 1];
+      const p0 = ps[color];
+      if (p0.length === 0) return ps;
+      const last = p0[p0.length - 1];
       if (cell === last) return ps;
-      // backtrack along own path
-      const ownIdx = p.indexOf(cell);
-      if (ownIdx !== -1) {
-        const next = ps.map((q) => [...q]);
-        next[color] = p.slice(0, ownIdx + 1);
-        return next;
+
+      // interpolate a straight run of cells so fast drags never skip tiles
+      const steps: number[] = [];
+      const r1 = Math.floor(last / size);
+      const c1 = last % size;
+      const r2 = Math.floor(cell / size);
+      const c2 = cell % size;
+      if (r1 === r2) {
+        const d = c2 > c1 ? 1 : -1;
+        for (let c = c1 + d; d > 0 ? c <= c2 : c >= c2; c += d) steps.push(r1 * size + c);
+      } else if (c1 === c2) {
+        const d = r2 > r1 ? size : -size;
+        for (let i = last + d; d > 0 ? i <= cell : i >= cell; i += d) steps.push(i);
+      } else if (orthAdjacent(last, cell)) {
+        steps.push(cell);
+      } else {
+        return ps;
       }
-      if (!orthAdjacent(last, cell)) return ps;
-      // may not run through another color's endpoint
-      const ep = endpointOwner.get(cell);
-      if (ep !== undefined && ep !== color) return ps;
-      // stop extending past our completed connection
-      if (isComplete(ps, color)) return ps;
-      const next = ps.map((q) => [...q]);
-      // cut any other path occupying this cell
-      for (let i = 0; i < next.length; i++) {
-        if (i === color) continue;
-        const at = next[i].indexOf(cell);
-        if (at !== -1) next[i] = next[i].slice(0, at);
+
+      let next = ps;
+      let changed = false;
+      let connected = false;
+      for (const target of steps) {
+        const p = next[color];
+        const lastCell = p[p.length - 1];
+        // backtrack along own path
+        const ownIdx = p.indexOf(target);
+        if (ownIdx !== -1) {
+          next = next.map((q, i) => (i === color ? p.slice(0, ownIdx + 1) : q));
+          changed = true;
+          continue;
+        }
+        if (!orthAdjacent(lastCell, target)) break;
+        // may not run through another color's endpoint
+        const ep = endpointOwner.get(target);
+        if (ep !== undefined && ep !== color) break;
+        // stop extending past our completed connection
+        if (isComplete(next, color)) break;
+        next = next.map((q, i) => {
+          if (i === color) return [...q, target];
+          // cut any other path occupying this cell
+          const at = q.indexOf(target);
+          return at !== -1 ? q.slice(0, at) : q;
+        });
+        changed = true;
+        if (isComplete(next, color)) {
+          connected = true;
+          break;
+        }
       }
-      next[color] = [...p, cell];
-      if (isComplete(next, color)) sfx.place();
+      if (!changed) return ps;
+      if (connected) sfx.pop();
+      else sfx.drag();
       return next;
     });
   };
@@ -200,10 +231,24 @@ export function ColorConnectGame({ difficulty, assists, paused, elapsedSec, even
     });
   };
 
-  const cellColor = (cell: number): number => {
-    for (let i = 0; i < paths.length; i++) if (paths[i].includes(cell)) return i;
-    return endpointOwner.get(cell) ?? -1;
-  };
+  /** cell -> which color's pipe passes through and towards which edges */
+  const pipes = useMemo(() => {
+    const map = new Map<number, { color: number; dirs: string[] }>();
+    paths.forEach((p, color) => {
+      p.forEach((cell, k) => {
+        const dirs: string[] = [];
+        for (const nb of [p[k - 1], p[k + 1]]) {
+          if (nb === undefined) continue;
+          if (nb === cell - size) dirs.push('n');
+          else if (nb === cell + size) dirs.push('s');
+          else if (nb === cell - 1) dirs.push('w');
+          else if (nb === cell + 1) dirs.push('e');
+        }
+        map.set(cell, { color, dirs });
+      });
+    });
+    return map;
+  }, [paths, size]);
 
   return (
     <div className={`colorconnect ${paused ? 'board-hidden' : ''}`}>
@@ -234,11 +279,15 @@ export function ColorConnectGame({ difficulty, assists, paused, elapsedSec, even
         onPointerCancel={onPointerUp}
       >
         {Array.from({ length: n }, (_, i) => {
-          const color = cellColor(i);
-          const isEp = endpointOwner.has(i);
+          const pipe = pipes.get(i);
+          const ep = endpointOwner.get(i);
           return (
-            <div key={i} className={`fl-cell ${color >= 0 ? `fl-c${color % 9}` : ''} ${color >= 0 && !isEp ? 'path' : ''}`}>
-              {isEp && <span className={`fl-dot fl-c${(endpointOwner.get(i)! % 9)}`} />}
+            <div key={i} className={`fl-cell ${pipe ? `tint fl-c${pipe.color % 9}` : ''}`}>
+              {pipe?.dirs.map((d) => (
+                <span key={d} className={`fl-seg ${d} fl-c${pipe.color % 9}`} />
+              ))}
+              {pipe && <span className={`fl-seg c fl-c${pipe.color % 9}`} />}
+              {ep !== undefined && <span className={`fl-dot ep fl-c${ep % 9}`} />}
             </div>
           );
         })}

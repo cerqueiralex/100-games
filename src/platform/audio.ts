@@ -20,6 +20,26 @@ function getCtx(): AudioContext | null {
   return ctx;
 }
 
+/** Tone with a frequency glide — used for pops and whooshes. */
+function sweep(f0: number, f1: number, durMs: number, type: OscillatorType = 'sine', gainMul = 1): void {
+  if (!enabled || volume <= 0) return;
+  const ac = getCtx();
+  if (!ac) return;
+  const t0 = ac.currentTime;
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(f0, t0);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t0 + durMs / 1000);
+  const peak = 0.14 * volume * gainMul;
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime(peak, t0 + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + durMs / 1000);
+  osc.connect(gain).connect(ac.destination);
+  osc.start(t0);
+  osc.stop(t0 + durMs / 1000 + 0.05);
+}
+
 function tone(freq: number, durMs: number, type: OscillatorType, gainMul = 1, delayMs = 0): void {
   if (!enabled || volume <= 0) return;
   const ac = getCtx();
@@ -45,6 +65,13 @@ export function playNote(freq: number, durMs = 300, type: OscillatorType = 'sine
 
 export const sfx = {
   tap: () => tone(700, 50, 'sine', 0.7),
+  /** soft short tick for continuous drag feedback */
+  drag: () => tone(880, 26, 'sine', 0.35),
+  /** bubbly pop for satisfying connections */
+  pop: () => {
+    sweep(260, 720, 90, 'sine', 1.1);
+    tone(1150, 40, 'triangle', 0.5, 60);
+  },
   place: () => tone(520, 80, 'triangle'),
   error: () => {
     tone(180, 160, 'sawtooth', 0.9);

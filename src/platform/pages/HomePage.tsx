@@ -54,7 +54,7 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
               <span className="game-card-body">
                 <span className="game-card-name">{game.name}</span>
                 <span className="game-card-tag">{game.tagline}</span>
-                <span className="game-card-stats">
+                <span className={`game-card-stats ${stats.played > 0 ? 'has-stats' : ''}`}>
                   {stats.played > 0 ? (
                     <>
                       {stats.played} played · best{' '}

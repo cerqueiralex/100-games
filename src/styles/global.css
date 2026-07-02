@@ -279,6 +279,18 @@ p {
   margin-top: 3px;
 }
 
+.game-card-stats.has-stats {
+  align-self: flex-start;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 3px 10px;
+  margin-top: 6px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .game-card-go {
   font-size: 26px;
   color: var(--text-dim);
@@ -1836,26 +1848,72 @@ p {
   place-items: center;
   background: var(--surface-2);
   border-radius: 8px;
+  overflow: hidden;
 }
 
-.fl-cell.path {
-  opacity: 0.92;
+/* subtle tint under the pipe, like classic Flow boards */
+.fl-cell.tint.fl-c0 { background: color-mix(in srgb, var(--play-1) 18%, var(--surface-2)); }
+.fl-cell.tint.fl-c1 { background: color-mix(in srgb, var(--play-2) 18%, var(--surface-2)); }
+.fl-cell.tint.fl-c2 { background: color-mix(in srgb, var(--play-3) 18%, var(--surface-2)); }
+.fl-cell.tint.fl-c3 { background: color-mix(in srgb, var(--play-4) 18%, var(--surface-2)); }
+.fl-cell.tint.fl-c4 { background: color-mix(in srgb, var(--play-5) 18%, var(--surface-2)); }
+.fl-cell.tint.fl-c5 { background: color-mix(in srgb, var(--play-6) 18%, var(--surface-2)); }
+.fl-cell.tint.fl-c6 { background: color-mix(in srgb, var(--play-7) 18%, var(--surface-2)); }
+.fl-cell.tint.fl-c7 { background: color-mix(in srgb, var(--play-8) 18%, var(--surface-2)); }
+.fl-cell.tint.fl-c8 { background: color-mix(in srgb, var(--play-9) 18%, var(--surface-2)); }
+
+/* the pipe: bars from the cell center to connected edges + a round joint */
+.fl-seg {
+  position: absolute;
+  z-index: 1;
+  animation: flgrow 0.14s ease;
 }
 
-.fl-cell.fl-c0.path { background: color-mix(in srgb, var(--play-1) 55%, var(--surface-2)); }
-.fl-cell.fl-c1.path { background: color-mix(in srgb, var(--play-2) 55%, var(--surface-2)); }
-.fl-cell.fl-c2.path { background: color-mix(in srgb, var(--play-3) 55%, var(--surface-2)); }
-.fl-cell.fl-c3.path { background: color-mix(in srgb, var(--play-4) 55%, var(--surface-2)); }
-.fl-cell.fl-c4.path { background: color-mix(in srgb, var(--play-5) 55%, var(--surface-2)); }
-.fl-cell.fl-c5.path { background: color-mix(in srgb, var(--play-6) 55%, var(--surface-2)); }
-.fl-cell.fl-c6.path { background: color-mix(in srgb, var(--play-7) 55%, var(--surface-2)); }
-.fl-cell.fl-c7.path { background: color-mix(in srgb, var(--play-8) 55%, var(--surface-2)); }
-.fl-cell.fl-c8.path { background: color-mix(in srgb, var(--play-9) 55%, var(--surface-2)); }
+@keyframes flgrow {
+  from {
+    transform: scale(0.4);
+    opacity: 0.3;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.fl-seg.c {
+  width: 36%;
+  height: 36%;
+  left: 32%;
+  top: 32%;
+  border-radius: 50%;
+}
+
+.fl-seg.n { width: 36%; height: 52%; left: 32%; top: 0; }
+.fl-seg.s { width: 36%; height: 52%; left: 32%; bottom: 0; }
+.fl-seg.w { width: 52%; height: 36%; left: 0; top: 32%; }
+.fl-seg.e { width: 52%; height: 36%; right: 0; top: 32%; }
+
+.fl-seg.fl-c0 { background: var(--play-1); }
+.fl-seg.fl-c1 { background: var(--play-2); }
+.fl-seg.fl-c2 { background: var(--play-3); }
+.fl-seg.fl-c3 { background: var(--play-4); }
+.fl-seg.fl-c4 { background: var(--play-5); }
+.fl-seg.fl-c5 { background: var(--play-6); }
+.fl-seg.fl-c6 { background: var(--play-7); }
+.fl-seg.fl-c7 { background: var(--play-8); }
+.fl-seg.fl-c8 { background: var(--play-9); }
 
 .fl-dot {
   width: 62%;
   height: 62%;
   border-radius: 50%;
+}
+
+.fl-dot.ep {
+  position: absolute;
+  left: 19%;
+  top: 19%;
+  z-index: 2;
 }
 
 .fl-dot.fl-c0 { background: var(--play-1); }
