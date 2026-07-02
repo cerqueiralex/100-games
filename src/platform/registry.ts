@@ -5,6 +5,12 @@ import { memoryMatchDefinition } from '../games/memory-match';
 import { simonDefinition } from '../games/simon';
 import { nBackDefinition } from '../games/nback';
 import { dualNBackDefinition } from '../games/dual-nback';
+import { wordWheelDefinition } from '../games/word-wheel';
+import { numberMergeDefinition } from '../games/number-merge';
+import { colorConnectDefinition } from '../games/color-connect';
+import { ticTacToeDefinition } from '../games/tic-tac-toe';
+import { imagePuzzleDefinition } from '../games/image-puzzle';
+import { mazeDefinition } from '../games/maze';
 
 /**
  * Central game registry. To add a new game to the platform:
@@ -16,10 +22,16 @@ import { dualNBackDefinition } from '../games/dual-nback';
 export const GAMES: GameDefinition[] = [
   sudokuDefinition,
   crosswordDefinition,
+  wordWheelDefinition,
   memoryMatchDefinition,
   simonDefinition,
   nBackDefinition,
-  dualNBackDefinition
+  dualNBackDefinition,
+  numberMergeDefinition,
+  colorConnectDefinition,
+  ticTacToeDefinition,
+  imagePuzzleDefinition,
+  mazeDefinition
 ];
 
 export function getGame(id: string): GameDefinition | undefined {

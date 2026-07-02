@@ -12,6 +12,12 @@ A minimalist, all-black platform for classic puzzle and brain games. Built as a 
 | **Simon** | Repeat growing color+tone sequences; reach round 8/12/16 to win; lives, slow playback and replay assists |
 | **N-Back** | Press Match when the lit position repeats from N steps back (N = 1/2/3); ≥70% accuracy wins |
 | **Dual N-Back** | Positions AND letters tracked at once on independent channels; ≥65% accuracy wins |
+| **Word Wheel** | Spell words from a letter wheel to fill a criss-cross grid (hand-crafted, validated levels) |
+| **Number Merge** | Drag chains of equal/doubling numbers to merge toward the goal tile (256/512/1024) |
+| **Color Connect** | Flow-style: link every dot pair and cover the board; levels freshly generated every game |
+| **Tic-Tac-Toe** | Race the robot to 3 round wins; AI scales from sloppy to near-perfect minimax |
+| **Image Puzzle** | Sliding photo tiles (3×3/4×4/5×5), always solvable — add your own photos (see below) |
+| **Maze** | Generated labyrinths with corridor-run movement; beat the BFS-optimal path for max score |
 
 ## Platform features (shared by every game)
 
@@ -91,7 +97,15 @@ permanently distinguishable from assisted ones in history and statistics.
 
 ### Content integrity
 
-`npm run validate` rebuilds every hand-crafted crossword (checking all
-intersections and catching accidental adjacent words) and generates one
-sudoku per difficulty, verifying unique solutions. Run it after editing
-`src/games/crossword/logic/puzzles.ts`.
+`npm run validate` rebuilds every hand-crafted crossword and Word Wheel
+level (checking all intersections and catching accidental words), generates
+sudokus verifying unique solutions, and stress-tests the Color Connect level
+generator for full-coverage solvability. Run it after editing
+`src/games/crossword/logic/puzzles.ts` or
+`src/games/word-wheel/logic/levels.ts`.
+
+### Custom Image Puzzle photos
+
+The sliding puzzle picks a random photo from `public/puzzles/`. To add your
+own: drop a square-ish image into that folder and add its filename to
+`public/puzzles/manifest.json`. The bundled five come from Lorem Picsum.

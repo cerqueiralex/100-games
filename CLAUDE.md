@@ -19,7 +19,9 @@ There is no test framework or linter; `npm run build` and `npm run validate` are
 
 ## What this is
 
-An offline-first PWA of classic puzzle games (React 18 + Vite + TypeScript, no backend, no router — navigation is component state in `App.tsx`). Six games so far: Sudoku, Crossword, Memory Match, Simon, N-Back, Dual N-Back. All persistence is localStorage under versioned keys (`100games.v1.*`) via `src/platform/storage.ts`. It is used on desktop browsers and installed on iPhone via Safari's Add to Home Screen (PWA config in `vite.config.ts`).
+An offline-first PWA of classic puzzle games (React 18 + Vite + TypeScript, no backend, no router — navigation is component state in `App.tsx`). Twelve games so far: Sudoku, Crossword, Word Wheel, Memory Match, Simon, N-Back, Dual N-Back, Number Merge, Color Connect, Tic-Tac-Toe, Image Puzzle, Maze. All persistence is localStorage under versioned keys (`100games.v1.*`) via `src/platform/storage.ts`. It is used on desktop browsers and installed on iPhone via Safari's Add to Home Screen (PWA config in `vite.config.ts`).
+
+Content notes: Word Wheel levels are hand-authored in `src/games/word-wheel/logic/levels.ts` (covered by `npm run validate`, like crossword puzzles). Color Connect and Maze generate levels at runtime with guaranteed solvability. Image Puzzle loads photos listed in `public/puzzles/manifest.json` — users add custom photos by dropping a file there and listing it in the manifest. Drag-driven games (Number Merge, Color Connect) use pointer events with `touch-action: none` and rect-math cell hit-testing, not `elementFromPoint`.
 
 `backlog.txt` at the repo root is the user's personal scratch file — leave it untracked and don't delete it.
 
