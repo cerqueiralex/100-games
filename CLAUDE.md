@@ -17,7 +17,7 @@ export PATH="$HOME/.local/opt/node-v22.17.0-linux-x64/bin:$PATH"
 
 There is no test framework or linter; `npm run build` and `npm run validate` are the gates. The GitHub remote uses SSH (`git@github.com:cerqueiralex/100-games.git`) — the HTTPS URL has no credentials on this machine.
 
-**Deployment**: every push to `main` triggers `.github/workflows/deploy.yml`, which validates, builds with `VITE_BASE=/100-games/`, and publishes `dist/` to the `gh-pages` branch → live at https://cerqueiralex.github.io/100-games/ (the user plays the installed PWA from there on iPhone). Because of subpath hosting, in-app URLs must use `import.meta.env.BASE_URL`, never absolute `/` paths. Note: `actions/configure-pages` cannot be used here (the workflow token lacks admin rights); the gh-pages-branch route is what auto-enabled Pages.
+**Deployment**: every push to `main` triggers `.github/workflows/deploy.yml`, which validates, builds with `VITE_BASE=/100-games/`, and deploys `dist/` straight to Pages via `upload-pages-artifact` + `deploy-pages` → live at https://cerqueiralex.github.io/100-games/ (the user plays the installed PWA from there on iPhone). Because of subpath hosting, in-app URLs must use `import.meta.env.BASE_URL`, never absolute `/` paths. Two settings are load-bearing and were configured by hand (the workflow token lacks admin rights, so `actions/configure-pages` must NOT be added): Settings → Pages → Source = "GitHub Actions", and the `github-pages` environment's deployment-branch policy must allow `main` — if deploy runs fail in seconds with "Branch main is not allowed to deploy", that policy is the cause. The old gh-pages-branch publisher route is dead (its deploy step times out); don't revive it.
 
 ## What this is
 

@@ -38,9 +38,10 @@ jobs:
         env:
           VITE_BASE: /100-games/
 
-      # switches the existing Pages site to workflow-based deploys
-      - uses: actions/configure-pages@v5
-
+      # NOTE: no actions/configure-pages here — the workflow token lacks
+      # admin rights. The Pages site must be configured once by hand:
+      # Settings → Pages → Source: "GitHub Actions", and the github-pages
+      # environment must allow deployments from main (see CLAUDE.md).
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
