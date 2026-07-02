@@ -8,9 +8,24 @@
  * (.fx-card is doubled for specificity so it always beats component rules.)
  */
 
-/* ---------- the glass card surface ---------- */
+/* ---------- the glass card surface ----------
+   Applied via the .fx-card class AND bound directly to every shared
+   card-surface component below, so the whole app (Settings included)
+   picks up any future change to this one rule. Component CSS in
+   global.css must NOT declare its own background/border for these —
+   layout only. */
 
-.fx-card.fx-card {
+.fx-card.fx-card,
+.toggle-row,
+.volume-row,
+.settings-info-row,
+.settings-action,
+.theme-btn,
+.accent-btn,
+.search-bar,
+.dropdown-btn,
+.history-row,
+.ttt-score {
   background:
     /* specular sheen — the iOS glass light */
     linear-gradient(165deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.015) 38%, rgba(0, 0, 0, 0.14)),
@@ -27,7 +42,17 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-:root[data-theme='light'] .fx-card.fx-card {
+:root[data-theme='light'] .fx-card.fx-card,
+:root[data-theme='light'] .toggle-row,
+:root[data-theme='light'] .volume-row,
+:root[data-theme='light'] .settings-info-row,
+:root[data-theme='light'] .settings-action,
+:root[data-theme='light'] .theme-btn,
+:root[data-theme='light'] .accent-btn,
+:root[data-theme='light'] .search-bar,
+:root[data-theme='light'] .dropdown-btn,
+:root[data-theme='light'] .history-row,
+:root[data-theme='light'] .ttt-score {
   background:
     linear-gradient(165deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.4) 40%, rgba(220, 220, 235, 0.35)),
     color-mix(in srgb, var(--surface) 72%, transparent);

@@ -80,9 +80,17 @@ The platform's card look is **iOS-style frosted glass**, defined once in
 
 - **`.fx-card`** is THE surface for cards: translucent glass base with
   backdrop blur + saturation, a specular top-edge highlight, and layered
-  drop/inset shadows for physical depth. Apply it to game cards, stat
-  cards, high-score cards, modals and tutorial cards. New card-like
-  components must use it rather than flat `var(--surface)` backgrounds.
+  drop/inset shadows for physical depth.
+- **One rule styles everything**: the glass rule in `effects.css` is
+  applied via `.fx-card` AND bound directly to every shared card-surface
+  class (settings rows, toggles, theme/accent pickers, search bar,
+  dropdown, history rows…). Component CSS in `global.css` must NEVER
+  declare its own `background`/`border` for card-like surfaces — layout
+  only. This is what guarantees every screen (Settings included)
+  automatically receives future surface redesigns. When adding a new
+  card-like component: either give it the `fx-card` class or add its
+  class to the effects.css selector list — never a flat
+  `var(--surface)` background.
 - **Flat background**: the page background is plain `var(--bg)` — no
   ambient glows, flares or gradients behind the content.
 - **`<Tilt>`** (Tilt.tsx) wraps large interactive cards only (game cards,

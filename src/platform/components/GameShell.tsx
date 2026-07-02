@@ -38,6 +38,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [resultsDismissed, setResultsDismissed] = useState(false);
 
   const liveStats = useRef<LiveStats>(emptyStats);
   const startedAt = useRef(0);
@@ -63,6 +64,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
     setPaused(false);
     setFinish(null);
     setShowShare(false);
+    setResultsDismissed(false);
     setSession((s) => s + 1);
     setPhase('playing');
   };
@@ -207,7 +209,11 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   return (
     <div className="screen game-screen">
       <header className="screen-header game-header fx-card">
-        <button className="icon-btn" onClick={() => setConfirmQuit(true)} aria-label="Quit game">
+        <button
+          className="icon-btn"
+          onClick={() => (phase === 'finished' ? quit(false) : setConfirmQuit(true))}
+          aria-label={phase === 'finished' ? 'Back to menu' : 'Quit game'}
+        >
           <BackIcon />
         </button>
         <div className="game-header-mid">
@@ -246,11 +252,13 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
       </header>
 
       <div className="game-body">
+        {/* keep the finished board visible for review — games block input via
+            their own done guards, so paused only reflects the real pause */}
         <GameComponent
           key={session}
           difficulty={difficulty}
           assists={assists}
-          paused={paused || phase === 'finished'}
+          paused={paused}
           elapsedSec={elapsedSec}
           events={events}
           onToggleAssist={(assistId, on) => setGameAssist(game.id, assistId, on)}
@@ -293,9 +301,19 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         </div>
       </Modal>
 
-      <Modal open={phase === 'finished' && finish !== null}>
+      <Modal
+        open={phase === 'finished' && finish !== null && !resultsDismissed}
+        onClose={() => setResultsDismissed(true)}
+      >
         {finish && (
           <div className="finish-card">
+            <button
+              className="finish-close"
+              onClick={() => setResultsDismissed(true)}
+              aria-label="Close results and view the board"
+            >
+              ×
+            </button>
             <div className={`finish-emoji ${finish.outcome}`}>
               {finish.outcome === 'won' ? '🏆' : '💥'}
             </div>
@@ -352,6 +370,12 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           </div>
         )}
       </Modal>
+
+      {phase === 'finished' && resultsDismissed && (
+        <button className="results-pill fx-card" onClick={() => setResultsDismissed(false)}>
+          Show results
+        </button>
+      )}
 
       {showTutorial && <TutorialModal game={game} onClose={() => setShowTutorial(false)} />}
 
