@@ -187,11 +187,13 @@ export function MemoryMatchGame({ difficulty, assists, paused, elapsedSec, event
       </div>
 
       {assists.peek && (
+        <div className="game-tools fx-card">
         <div className="sudoku-controls">
           <button className="pad-tool" onClick={peek}>
             <EyeIcon />
             <span>Peek</span>
           </button>
+        </div>
         </div>
       )}
     </div>

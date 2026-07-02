@@ -94,7 +94,7 @@ export interface GameResult {
 export type ThemeId = 'black' | 'dim' | 'light';
 
 /** Accent color themes — see src/platform/design/DESIGN.md. */
-export type AccentId = 'orange' | 'blue' | 'green' | 'red' | 'purple';
+export type AccentId = 'orange' | 'blue' | 'green' | 'red' | 'purple' | 'white';
 
 export interface PlatformSettings {
   theme: ThemeId;
@@ -105,6 +105,8 @@ export interface PlatformSettings {
   gameAssists: Record<string, Record<string, boolean>>;
   /** gameId -> last chosen difficulty */
   lastDifficulty: Record<string, Difficulty>;
+  /** pinned game ids, shown in their own section at the top of the menu */
+  favorites: string[];
 }
 
 export interface Profile {

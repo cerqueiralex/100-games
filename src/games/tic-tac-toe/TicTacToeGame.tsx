@@ -252,11 +252,13 @@ export function TicTacToeGame({ difficulty, assists, paused, events }: GameProps
       </div>
 
       {assists.suggest && (
+        <div className="game-tools fx-card">
         <div className="sudoku-controls">
           <button className="pad-tool" onClick={useSuggest} disabled={!yourTurn}>
             <BulbIcon />
             <span>Suggest move</span>
           </button>
+        </div>
         </div>
       )}
     </div>

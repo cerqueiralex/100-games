@@ -208,11 +208,13 @@ export function ImagePuzzleGame({ difficulty, assists, paused, elapsedSec, event
       </div>
 
       {assists.preview && (
+        <div className="game-tools fx-card">
         <div className="sudoku-controls">
           <button className="pad-tool" onClick={preview}>
             <EyeIcon />
             <span>Preview image</span>
           </button>
+        </div>
         </div>
       )}
     </div>

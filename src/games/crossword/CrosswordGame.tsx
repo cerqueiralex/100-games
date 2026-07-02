@@ -349,6 +349,7 @@ export function CrosswordGame({ difficulty, assists, paused, elapsedSec, events 
 
       {toast && <div className="cw-toast">{toast}</div>}
 
+      <div className="game-tools fx-card">
       <div className="cw-cluebar">
         <button className="cw-arrow" onClick={() => cycleSlot(-1)} aria-label="Previous clue">
           ‹
@@ -402,6 +403,7 @@ export function CrosswordGame({ difficulty, assists, paused, elapsedSec, events 
             )}
           </div>
         ))}
+      </div>
       </div>
     </div>
   );

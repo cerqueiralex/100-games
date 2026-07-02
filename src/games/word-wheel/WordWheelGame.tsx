@@ -175,6 +175,7 @@ export function WordWheelGame({ difficulty, assists, paused, elapsedSec, events 
         )}
       </div>
 
+      <div className="game-tools fx-card">
       <div className={`ww-current ${shake ? 'shake' : ''}`}>{current || ' '}</div>
 
       <div className="ww-wheel" style={{ width: wheelSize, height: wheelSize }}>
@@ -219,6 +220,7 @@ export function WordWheelGame({ difficulty, assists, paused, elapsedSec, events 
           <CheckIcon />
           <span>Submit</span>
         </button>
+      </div>
       </div>
     </div>
   );

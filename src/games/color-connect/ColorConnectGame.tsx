@@ -294,11 +294,13 @@ export function ColorConnectGame({ difficulty, assists, paused, elapsedSec, even
       </div>
 
       {assists.solveColor && (
+        <div className="game-tools fx-card">
         <div className="sudoku-controls">
           <button className="pad-tool" onClick={useHint}>
             <BulbIcon />
             <span>Solve a color</span>
           </button>
+        </div>
         </div>
       )}
     </div>

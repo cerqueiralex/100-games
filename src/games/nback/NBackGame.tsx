@@ -189,6 +189,7 @@ export function NBackGame({ difficulty, assists, paused, events }: GameProps) {
         <p className={`nb-feedback ${feedback}`}>{feedback === 'good' ? 'Correct' : 'Wrong'}</p>
       )}
 
+      <div className="game-tools fx-card">
       <button
         className={`nb-match ${pressed ? 'armed' : ''}`}
         onClick={press}
@@ -196,6 +197,7 @@ export function NBackGame({ difficulty, assists, paused, events }: GameProps) {
       >
         Match
       </button>
+      </div>
     </div>
   );
 }

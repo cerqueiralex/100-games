@@ -2,6 +2,7 @@
    Color/theme tokens live in the design system; see
    src/platform/design/DESIGN.md for the rules. */
 @import '../platform/design/tokens.css';
+@import '../platform/design/effects.css';
 
 * {
   box-sizing: border-box;
@@ -296,6 +297,41 @@ p {
   color: var(--text-dim);
 }
 
+.fav-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.fav-btn:hover {
+  color: var(--text);
+}
+
+.fav-btn.active {
+  color: var(--accent);
+}
+
+.fav-btn.active:active {
+  transform: scale(0.9);
+}
+
+.home-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 20px 0 10px;
+}
+
+.home-section svg {
+  color: var(--accent);
+}
+
 .game-card.coming-soon {
   opacity: 0.5;
   cursor: default;
@@ -473,8 +509,36 @@ p {
   padding-bottom: 16px;
 }
 
+/* segregated glass top bar, aligned to the standard game width */
 .game-header {
-  margin-bottom: 12px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto 16px;
+  padding: 8px 10px;
+  border-radius: var(--radius-l);
+}
+
+/* every game renders inside the same centered column */
+.game-body {
+  width: 100%;
+}
+
+/* the bottom tools tab — visually separated from the board */
+.game-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: var(--radius-l);
+}
+
+.game-tools .pad-tool,
+.game-tools .pad-btn,
+.game-tools .cw-arrow,
+.game-tools .cw-clue,
+.game-tools .icon-btn {
+  background: var(--surface-2);
 }
 
 .game-header-mid {
@@ -719,29 +783,99 @@ p {
   flex: 1;
 }
 
-.filter-row {
-  display: flex;
-  gap: 8px;
+.filter-bar {
   margin-bottom: 22px;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 
-.chip-btn {
-  padding: 9px 16px;
-  border-radius: 999px;
+/* ===== design-system dropdown (use instead of native <select>) ===== */
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
   background: var(--surface);
   border: 1px solid var(--border);
-  color: var(--text-dim);
-  font-size: 13.5px;
+  border-radius: var(--radius-m);
+  color: var(--text);
+  font-size: 15px;
   font-weight: 600;
-  white-space: nowrap;
 }
 
-.chip-btn.active {
-  background: var(--text);
-  color: var(--bg);
-  border-color: var(--text);
+.dropdown-btn.open,
+.dropdown-btn:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.dropdown-chev {
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--text-dim);
+  border-bottom: 2px solid var(--text-dim);
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform 0.18s ease;
+  flex-shrink: 0;
+}
+
+.dropdown-chev.up {
+  transform: rotate(-135deg) translate(-3px, -3px);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  border-radius: var(--radius-m);
+  padding: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: dropin 0.14s ease;
+}
+
+@keyframes dropin {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  transition: background 0.12s, color 0.12s;
+}
+
+.dropdown-item:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.dropdown-item.active {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .stat-grid {
@@ -1002,7 +1136,7 @@ p {
 
 .accent-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
@@ -1094,8 +1228,6 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 480px;
-  margin: 0 auto;
 }
 
 .sudoku-info {
@@ -1279,8 +1411,6 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 500px;
-  margin: 0 auto;
 }
 
 .cw-meta {
@@ -1448,8 +1578,6 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 480px;
-  margin: 0 auto;
 }
 
 .mm-board {
@@ -1505,8 +1633,6 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 480px;
-  margin: 0 auto;
 }
 
 .simon-status {
@@ -1573,8 +1699,6 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 480px;
-  margin: 0 auto;
 }
 
 .nb-grid {
@@ -1672,8 +1796,6 @@ p {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  max-width: 480px;
-  margin: 0 auto;
 }
 
 .ww-board {
@@ -1761,8 +1883,6 @@ p {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-width: 420px;
-  margin: 0 auto;
 }
 
 .nm-preview {
@@ -1826,8 +1946,6 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 440px;
-  margin: 0 auto;
 }
 
 .fl-board {
@@ -1945,8 +2063,6 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 400px;
-  margin: 0 auto;
 }
 
 .ttt-score {
@@ -2035,8 +2151,6 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 440px;
-  margin: 0 auto;
 }
 
 .ip-wrap {
@@ -2110,8 +2224,6 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 440px;
-  margin: 0 auto;
 }
 
 .mz-board {
@@ -2156,6 +2268,7 @@ p {
 
 .mz-controls {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 22px;
@@ -2613,7 +2726,7 @@ p {
   object-fit: contain;
   border-radius: 20px;
   border: 1px solid var(--border);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
 }
 
 .share-loading {

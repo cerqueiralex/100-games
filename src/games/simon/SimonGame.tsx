@@ -200,11 +200,13 @@ export function SimonGame({ difficulty, assists, paused, events }: GameProps) {
       </div>
 
       {assists.repeatSequence && (
+        <div className="game-tools fx-card">
         <div className="sudoku-controls">
           <button className="pad-tool" onClick={replay} disabled={phase !== 'input'}>
             <RestartIcon />
             <span>Replay</span>
           </button>
+        </div>
         </div>
       )}
     </div>

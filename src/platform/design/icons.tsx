@@ -187,6 +187,24 @@ export function EyeIcon({ size = 16 }: IconProps) {
   );
 }
 
+export function StarIcon({ size = 18, filled = false }: IconProps & { filled?: boolean }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 2.8l2.9 5.85 6.46.94-4.68 4.56 1.11 6.44L12 17.55l-5.79 3.04 1.11-6.44-4.68-4.56 6.46-.94L12 2.8z" />
+    </svg>
+  );
+}
+
 export function ShareIcon({ size = 16 }: IconProps) {
   return (
     <Svg size={size}>

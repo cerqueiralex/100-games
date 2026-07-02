@@ -19,7 +19,7 @@ export function TutorialModal({ game, onClose }: { game: GameDefinition; onClose
 
   return (
     <div className="tut-backdrop" onClick={onClose}>
-      <div className="tut-card" role="dialog" aria-modal onClick={(e) => e.stopPropagation()}>
+      <div className="tut-card fx-card" role="dialog" aria-modal onClick={(e) => e.stopPropagation()}>
         <header className="tut-header">
           <span className="tut-title">How to play {game.name}</span>
           <button className="tut-close" onClick={onClose} aria-label="Close tutorial">

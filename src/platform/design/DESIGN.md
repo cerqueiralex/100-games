@@ -6,6 +6,8 @@ This folder is the single source of truth for the platform's look and feel.
 | File | Purpose |
 | --- | --- |
 | `tokens.css` | All colors, themes, radii, touch-target sizes |
+| `effects.css` | Depth & motion: the frosted-glass surface standard |
+| `Tilt.tsx` | Mouse-reactive 3D tilt + cursor glow wrapper |
 | `icons.tsx` | Every icon in the platform (monochrome SVG) |
 | `DESIGN.md` | The rules (this file) |
 | `/public/icons/icon.svg` | App logo — source for all PWA/app icons |
@@ -23,7 +25,8 @@ interactive state and game assists so it always means something.
 2. **Surface themes** (`data-theme`: `black` | `dim` | `light`) control
    backgrounds, text and borders only.
 3. **Accent themes** (`data-accent`: `orange` (default) | `blue` | `green` |
-   `red` | `purple`) control every tool color across all games: toggle
+   `red` | `purple` | `white` for monochrome black & white) control every
+   tool color across all games: toggle
    active states, hint buttons, selections, same-number highlight, crossword
    word highlight, difficulty pills, share button.
    Both attributes live on `<html>` and are set by `AppState` from settings.
@@ -69,6 +72,27 @@ type. Nothing else — every component already inherits.
 System font stack (SF Pro on Apple devices). Weights: 800 page titles,
 700 headings/buttons, 600 labels, 400–500 body. Numbers that update live
 (timers, scores, stats) use `font-variant-numeric: tabular-nums`.
+
+## Depth & motion (the surface standard)
+
+The platform's card look is **iOS-style frosted glass**, defined once in
+`effects.css` — aim for "designed by Apple" (no textures/patterns):
+
+- **`.fx-card`** is THE surface for cards: translucent glass base with
+  backdrop blur + saturation, a specular top-edge highlight, and layered
+  drop/inset shadows for physical depth. Apply it to game cards, stat
+  cards, high-score cards, modals and tutorial cards. New card-like
+  components must use it rather than flat `var(--surface)` backgrounds.
+- **Flat background**: the page background is plain `var(--bg)` — no
+  ambient glows, flares or gradients behind the content.
+- **`<Tilt>`** (Tilt.tsx) wraps large interactive cards only (game cards,
+  hero surfaces — never small buttons): a ≤4° mouse-following 3D tilt with
+  an accent glow that tracks the cursor. It is a no-op on touch devices.
+- **3D logos**: `.game-card-icon` chips are glassy accent gradients with
+  bevel shadows that float on `translateZ` inside tilted cards.
+- Effects use neutral white/black alphas by design — they are the one
+  sanctioned exception to the "tokens only" color rule, and they live
+  exclusively in `effects.css`.
 
 ## Motion & feedback
 

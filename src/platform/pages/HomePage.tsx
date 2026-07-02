@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { useAppState } from '../AppState';
 import { GAMES } from '../registry';
 import { computeStats, formatDuration } from '../stats';
-import { SearchIcon } from '../design/icons';
+import { SearchIcon, StarIcon } from '../design/icons';
+import { Tilt } from '../design/Tilt';
+import { sfx } from '../audio';
+import type { GameDefinition } from '../types';
 
 export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void }) {
-  const { profile, history } = useAppState();
+  const { profile, history, settings, updateSettings } = useAppState();
   const [query, setQuery] = useState('');
 
   const hour = new Date().getHours();
@@ -15,6 +18,66 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
   const visible = q
     ? GAMES.filter((g) => `${g.name} ${g.tagline}`.toLowerCase().includes(q))
     : GAMES;
+
+  const favorites = settings.favorites;
+  const pinned = visible.filter((g) => favorites.includes(g.id));
+  const rest = visible.filter((g) => !favorites.includes(g.id));
+
+  const toggleFavorite = (gameId: string) => {
+    sfx.tap();
+    updateSettings({
+      favorites: favorites.includes(gameId)
+        ? favorites.filter((id) => id !== gameId)
+        : [...favorites, gameId]
+    });
+  };
+
+  const renderCard = (game: GameDefinition) => {
+    const stats = computeStats(history.filter((r) => r.gameId === game.id));
+    const fav = favorites.includes(game.id);
+    return (
+      <Tilt key={game.id}>
+        <button className="game-card fx-card" onClick={() => onOpenGame(game.id)}>
+          <span className="game-card-icon">{game.icon}</span>
+          <span className="game-card-body">
+            <span className="game-card-name">{game.name}</span>
+            <span className="game-card-tag">{game.tagline}</span>
+            <span className={`game-card-stats ${stats.played > 0 ? 'has-stats' : ''}`}>
+              {stats.played > 0 ? (
+                <>
+                  {stats.played} played · best{' '}
+                  {stats.bestTime !== null ? formatDuration(stats.bestTime) : '—'} ·{' '}
+                  {Math.round(stats.winRate * 100)}% wins
+                </>
+              ) : (
+                'Not played yet'
+              )}
+            </span>
+          </span>
+          <span
+            role="button"
+            tabIndex={0}
+            aria-label={fav ? `Unpin ${game.name}` : `Pin ${game.name}`}
+            className={`fav-btn ${fav ? 'active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFavorite(game.id);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFavorite(game.id);
+              }
+            }}
+          >
+            <StarIcon filled={fav} />
+          </span>
+          <span className="game-card-go">›</span>
+        </button>
+      </Tilt>
+    );
+  };
 
   return (
     <div className="screen">
@@ -45,38 +108,26 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
         )}
       </div>
 
-      <div className="game-cards">
-        {visible.map((game) => {
-          const stats = computeStats(history.filter((r) => r.gameId === game.id));
-          return (
-            <button key={game.id} className="game-card" onClick={() => onOpenGame(game.id)}>
-              <span className="game-card-icon">{game.icon}</span>
-              <span className="game-card-body">
-                <span className="game-card-name">{game.name}</span>
-                <span className="game-card-tag">{game.tagline}</span>
-                <span className={`game-card-stats ${stats.played > 0 ? 'has-stats' : ''}`}>
-                  {stats.played > 0 ? (
-                    <>
-                      {stats.played} played · best{' '}
-                      {stats.bestTime !== null ? formatDuration(stats.bestTime) : '—'} ·{' '}
-                      {Math.round(stats.winRate * 100)}% wins
-                    </>
-                  ) : (
-                    'Not played yet'
-                  )}
-                </span>
-              </span>
-              <span className="game-card-go">›</span>
-            </button>
-          );
-        })}
+      {pinned.length > 0 && (
+        <>
+          <h3 className="section-title home-section">
+            <StarIcon size={13} filled /> Pinned
+          </h3>
+          <div className="game-cards">{pinned.map(renderCard)}</div>
+        </>
+      )}
 
-        {visible.length === 0 && (
-          <p className="empty-note">No games match “{query}”.</p>
-        )}
+      {pinned.length > 0 && rest.length > 0 && (
+        <h3 className="section-title home-section">All games</h3>
+      )}
+
+      <div className="game-cards">
+        {rest.map(renderCard)}
+
+        {visible.length === 0 && <p className="empty-note">No games match “{query}”.</p>}
 
         {!q && (
-          <div className="game-card coming-soon">
+          <div className="game-card fx-card coming-soon">
             <span className="game-card-icon">…</span>
             <span className="game-card-body">
               <span className="game-card-name">More classics coming</span>

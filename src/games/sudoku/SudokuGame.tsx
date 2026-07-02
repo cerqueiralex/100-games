@@ -320,6 +320,7 @@ export function SudokuGame({
         {cells}
       </div>
 
+      <div className="game-tools fx-card">
       <div className="sudoku-controls">
         <button
           className={`pad-tool ${notesMode ? 'active' : ''}`}
@@ -379,6 +380,7 @@ export function SudokuGame({
             {assists.remainingNumbers && <span className="pad-count">{remaining[d]}</span>}
           </button>
         ))}
+      </div>
       </div>
     </div>
   );

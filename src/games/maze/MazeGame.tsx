@@ -206,7 +206,7 @@ export function MazeGame({ difficulty, assists, paused, elapsedSec, events }: Ga
         ))}
       </div>
 
-      <div className="mz-controls">
+      <div className="mz-controls game-tools fx-card">
         <div className="mz-dpad">
           <span />
           <button className="icon-btn mz-up" onClick={() => move(N)} aria-label="Up">

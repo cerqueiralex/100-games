@@ -262,6 +262,7 @@ export function NumberMergeGame({ difficulty, assists, paused, events }: GamePro
         ))}
       </div>
 
+      <div className="game-tools fx-card">
       <div className="sudoku-controls">
         {assists.undo && (
           <button className="pad-tool" onClick={undo} disabled={undosLeft === 0}>
@@ -275,6 +276,7 @@ export function NumberMergeGame({ difficulty, assists, paused, events }: GamePro
             <span>Hint</span>
           </button>
         )}
+      </div>
       </div>
     </div>
   );

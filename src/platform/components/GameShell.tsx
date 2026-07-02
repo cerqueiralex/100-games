@@ -206,7 +206,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   // ----- playing / finished -----
   return (
     <div className="screen game-screen">
-      <header className="screen-header game-header">
+      <header className="screen-header game-header fx-card">
         <button className="icon-btn" onClick={() => setConfirmQuit(true)} aria-label="Quit game">
           <BackIcon />
         </button>

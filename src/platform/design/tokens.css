@@ -15,7 +15,7 @@
   --text: #f5f5f7;
   --text-dim: #98989f;
   --cell-peer: #17171b;
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
 }
 
 :root[data-theme='dim'] {
@@ -24,7 +24,7 @@
   --surface-2: #26272c;
   --border: #303138;
   --cell-peer: #222327;
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 :root[data-theme='light'] {
@@ -35,7 +35,7 @@
   --text: #121216;
   --text-dim: #6a6a72;
   --cell-peer: #eaeef5;
-  --shadow: 0 8px 24px rgba(20, 20, 40, 0.12);
+  --shadow: 0 8px 24px rgba(20, 20, 40, 0.06);
 }
 
 /* ---------- accent themes (Settings → Theme color) ----------
@@ -62,6 +62,11 @@
 
 :root[data-accent='purple'] {
   --accent: #bf5af2;
+}
+
+/* monochrome: pure black & white — white is the highlight color */
+:root[data-accent='white'] {
+  --accent: #ffffff;
 }
 
 /* ---------- semantic + derived tokens ---------- */

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAppState } from '../AppState';
 import { GAMES, getGame } from '../registry';
 import { computeStats, formatDate, formatDuration } from '../stats';
-import { Chip, Modal, StatCard } from '../components/ui';
+import { Chip, Dropdown, Modal, StatCard } from '../components/ui';
 import type { GameResult } from '../types';
 
 const EMOJIS = ['🎮', '🦊', '🐼', '🦉', '🐯', '🚀', '🌙', '⚡', '🎯', '🧩', '👾', '🏆'];
@@ -84,19 +84,16 @@ export function ProfilePage() {
         </button>
       </header>
 
-      <div className="filter-row">
-        <button className={`chip-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>
-          All games
-        </button>
-        {GAMES.map((g) => (
-          <button
-            key={g.id}
-            className={`chip-btn ${filter === g.id ? 'active' : ''}`}
-            onClick={() => setFilter(g.id)}
-          >
-            {g.name}
-          </button>
-        ))}
+      <div className="filter-bar">
+        <Dropdown
+          value={filter}
+          onChange={setFilter}
+          ariaLabel="Filter statistics by game"
+          options={[
+            { value: 'all', label: 'All games' },
+            ...GAMES.map((g) => ({ value: g.id, label: g.name }))
+          ]}
+        />
       </div>
 
       <section className="setup-section">
@@ -122,7 +119,7 @@ export function ProfilePage() {
         {scopeGames.map((g) => {
           const gs = computeStats(history.filter((r) => r.gameId === g.id));
           return (
-            <div key={g.id} className="highscore-card">
+            <div key={g.id} className="highscore-card fx-card">
               <span className="highscore-game">{g.name}</span>
               <div className="highscore-cols">
                 {(['easy', 'medium', 'hard'] as const).map((d) => (

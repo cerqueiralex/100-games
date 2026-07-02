@@ -31,7 +31,8 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   soundEnabled: true,
   volume: 0.6,
   gameAssists: {},
-  lastDifficulty: {}
+  lastDifficulty: {},
+  favorites: []
 };
 
 export const DEFAULT_PROFILE: Profile = {

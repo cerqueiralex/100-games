@@ -210,6 +210,7 @@ export function DualNBackGame({ difficulty, assists, paused, events }: GameProps
         <p className={`nb-feedback ${feedback}`}>{feedback === 'good' ? 'Correct' : 'Wrong'}</p>
       )}
 
+      <div className="game-tools fx-card">
       <div className="nb-dual-actions">
         <button
           className={`nb-match ${pressedPos ? 'armed' : ''}`}
@@ -225,6 +226,7 @@ export function DualNBackGame({ difficulty, assists, paused, events }: GameProps
         >
           Letter
         </button>
+      </div>
       </div>
     </div>
   );

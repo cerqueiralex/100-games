@@ -17,7 +17,8 @@ const ACCENTS: { id: AccentId; name: string; color: string }[] = [
   { id: 'blue', name: 'Blue', color: '#0a84ff' },
   { id: 'green', name: 'Green', color: '#30d158' },
   { id: 'red', name: 'Red', color: '#ff453a' },
-  { id: 'purple', name: 'Purple', color: '#bf5af2' }
+  { id: 'purple', name: 'Purple', color: '#bf5af2' },
+  { id: 'white', name: 'B & W', color: '#ffffff' }
 ];
 
 export function SettingsPage() {
