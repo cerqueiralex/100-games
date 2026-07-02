@@ -72,6 +72,67 @@ for (const [difficulty, phrases] of Object.entries(PHRASES)) {
   }
 }
 
+console.log('— Logic grid presets —');
+const { PRESET_TIERS, buildPreset } = await import('../src/games/logic-grid/logic/presets');
+const { solveByPropagation, isFullyDecided, stateMatchesSolution } = await import(
+  '../src/games/logic-grid/logic/solver'
+);
+const { generatePuzzle: generateLogicPuzzle } = await import('../src/games/logic-grid/logic/generator');
+for (const tier of PRESET_TIERS) {
+  for (const entry of tier.entries) {
+    const t0 = Date.now();
+    try {
+      const def = buildPreset(entry);
+      const s = solveByPropagation(def);
+      if (!isFullyDecided(s) || !stateMatchesSolution(def, s)) {
+        failed = true;
+        console.error(`✗ ${tier.id}/${entry.id}: not solvable by pure deduction / solution mismatch`);
+      } else {
+        console.log(
+          `✓ ${tier.id}/${entry.id} "${entry.title}" — ${entry.k}×${entry.n}, ${def.clues.length} clues, ${Date.now() - t0}ms`
+        );
+      }
+    } catch (err) {
+      failed = true;
+      console.error(`✗ ${tier.id}/${entry.id}: ${(err as Error).message}`);
+    }
+  }
+}
+
+console.log('— Logic grid generator —');
+{
+  const sizes = [
+    { k: 3, n: 3, flavor: 'gentle' as const },
+    { k: 4, n: 4, flavor: 'balanced' as const },
+    { k: 4, n: 5, flavor: 'tricky' as const }
+  ];
+  for (const size of sizes) {
+    let ok = 0;
+    let clueSum = 0;
+    const t0 = Date.now();
+    for (let seed = 1000; seed < 1025; seed++) {
+      try {
+        const def = generateLogicPuzzle({ seed, ...size });
+        const s = solveByPropagation(def);
+        if (isFullyDecided(s) && stateMatchesSolution(def, s)) {
+          ok++;
+          clueSum += def.clues.length;
+        }
+      } catch {
+        // counted as a failure below
+      }
+    }
+    if (ok < 25) {
+      failed = true;
+      console.error(`✗ ${size.k}×${size.n} ${size.flavor}: only ${ok}/25 seeds produced guess-free puzzles`);
+    } else {
+      console.log(
+        `✓ ${size.k}×${size.n} ${size.flavor}: 25/25 unique & deduction-solvable, ~${Math.round(clueSum / 25)} clues, ${Date.now() - t0}ms total`
+      );
+    }
+  }
+}
+
 console.log('— Color Connect generator —');
 for (const difficulty of ['easy', 'medium', 'hard'] as const) {
   let ok = 0;

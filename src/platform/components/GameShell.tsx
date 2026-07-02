@@ -32,6 +32,8 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   );
   const [paused, setPaused] = useState(false);
   const [elapsedSec, setElapsedSec] = useState(0);
+  /** a game-requested clock hold for pre-game phases (see GameProps.holdClock) */
+  const [clockHeld, setClockHeld] = useState(false);
   const [session, setSession] = useState(0);
   const [finish, setFinish] = useState<FinishPayload | null>(null);
   const [confirmQuit, setConfirmQuit] = useState(false);
@@ -62,10 +64,21 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   );
 
   useEffect(() => {
-    if (phase !== 'playing' || paused) return;
+    if (phase !== 'playing' || paused || clockHeld) return;
     const t = setInterval(() => setElapsedSec((s) => s + 1), 1000);
     return () => clearInterval(t);
-  }, [phase, paused]);
+  }, [phase, paused, clockHeld]);
+
+  const elapsedRef = useRef(0);
+  useEffect(() => {
+    elapsedRef.current = elapsedSec;
+  }, [elapsedSec]);
+
+  const holdClock = useCallback((hold: boolean) => {
+    // re-anchor so held time never counts toward the recorded duration
+    startedAt.current = Date.now() - elapsedRef.current * 1000;
+    setClockHeld(hold);
+  }, []);
 
   const start = (resume?: GameSave | null) => {
     const diff = resume?.difficulty ?? difficulty;
@@ -78,6 +91,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
     const elapsed = resume?.elapsedSec ?? 0;
     startedAt.current = Date.now() - elapsed * 1000;
     setElapsedSec(elapsed);
+    setClockHeld(false);
     setPaused(false);
     setFinish(null);
     setShowShare(false);
@@ -342,6 +356,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           registerSnapshot={(fn) => {
             snapshotRef.current = fn;
           }}
+          holdClock={holdClock}
         />
         {paused && phase === 'playing' && (
           <div className="pause-overlay">

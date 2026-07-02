@@ -9,7 +9,7 @@ import { sfx } from '../audio';
 
 /* Palette slots charts may use. --play-9 (white) is excluded: it is invisible
    against the card surfaces in the light theme (and black would be in dark). */
-const CHART_SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 13, 10, 11, 12, 14, 15];
+const CHART_SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 13, 10, 11, 12, 14, 15, 16];
 
 export function gameColor(gameId: string): string {
   const i = GAMES.findIndex((g) => g.id === gameId);

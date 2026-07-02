@@ -2688,6 +2688,362 @@ p {
   pointer-events: none;
 }
 
+/* ===== logic grid ===== */
+
+.logic-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* --- puzzle picker --- */
+
+.lg-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lg-random {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 16px;
+  border-radius: var(--radius-m);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.lg-random-title {
+  font-size: 15px;
+  font-weight: 750;
+  color: var(--accent);
+}
+
+.lg-random-sub {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.lg-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lg-tier-name {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.lg-tier-progress {
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.lg-tier-blurb {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.35;
+}
+
+.lg-presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.lg-preset {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 12px;
+  border-radius: var(--radius-s);
+  transition: transform 0.12s ease;
+}
+
+.lg-preset:active {
+  transform: scale(0.97);
+}
+
+.lg-preset-title {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.lg-preset-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.lg-solved {
+  color: var(--good);
+  font-weight: 700;
+}
+
+/* --- play screen --- */
+
+.lg-story {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+.lg-board-wrap {
+  overflow-x: auto;
+}
+
+.lg-board {
+  display: grid;
+  gap: 4px;
+  user-select: none;
+}
+
+.lg-corner {
+  min-width: 10px;
+}
+
+.lg-hole {
+  pointer-events: none;
+}
+
+.lg-colhead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lg-cat-name {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lg-collabels {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 1px;
+  flex: 1;
+}
+
+.lg-collabel {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  justify-self: center;
+  align-self: end;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text);
+  max-height: 72px;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 2px 0;
+}
+
+.lg-rowhead {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  min-width: 0;
+}
+
+.lg-cat-name.vertical {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  align-self: center;
+}
+
+.lg-rowlabels {
+  display: grid;
+  grid-auto-rows: 1fr;
+  flex: 1;
+}
+
+.lg-rowlabel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding-right: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 84px;
+}
+
+.lg-block {
+  border: 2px solid color-mix(in srgb, var(--text-dim) 55%, transparent);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.lg-block-inner {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 1px;
+  background: var(--border);
+  height: 100%;
+}
+
+/* tile-grid standard: geometry is pinned, states change paint/transform only */
+.lg-cell {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 0;
+  padding: 0;
+  font-size: clamp(10px, 2.6vw, 15px);
+  font-weight: 800;
+  color: var(--text-dim);
+  transition: background 0.13s ease, transform 0.1s ease;
+}
+
+@media (hover: hover) {
+  .lg-cell:hover {
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  }
+}
+
+.lg-cell.peer {
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+
+.lg-cell:active {
+  transform: scale(0.86);
+}
+
+.lg-cell.yes {
+  color: var(--accent);
+  animation: lg-mark 0.14s ease;
+}
+
+.lg-cell.no {
+  animation: lg-mark 0.14s ease;
+}
+
+.lg-cell.wrong {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+@keyframes lg-mark {
+  from {
+    transform: scale(0.55);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* --- clues & answers --- */
+
+.lg-clues {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.lg-clue {
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+  padding: 5px 8px;
+  border-radius: 8px;
+  transition: background 0.12s ease;
+}
+
+@media (hover: hover) {
+  .lg-clue:hover {
+    background: var(--surface-2);
+  }
+}
+
+.lg-clue.struck {
+  text-decoration: line-through;
+  color: var(--text-dim);
+  opacity: 0.65;
+}
+
+.lg-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lg-answer-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.lg-answer-table th {
+  text-align: left;
+  font-weight: 750;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 8px;
+}
+
+.lg-answer-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+
+.lg-answer-table td:not(:first-child) {
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.lg-answers-note {
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.lg-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 30%;
+  transform: translateX(-50%);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  z-index: 30;
+}
+
+.board-hidden .lg-play,
+.board-hidden .lg-menu {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* ===== tutorials (see DESIGN.md — every game ships one) ===== */
 
 .howto-btn {

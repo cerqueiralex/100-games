@@ -20,6 +20,7 @@ A minimalist, flat frosted-glass platform for classic puzzle and brain games. Bu
 | **Maze** | Generated labyrinths with corridor-run movement; beat the BFS-optimal path for max score |
 | **Cryptogram** | Crack a random substitution cipher to reveal a hidden phrase; frequency and reveal assists |
 | **Minesweeper** | Classic mines with protected first tap, flag mode, long-press flags and chording |
+| **Logic Puzzles** | Logic grid deduction: 25 original presets in 5 tiers plus endless generated puzzles, all guess-free with a unique solution |
 
 ## Platform features (shared by every game)
 
@@ -92,7 +93,7 @@ src/
   games/                 ← one isolated folder per game, all its logic inside
     sudoku/  crossword/  word-wheel/  memory-match/  simon/  nback/
     dual-nback/  number-merge/  color-connect/  tic-tac-toe/  image-puzzle/
-    maze/  cryptogram/  minesweeper/
+    maze/  cryptogram/  minesweeper/  logic-grid/
 ```
 
 ### Adding a new game

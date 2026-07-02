@@ -56,6 +56,12 @@ export interface GameProps {
    * running game. Re-register on every render so it never goes stale.
    */
   registerSnapshot: (fn: () => unknown) => void;
+  /**
+   * Hold the session clock during a pre-game phase (e.g. a mode or level
+   * picker rendered by the game itself): while held the timer neither ticks
+   * nor counts toward the recorded duration. Release when real play begins.
+   */
+  holdClock: (hold: boolean) => void;
 }
 
 /** A resumable mid-game save, one per game, persisted on-device. */

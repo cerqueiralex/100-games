@@ -13,6 +13,7 @@ import { imagePuzzleDefinition } from '../games/image-puzzle';
 import { mazeDefinition } from '../games/maze';
 import { cryptogramDefinition } from '../games/cryptogram';
 import { minesweeperDefinition } from '../games/minesweeper';
+import { logicGridDefinition } from '../games/logic-grid';
 
 /**
  * Central game registry. To add a new game to the platform:
@@ -35,7 +36,8 @@ export const GAMES: GameDefinition[] = [
   imagePuzzleDefinition,
   mazeDefinition,
   cryptogramDefinition,
-  minesweeperDefinition
+  minesweeperDefinition,
+  logicGridDefinition
 ];
 
 export function getGame(id: string): GameDefinition | undefined {
