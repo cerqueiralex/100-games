@@ -35,22 +35,43 @@ export function generateSequence(trials: number, n: number, symbols: number): nu
   return seq;
 }
 
-export function NBackGame({ difficulty, assists, paused, events }: GameProps) {
-  const cfg = CONFIG[difficulty];
-  const seq = useMemo(() => generateSequence(cfg.trials, cfg.n, 9), [cfg]);
+interface NBackSave {
+  seq: number[];
+  idx: number;
+  counts: { hit: number; miss: number; fa: number; cr: number };
+  score: number;
+  errors: number;
+  assistsUsed: string[];
+}
 
-  const [idx, setIdx] = useState(-1); // -1 = get ready
+export function NBackGame({
+  difficulty,
+  assists,
+  paused,
+  events,
+  savedState,
+  registerSnapshot
+}: GameProps) {
+  const cfg = CONFIG[difficulty];
+  const saved = savedState as NBackSave | undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const seq = useMemo(() => saved?.seq ?? generateSequence(cfg.trials, cfg.n, 9), [cfg]);
+
+  const [idx, setIdx] = useState(saved?.idx ?? -1); // -1 = get ready
   const [showStim, setShowStim] = useState(false);
   const [pressed, setPressed] = useState(false);
-  const [score, setScore] = useState(0);
-  const [errors, setErrors] = useState(0);
+  const [score, setScore] = useState(saved?.score ?? 0);
+  const [errors, setErrors] = useState(saved?.errors ?? 0);
   const [feedback, setFeedback] = useState<'good' | 'bad' | null>(null);
 
   const pressedRef = useRef(false);
-  const counts = useRef({ hit: 0, miss: 0, fa: 0, cr: 0 });
+  const counts = useRef(saved ? { ...saved.counts } : { hit: 0, miss: 0, fa: 0, cr: 0 });
   const done = useRef(false);
   const assistsUsed = useRef<Set<string>>(
-    new Set(['feedback', 'showHistory', 'slowMode'].filter((a) => assists[a]))
+    new Set([
+      ...(saved?.assistsUsed ?? []),
+      ...['feedback', 'showHistory', 'slowMode'].filter((a) => assists[a])
+    ])
   );
 
   useEffect(() => {
@@ -149,6 +170,17 @@ export function NBackGame({ difficulty, assists, paused, events }: GameProps) {
   };
 
   const ghost = assists.showHistory && idx >= cfg.n ? seq[idx - cfg.n] : null;
+
+  useEffect(() => {
+    registerSnapshot(() => ({
+      seq,
+      idx,
+      counts: { ...counts.current },
+      score,
+      errors,
+      assistsUsed: [...assistsUsed.current]
+    }));
+  });
 
   return (
     <div className={`nback ${paused ? 'board-hidden' : ''}`}>

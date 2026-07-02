@@ -74,19 +74,40 @@ function generateMaze(size: number): Maze {
   return { size, walls, par: solution.length - 1, solution };
 }
 
-export function MazeGame({ difficulty, assists, paused, elapsedSec, events }: GameProps) {
+interface MazeSave {
+  maze: Maze;
+  pos: number;
+  steps: number;
+  trail: number[];
+  hintsUsed: number;
+  assistsUsed: string[];
+}
+
+export function MazeGame({
+  difficulty,
+  assists,
+  paused,
+  elapsedSec,
+  events,
+  savedState,
+  registerSnapshot
+}: GameProps) {
   const size = SIZE[difficulty];
-  const maze = useMemo(() => generateMaze(size), [size]);
+  const saved = savedState as MazeSave | undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const maze = useMemo(() => saved?.maze ?? generateMaze(size), [size]);
   const exit = size * size - 1;
 
-  const [pos, setPos] = useState(0);
-  const [steps, setSteps] = useState(0);
-  const [trail, setTrail] = useState<Set<number>>(() => new Set([0]));
-  const [hintsUsed, setHintsUsed] = useState(0);
+  const [pos, setPos] = useState(saved?.pos ?? 0);
+  const [steps, setSteps] = useState(saved?.steps ?? 0);
+  const [trail, setTrail] = useState<Set<number>>(() => new Set(saved?.trail ?? [0]));
+  const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
   const [showPath, setShowPath] = useState(false);
 
   const done = useRef(false);
-  const assistsUsed = useRef<Set<string>>(new Set(assists.breadcrumbs ? ['breadcrumbs'] : []));
+  const assistsUsed = useRef<Set<string>>(
+    new Set([...(saved?.assistsUsed ?? []), ...(assists.breadcrumbs ? ['breadcrumbs'] : [])])
+  );
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
 
@@ -172,6 +193,17 @@ export function MazeGame({ difficulty, assists, paused, elapsedSec, events }: Ga
   };
 
   const solutionSet = useMemo(() => new Set(maze.solution), [maze]);
+
+  useEffect(() => {
+    registerSnapshot(() => ({
+      maze,
+      pos,
+      steps,
+      trail: [...trail],
+      hintsUsed,
+      assistsUsed: [...assistsUsed.current]
+    }));
+  });
 
   return (
     <div className={`maze ${paused ? 'board-hidden' : ''}`}>

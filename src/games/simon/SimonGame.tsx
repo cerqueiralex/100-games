@@ -19,17 +19,34 @@ const CONFIG: Record<Difficulty, Config> = {
 const FREQS = [261.63, 329.63, 392.0, 523.25];
 const MAX_STRIKES = 2;
 
-export function SimonGame({ difficulty, assists, paused, events }: GameProps) {
+interface SimonSave {
+  sequence: number[];
+  strikes: number;
+  score: number;
+  errors: number;
+  hintsUsed: number;
+  assistsUsed: string[];
+}
+
+export function SimonGame({
+  difficulty,
+  assists,
+  paused,
+  events,
+  savedState,
+  registerSnapshot
+}: GameProps) {
   const cfg = CONFIG[difficulty];
+  const saved = savedState as SimonSave | undefined;
 
   const [sequence, setSequence] = useState<number[]>([]);
   const [phase, setPhase] = useState<'idle' | 'watch' | 'input'>('idle');
   const [lit, setLit] = useState<number | null>(null);
   const [inputPos, setInputPos] = useState(0);
-  const [strikes, setStrikes] = useState(0);
-  const [score, setScore] = useState(0);
-  const [errors, setErrors] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
+  const [strikes, setStrikes] = useState(saved?.strikes ?? 0);
+  const [score, setScore] = useState(saved?.score ?? 0);
+  const [errors, setErrors] = useState(saved?.errors ?? 0);
+  const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
 
   const done = useRef(false);
   const seqRef = useRef<number[]>([]);
@@ -38,7 +55,7 @@ export function SimonGame({ difficulty, assists, paused, events }: GameProps) {
   const timeouts = useRef<number[]>([]);
   const wasPaused = useRef(false);
   const assistsUsed = useRef<Set<string>>(
-    new Set(assists.slowPlayback ? ['slowPlayback'] : [])
+    new Set([...(saved?.assistsUsed ?? []), ...(assists.slowPlayback ? ['slowPlayback'] : [])])
   );
 
   const clearAll = () => {
@@ -72,7 +89,7 @@ export function SimonGame({ difficulty, assists, paused, events }: GameProps) {
 
   // first round
   useEffect(() => {
-    const first = [Math.floor(Math.random() * 4)];
+    const first = saved?.sequence ?? [Math.floor(Math.random() * 4)];
     seqRef.current = first;
     setSequence(first);
     playSequence(first);
@@ -167,6 +184,17 @@ export function SimonGame({ difficulty, assists, paused, events }: GameProps) {
     sfx.hint();
     playSequence(seqRef.current);
   };
+
+  useEffect(() => {
+    registerSnapshot(() => ({
+      sequence: seqRef.current,
+      strikes,
+      score,
+      errors,
+      hintsUsed,
+      assistsUsed: [...assistsUsed.current]
+    }));
+  });
 
   return (
     <div className={`simon ${paused ? 'board-hidden' : ''}`}>

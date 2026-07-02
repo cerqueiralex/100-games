@@ -45,6 +45,26 @@ export interface GameProps {
   events: GameEvents;
   /** Flip an assist while playing; the change persists to settings. */
   onToggleAssist: (assistId: string, on: boolean) => void;
+  /**
+   * Present when resuming a saved game: the exact object this game's
+   * snapshot provider returned. Games must initialize from it (see
+   * DESIGN.md "Save & resume").
+   */
+  savedState?: unknown;
+  /**
+   * Register a provider returning a JSON-serializable snapshot of the
+   * running game. Re-register on every render so it never goes stale.
+   */
+  registerSnapshot: (fn: () => unknown) => void;
+}
+
+/** A resumable mid-game save, one per game, persisted on-device. */
+export interface GameSave {
+  gameId: string;
+  difficulty: Difficulty;
+  elapsedSec: number;
+  savedAt: number;
+  state: unknown;
 }
 
 /**

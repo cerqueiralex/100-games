@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Difficulty, FinishPayload, GameDefinition, GameResult, LiveStats } from '../types';
+import type { Difficulty, FinishPayload, GameDefinition, GameResult, GameSave, LiveStats } from '../types';
 import { DIFFICULTIES } from '../types';
 import { useAppState } from '../AppState';
-import { resolveAssists } from '../storage';
-import { formatDuration } from '../stats';
+import { deleteSave, loadSaves, putSave, resolveAssists } from '../storage';
+import { formatDate, formatDuration } from '../stats';
 import { sfx } from '../audio';
-import { BackIcon, Chip, HelpIcon, Modal, PauseIcon, PlayIcon, RestartIcon, ShareIcon, Toggle } from './ui';
+import { BackIcon, Chip, HelpIcon, Modal, PauseIcon, PlayIcon, RestartIcon, SaveIcon, ShareIcon, Toggle } from './ui';
 import { ShareCardModal } from './ShareCard';
 import { TutorialModal } from './Tutorial';
 
@@ -39,10 +39,22 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   const [showShare, setShowShare] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [resultsDismissed, setResultsDismissed] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [storedSave, setStoredSave] = useState<GameSave | null>(
+    () => loadSaves()[game.id] ?? null
+  );
+  const [activeSave, setActiveSave] = useState<GameSave | null>(null);
 
   const liveStats = useRef<LiveStats>(emptyStats);
   const startedAt = useRef(0);
   const finished = useRef(false);
+  const snapshotRef = useRef<(() => unknown) | null>(null);
+  /** the running session created a save or was resumed from one */
+  const sessionHasSave = useRef(false);
+
+  useEffect(() => {
+    if (phase === 'setup') setStoredSave(loadSaves()[game.id] ?? null);
+  }, [phase, game.id]);
 
   const assists = useMemo(
     () => resolveAssists(settings, game.id, game.assistFeatures),
@@ -55,18 +67,39 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
     return () => clearInterval(t);
   }, [phase, paused]);
 
-  const start = () => {
-    updateSettings({ lastDifficulty: { ...settings.lastDifficulty, [game.id]: difficulty } });
+  const start = (resume?: GameSave | null) => {
+    const diff = resume?.difficulty ?? difficulty;
+    if (resume) setDifficulty(diff);
+    updateSettings({ lastDifficulty: { ...settings.lastDifficulty, [game.id]: diff } });
     liveStats.current = emptyStats;
     finished.current = false;
-    startedAt.current = Date.now();
-    setElapsedSec(0);
+    sessionHasSave.current = !!resume;
+    setActiveSave(resume ?? null);
+    const elapsed = resume?.elapsedSec ?? 0;
+    startedAt.current = Date.now() - elapsed * 1000;
+    setElapsedSec(elapsed);
     setPaused(false);
     setFinish(null);
     setShowShare(false);
     setResultsDismissed(false);
+    setShowSaveModal(false);
     setSession((s) => s + 1);
     setPhase('playing');
+  };
+
+  const saveGame = () => {
+    const state = snapshotRef.current?.();
+    if (state === undefined || state === null) return;
+    putSave({
+      gameId: game.id,
+      difficulty,
+      elapsedSec,
+      savedAt: Date.now(),
+      state
+    });
+    sessionHasSave.current = true;
+    sfx.place();
+    setShowSaveModal(true);
   };
 
   const buildResult = useCallback(
@@ -101,13 +134,19 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         finished.current = true;
         liveStats.current = payload;
         recordResult(buildResult(payload.outcome, payload));
+        // a finished game's save is obsolete — but only touch the stored
+        // save if this session owned it (saved or resumed)
+        if (sessionHasSave.current) {
+          deleteSave(game.id);
+          sessionHasSave.current = false;
+        }
         setFinish(payload);
         setPhase('finished');
         if (payload.outcome === 'won') sfx.win();
         else sfx.lose();
       }
     }),
-    [buildResult, recordResult]
+    [buildResult, recordResult, game.id]
   );
 
   const quit = (recordAbandon: boolean) => {
@@ -155,6 +194,35 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           <span className="howto-go">›</span>
         </button>
 
+        {storedSave && (
+          <div className="resume-card fx-card">
+            <div className="resume-info">
+              <span className="resume-title">
+                <SaveIcon size={15} /> Saved game
+              </span>
+              <span className="resume-sub">
+                {DIFFICULTY_LABEL[storedSave.difficulty]} · {formatDuration(storedSave.elapsedSec)}{' '}
+                played · saved {formatDate(storedSave.savedAt)}
+              </span>
+            </div>
+            <div className="resume-actions">
+              <button
+                className="ghost-btn small"
+                onClick={() => {
+                  sfx.tap();
+                  deleteSave(game.id);
+                  setStoredSave(null);
+                }}
+              >
+                Discard
+              </button>
+              <button className="primary-btn resume-btn" onClick={() => start(storedSave)}>
+                Continue
+              </button>
+            </div>
+          </div>
+        )}
+
         <section className="setup-section">
           <h3 className="section-title">Difficulty</h3>
           <div className="difficulty-row">
@@ -196,7 +264,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
 
         <p className="scoring-note">{game.scoringNote}</p>
 
-        <button className="primary-btn start-btn" onClick={start}>
+        <button className="primary-btn start-btn" onClick={() => start()}>
           Start game
         </button>
 
@@ -211,7 +279,10 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
       <header className="screen-header game-header fx-card">
         <button
           className="icon-btn"
-          onClick={() => (phase === 'finished' ? quit(false) : setConfirmQuit(true))}
+          onClick={() =>
+            // finished games and saved sessions exit directly — nothing to abandon
+            phase === 'finished' || sessionHasSave.current ? quit(false) : setConfirmQuit(true)
+          }
           aria-label={phase === 'finished' ? 'Back to menu' : 'Quit game'}
         >
           <BackIcon />
@@ -233,6 +304,11 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         >
           <HelpIcon />
         </button>
+        {phase === 'playing' && (
+          <button className="icon-btn" onClick={saveGame} aria-label="Save game">
+            <SaveIcon />
+          </button>
+        )}
         <button
           className="icon-btn"
           onClick={() => setConfirmRestart(true)}
@@ -262,6 +338,10 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           elapsedSec={elapsedSec}
           events={events}
           onToggleAssist={(assistId, on) => setGameAssist(game.id, assistId, on)}
+          savedState={activeSave?.state}
+          registerSnapshot={(fn) => {
+            snapshotRef.current = fn;
+          }}
         />
         {paused && phase === 'playing' && (
           <div className="pause-overlay">
@@ -273,6 +353,20 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           </div>
         )}
       </div>
+
+      <Modal open={showSaveModal} onClose={() => setShowSaveModal(false)} title="Game saved">
+        <p className="modal-text">
+          Pick it up any time from this game's start screen — even after closing the app.
+        </p>
+        <div className="modal-actions">
+          <button className="ghost-btn" onClick={() => setShowSaveModal(false)}>
+            Keep playing
+          </button>
+          <button className="primary-btn" onClick={() => onExit()}>
+            Exit to menu
+          </button>
+        </div>
+      </Modal>
 
       <Modal open={confirmRestart} onClose={() => setConfirmRestart(false)} title="Restart game?">
         <p className="modal-text">
@@ -363,7 +457,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
               <button className="ghost-btn" onClick={() => setPhase('setup')}>
                 Options
               </button>
-              <button className="primary-btn" onClick={start}>
+              <button className="primary-btn" onClick={() => start()}>
                 Play again
               </button>
             </div>

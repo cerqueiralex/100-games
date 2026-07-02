@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, CheckIcon, EraseIcon, RestartIcon } from '../../platform/design/icons';
-import { buildWheelLevel, pickLevel } from './logic/levels';
+import { buildWheelLevel, pickLevel, type WheelLevel } from './logic/levels';
 
 const WORD_PTS: Record<Difficulty, number> = { easy: 20, medium: 30, hard: 40 };
 const PAR_SEC: Record<Difficulty, number> = { easy: 3 * 60, medium: 5 * 60, hard: 8 * 60 };
@@ -10,21 +10,44 @@ const BONUS: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
 const WRONG_PENALTY = 5;
 const HINT_PENALTY = 15;
 
-export function WordWheelGame({ difficulty, assists, paused, elapsedSec, events }: GameProps) {
-  const level = useMemo(() => pickLevel(difficulty), [difficulty]);
+interface WheelSave {
+  level: WheelLevel;
+  wheel: string[];
+  found: number[];
+  revealed: number[];
+  errors: number;
+  score: number;
+  hintsUsed: number;
+  assistsUsed: string[];
+}
+
+export function WordWheelGame({
+  difficulty,
+  assists,
+  paused,
+  elapsedSec,
+  events,
+  savedState,
+  registerSnapshot
+}: GameProps) {
+  const saved = savedState as WheelSave | undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const level = useMemo(() => saved?.level ?? pickLevel(difficulty), [difficulty]);
   const built = useMemo(() => buildWheelLevel(level), [level]);
 
-  const [wheel, setWheel] = useState<string[]>(() => level.letters);
+  const [wheel, setWheel] = useState<string[]>(() => saved?.wheel ?? level.letters);
   const [picked, setPicked] = useState<number[]>([]); // indices into wheel
-  const [found, setFound] = useState<Set<number>>(() => new Set());
-  const [revealed, setRevealed] = useState<Set<number>>(() => new Set());
-  const [errors, setErrors] = useState(0);
-  const [score, setScore] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
+  const [found, setFound] = useState<Set<number>>(() => new Set(saved?.found ?? []));
+  const [revealed, setRevealed] = useState<Set<number>>(() => new Set(saved?.revealed ?? []));
+  const [errors, setErrors] = useState(saved?.errors ?? 0);
+  const [score, setScore] = useState(saved?.score ?? 0);
+  const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
   const [shake, setShake] = useState(false);
 
   const done = useRef(false);
-  const assistsUsed = useRef<Set<string>>(new Set(assists.firstLetters ? ['firstLetters'] : []));
+  const assistsUsed = useRef<Set<string>>(
+    new Set([...(saved?.assistsUsed ?? []), ...(assists.firstLetters ? ['firstLetters'] : [])])
+  );
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
 
@@ -145,6 +168,19 @@ export function WordWheelGame({ difficulty, assists, paused, elapsedSec, events 
 
   const wheelSize = 220;
   const radius = 78;
+
+  useEffect(() => {
+    registerSnapshot(() => ({
+      level,
+      wheel,
+      found: [...found],
+      revealed: [...revealed],
+      errors,
+      score,
+      hintsUsed,
+      assistsUsed: [...assistsUsed.current]
+    }));
+  });
 
   return (
     <div className={`wordwheel ${paused ? 'board-hidden' : ''}`}>

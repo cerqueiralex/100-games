@@ -24,27 +24,47 @@ const ERROR_LIMIT = 3;
 /** Passive assists count as "help used" for the whole game when enabled. */
 const PASSIVE_ASSISTS = ['colorAssist', 'regionHighlight', 'highlightSame', 'remainingNumbers'];
 
+interface SudokuSave {
+  puzzle: number[];
+  solution: number[];
+  values: number[];
+  notes: number[];
+  score: number;
+  errors: number;
+  hintsUsed: number;
+  assistsUsed: string[];
+}
+
 export function SudokuGame({
   difficulty,
   assists,
   paused,
   elapsedSec,
   events,
-  onToggleAssist
+  onToggleAssist,
+  savedState,
+  registerSnapshot
 }: GameProps) {
-  const { puzzle, solution } = useMemo(() => generatePuzzle(difficulty), [difficulty]);
+  const saved = savedState as SudokuSave | undefined;
+  const { puzzle, solution } = useMemo(
+    () => (saved ? { puzzle: saved.puzzle, solution: saved.solution } : generatePuzzle(difficulty)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [difficulty]
+  );
 
-  const [values, setValues] = useState<Grid>(() => [...puzzle]);
-  const [notes, setNotes] = useState<number[]>(() => new Array(81).fill(0));
+  const [values, setValues] = useState<Grid>(() => (saved ? [...saved.values] : [...puzzle]));
+  const [notes, setNotes] = useState<number[]>(() =>
+    saved ? [...saved.notes] : new Array(81).fill(0)
+  );
   const [selected, setSelected] = useState<number | null>(null);
   const [notesMode, setNotesMode] = useState(false);
-  const [score, setScore] = useState(0);
-  const [errors, setErrors] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
+  const [score, setScore] = useState(saved?.score ?? 0);
+  const [errors, setErrors] = useState(saved?.errors ?? 0);
+  const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
   const [flash, setFlash] = useState<number | null>(null);
 
   const assistsUsed = useRef<Set<string>>(
-    new Set(PASSIVE_ASSISTS.filter((a) => assists[a]))
+    new Set([...(saved?.assistsUsed ?? []), ...PASSIVE_ASSISTS.filter((a) => assists[a])])
   );
   const done = useRef(false);
 
@@ -297,6 +317,19 @@ export function SudokuGame({
       </button>
     );
   }
+
+  useEffect(() => {
+    registerSnapshot(() => ({
+      puzzle,
+      solution,
+      values,
+      notes,
+      score,
+      errors,
+      hintsUsed,
+      assistsUsed: [...assistsUsed.current]
+    }));
+  });
 
   return (
     <div className={`sudoku ${paused ? 'board-hidden' : ''}`}>

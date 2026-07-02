@@ -47,24 +47,46 @@ function shuffle(n: number, count: number): number[] {
   return perm;
 }
 
-export function ImagePuzzleGame({ difficulty, assists, paused, elapsedSec, events }: GameProps) {
+interface PuzzleSave {
+  perm: number[];
+  img: string | null;
+  moves: number;
+  hintsUsed: number;
+  assistsUsed: string[];
+}
+
+export function ImagePuzzleGame({
+  difficulty,
+  assists,
+  paused,
+  elapsedSec,
+  events,
+  savedState,
+  registerSnapshot
+}: GameProps) {
   const n = SIZE[difficulty];
   const blankTile = n * n - 1;
+  const saved = savedState as PuzzleSave | undefined;
 
   // perm[position] = tile that currently sits there
-  const [perm, setPerm] = useState<number[]>(() => shuffle(n, SHUFFLE_MOVES[difficulty]));
-  const [img, setImg] = useState<string | null>(null);
-  const [imgReady, setImgReady] = useState(false);
-  const [moves, setMoves] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
+  const [perm, setPerm] = useState<number[]>(() =>
+    saved ? [...saved.perm] : shuffle(n, SHUFFLE_MOVES[difficulty])
+  );
+  const [img, setImg] = useState<string | null>(saved?.img ?? null);
+  const [imgReady, setImgReady] = useState(!!saved);
+  const [moves, setMoves] = useState(saved?.moves ?? 0);
+  const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
   const [previewing, setPreviewing] = useState(false);
 
   const done = useRef(false);
-  const assistsUsed = useRef<Set<string>>(new Set(assists.showNumbers ? ['showNumbers'] : []));
+  const assistsUsed = useRef<Set<string>>(
+    new Set([...(saved?.assistsUsed ?? []), ...(assists.showNumbers ? ['showNumbers'] : [])])
+  );
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
 
   useEffect(() => {
+    if (saved) return; // resumed games keep their saved image
     let alive = true;
     void pickImage().then((url) => {
       if (!alive) return;
@@ -74,6 +96,7 @@ export function ImagePuzzleGame({ difficulty, assists, paused, elapsedSec, event
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -172,6 +195,16 @@ export function ImagePuzzleGame({ difficulty, assists, paused, elapsedSec, event
   };
 
   const solvedCount = useMemo(() => perm.filter((t, i) => t === i).length, [perm]);
+
+  useEffect(() => {
+    registerSnapshot(() => ({
+      perm,
+      img,
+      moves,
+      hintsUsed,
+      assistsUsed: [...assistsUsed.current]
+    }));
+  });
 
   return (
     <div className={`imgpuzzle ${paused ? 'board-hidden' : ''}`}>

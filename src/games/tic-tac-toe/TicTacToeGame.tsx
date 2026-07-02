@@ -70,23 +70,45 @@ function robotMove(b: Mark[], difficulty: Difficulty): number {
   return e[Math.floor(Math.random() * e.length)];
 }
 
-export function TicTacToeGame({ difficulty, assists, paused, events }: GameProps) {
-  const [board, setBoard] = useState<Mark[]>(() => new Array(9).fill(null));
-  const [youScore, setYouScore] = useState(0);
-  const [botScore, setBotScore] = useState(0);
-  const [draws, setDraws] = useState(0);
-  const [score, setScore] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
-  const [yourTurn, setYourTurn] = useState(true);
+interface TttSave {
+  board: Mark[];
+  youScore: number;
+  botScore: number;
+  draws: number;
+  score: number;
+  hintsUsed: number;
+  yourTurn: boolean;
+  youStart: boolean;
+  assistsUsed: string[];
+}
+
+export function TicTacToeGame({
+  difficulty,
+  assists,
+  paused,
+  events,
+  savedState,
+  registerSnapshot
+}: GameProps) {
+  const saved = savedState as TttSave | undefined;
+  const [board, setBoard] = useState<Mark[]>(() =>
+    saved ? [...saved.board] : new Array(9).fill(null)
+  );
+  const [youScore, setYouScore] = useState(saved?.youScore ?? 0);
+  const [botScore, setBotScore] = useState(saved?.botScore ?? 0);
+  const [draws, setDraws] = useState(saved?.draws ?? 0);
+  const [score, setScore] = useState(saved?.score ?? 0);
+  const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
+  const [yourTurn, setYourTurn] = useState(saved?.yourTurn ?? true);
   const [banner, setBanner] = useState<string | null>(null);
   const [suggest, setSuggest] = useState<number | null>(null);
   const [winLine, setWinLine] = useState<number[] | null>(null);
 
   const done = useRef(false);
   const roundOver = useRef(false);
-  const youStart = useRef(true);
+  const youStart = useRef(saved?.youStart ?? true);
   const timers = useRef<number[]>([]);
-  const assistsUsed = useRef<Set<string>>(new Set());
+  const assistsUsed = useRef<Set<string>>(new Set(saved?.assistsUsed ?? []));
 
   const schedule = (fn: () => void, ms: number) => {
     timers.current.push(window.setTimeout(fn, ms));
@@ -186,6 +208,14 @@ export function TicTacToeGame({ difficulty, assists, paused, events }: GameProps
     [difficulty, settleRound]
   );
 
+  // resumed mid-robot-turn: let the robot finish its move
+  useEffect(() => {
+    if (saved && !saved.yourTurn && saved.board.some(Boolean) && !winner(saved.board) && !full(saved.board)) {
+      playRobot([...saved.board], saved.youScore, saved.botScore, saved.draws, saved.hintsUsed, saved.score);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // robot opens when it starts the round
   useEffect(() => {
     if (!yourTurn && board.every((v) => v === null) && !done.current) {
@@ -215,6 +245,20 @@ export function TicTacToeGame({ difficulty, assists, paused, events }: GameProps
     const m = minimax([...board], 'X', 'X').move;
     setSuggest(m >= 0 ? m : empties(board)[0]);
   };
+
+  useEffect(() => {
+    registerSnapshot(() => ({
+      board,
+      youScore,
+      botScore,
+      draws,
+      score,
+      hintsUsed,
+      yourTurn,
+      youStart: youStart.current,
+      assistsUsed: [...assistsUsed.current]
+    }));
+  });
 
   return (
     <div className={`ttt ${paused ? 'board-hidden' : ''}`}>

@@ -2,14 +2,32 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon } from '../../platform/design/icons';
-import { generateFlowLevel } from './logic/generator';
+import { generateFlowLevel, type FlowLevel } from './logic/generator';
 
 const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
 const PAR_SEC: Record<Difficulty, number> = { easy: 2 * 60, medium: 4 * 60, hard: 6 * 60 };
 const HINT_PENALTY = 50;
 
-export function ColorConnectGame({ difficulty, assists, paused, elapsedSec, events }: GameProps) {
-  const level = useMemo(() => generateFlowLevel(difficulty), [difficulty]);
+interface FlowSave {
+  level: FlowLevel;
+  paths: number[][];
+  moves: number;
+  hintsUsed: number;
+  assistsUsed: string[];
+}
+
+export function ColorConnectGame({
+  difficulty,
+  assists,
+  paused,
+  elapsedSec,
+  events,
+  savedState,
+  registerSnapshot
+}: GameProps) {
+  const saved = savedState as FlowSave | undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const level = useMemo(() => saved?.level ?? generateFlowLevel(difficulty), [difficulty]);
   const size = level.size;
   const n = size * size;
 
@@ -26,15 +44,19 @@ export function ColorConnectGame({ difficulty, assists, paused, elapsedSec, even
     return map;
   }, [endpoints]);
 
-  const [paths, setPaths] = useState<number[][]>(() => level.paths.map(() => []));
-  const [moves, setMoves] = useState(0);
+  const [paths, setPaths] = useState<number[][]>(() =>
+    saved ? saved.paths.map((p) => [...p]) : level.paths.map(() => [])
+  );
+  const [moves, setMoves] = useState(saved?.moves ?? 0);
   const [score, setScore] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
+  const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
 
   const active = useRef<number | null>(null);
   const done = useRef(false);
   const boardRef = useRef<HTMLDivElement>(null);
-  const assistsUsed = useRef<Set<string>>(new Set(assists.progress ? ['progress'] : []));
+  const assistsUsed = useRef<Set<string>>(
+    new Set([...(saved?.assistsUsed ?? []), ...(assists.progress ? ['progress'] : [])])
+  );
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
 
@@ -249,6 +271,16 @@ export function ColorConnectGame({ difficulty, assists, paused, elapsedSec, even
     });
     return map;
   }, [paths, size]);
+
+  useEffect(() => {
+    registerSnapshot(() => ({
+      level,
+      paths,
+      moves,
+      hintsUsed,
+      assistsUsed: [...assistsUsed.current]
+    }));
+  });
 
   return (
     <div className={`colorconnect ${paused ? 'board-hidden' : ''}`}>

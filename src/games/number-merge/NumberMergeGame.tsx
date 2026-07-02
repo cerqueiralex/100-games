@@ -52,24 +52,43 @@ function hasAnyMove(board: number[]): boolean {
   return false;
 }
 
-export function NumberMergeGame({ difficulty, assists, paused, events }: GameProps) {
+interface MergeSave {
+  board: number[];
+  score: number;
+  best: number;
+  undosLeft: number;
+  hintsUsed: number;
+  assistsUsed: string[];
+}
+
+export function NumberMergeGame({
+  difficulty,
+  assists,
+  paused,
+  events,
+  savedState,
+  registerSnapshot
+}: GameProps) {
   const target = TARGET[difficulty];
+  const saved = savedState as MergeSave | undefined;
   const [board, setBoard] = useState<number[]>(() =>
-    Array.from({ length: N }, () => spawnValue(16))
+    saved ? [...saved.board] : Array.from({ length: N }, () => spawnValue(16))
   );
   const [chain, setChain] = useState<number[]>([]);
-  const [score, setScore] = useState(0);
+  const [score, setScore] = useState(saved?.score ?? 0);
   const [errors] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
-  const [undosLeft, setUndosLeft] = useState(MAX_UNDOS);
+  const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
+  const [undosLeft, setUndosLeft] = useState(saved?.undosLeft ?? MAX_UNDOS);
   const [hintCells, setHintCells] = useState<Set<number>>(() => new Set());
-  const [best, setBest] = useState(0);
+  const [best, setBest] = useState(saved?.best ?? 0);
 
   const done = useRef(false);
   const dragging = useRef(false);
   const boardRef = useRef<HTMLDivElement>(null);
   const undoState = useRef<{ board: number[]; score: number; best: number } | null>(null);
-  const assistsUsed = useRef<Set<string>>(new Set(assists.chainPreview ? ['chainPreview'] : []));
+  const assistsUsed = useRef<Set<string>>(
+    new Set([...(saved?.assistsUsed ?? []), ...(assists.chainPreview ? ['chainPreview'] : [])])
+  );
 
   useEffect(() => {
     events.onStats({
@@ -212,6 +231,17 @@ export function NumberMergeGame({ difficulty, assists, paused, events }: GamePro
     () => chain.reduce((a, i) => a + board[i], 0),
     [chain, board]
   );
+
+  useEffect(() => {
+    registerSnapshot(() => ({
+      board,
+      score,
+      best,
+      undosLeft,
+      hintsUsed,
+      assistsUsed: [...assistsUsed.current]
+    }));
+  });
 
   return (
     <div className={`nmerge ${paused ? 'board-hidden' : ''}`}>

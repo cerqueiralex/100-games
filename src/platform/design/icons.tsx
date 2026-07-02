@@ -187,6 +187,16 @@ export function EyeIcon({ size = 16 }: IconProps) {
   );
 }
 
+export function SaveIcon({ size = 18 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+      <path d="M17 21v-8H7v8" />
+      <path d="M7 3v5h8" />
+    </Svg>
+  );
+}
+
 export function StarIcon({ size = 18, filled = false }: IconProps & { filled?: boolean }) {
   return (
     <svg

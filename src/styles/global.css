@@ -436,6 +436,43 @@ p {
   font-size: 14px;
 }
 
+.resume-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: var(--radius-m);
+  padding: 14px 16px;
+  margin-bottom: 22px;
+}
+
+.resume-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.resume-sub {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.resume-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.resume-btn {
+  width: auto;
+  padding: 10px 22px;
+  font-size: 14px;
+}
+
 /* ===== toggle ===== */
 
 .toggle-row {

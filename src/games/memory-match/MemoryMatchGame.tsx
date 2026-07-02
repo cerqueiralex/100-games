@@ -32,29 +32,52 @@ function buildDeck(pairs: number): string[] {
   return [...faces, ...faces].sort(() => Math.random() - 0.5);
 }
 
-export function MemoryMatchGame({ difficulty, assists, paused, elapsedSec, events }: GameProps) {
-  const cfg = CONFIG[difficulty];
-  const deck = useMemo(() => buildDeck(cfg.pairs), [cfg.pairs]);
+interface MemorySave {
+  deck: string[];
+  matched: boolean[];
+  errors: number;
+  score: number;
+  moves: number;
+  hintsUsed: number;
+  streak: number;
+  assistsUsed: string[];
+}
 
-  const [matched, setMatched] = useState<boolean[]>(() => new Array(cfg.pairs * 2).fill(false));
+export function MemoryMatchGame({
+  difficulty,
+  assists,
+  paused,
+  elapsedSec,
+  events,
+  savedState,
+  registerSnapshot
+}: GameProps) {
+  const cfg = CONFIG[difficulty];
+  const saved = savedState as MemorySave | undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const deck = useMemo(() => saved?.deck ?? buildDeck(cfg.pairs), [cfg.pairs]);
+
+  const [matched, setMatched] = useState<boolean[]>(() =>
+    saved ? [...saved.matched] : new Array(cfg.pairs * 2).fill(false)
+  );
   const [flipped, setFlipped] = useState<number[]>([]);
-  const [errors, setErrors] = useState(0);
-  const [score, setScore] = useState(0);
-  const [moves, setMoves] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
-  const [streak, setStreak] = useState(0);
+  const [errors, setErrors] = useState(saved?.errors ?? 0);
+  const [score, setScore] = useState(saved?.score ?? 0);
+  const [moves, setMoves] = useState(saved?.moves ?? 0);
+  const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
+  const [streak, setStreak] = useState(saved?.streak ?? 0);
   const [revealAll, setRevealAll] = useState(false);
 
-  const matchedCount = useRef(0);
+  const matchedCount = useRef(saved ? saved.matched.filter(Boolean).length : 0);
   const done = useRef(false);
   const flipBackTimer = useRef<number | null>(null);
-  const assistsUsed = useRef<Set<string>>(new Set());
+  const assistsUsed = useRef<Set<string>>(new Set(saved?.assistsUsed ?? []));
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
 
-  // opening peek: reveal everything briefly at the start
+  // opening peek: reveal everything briefly at the start (not on resume)
   useEffect(() => {
-    if (!assists.previewStart) return;
+    if (!assists.previewStart || saved) return;
     assistsUsed.current.add('previewStart');
     setRevealAll(true);
     const t = window.setTimeout(() => setRevealAll(false), 2800);
@@ -151,6 +174,19 @@ export function MemoryMatchGame({ difficulty, assists, paused, elapsedSec, event
   useEffect(() => () => {
     if (flipBackTimer.current) clearTimeout(flipBackTimer.current);
   }, []);
+
+  useEffect(() => {
+    registerSnapshot(() => ({
+      deck,
+      matched,
+      errors,
+      score,
+      moves,
+      hintsUsed,
+      streak,
+      assistsUsed: [...assistsUsed.current]
+    }));
+  });
 
   return (
     <div className={`memory ${paused ? 'board-hidden' : ''}`}>

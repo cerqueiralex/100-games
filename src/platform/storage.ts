@@ -1,9 +1,10 @@
-import type { GameResult, PlatformSettings, Profile, Difficulty } from './types';
+import type { GameResult, GameSave, PlatformSettings, Profile, Difficulty } from './types';
 
 const KEYS = {
   settings: '100games.v1.settings',
   profile: '100games.v1.profile',
-  history: '100games.v1.history'
+  history: '100games.v1.history',
+  saves: '100games.v1.saves'
 } as const;
 
 const HISTORY_LIMIT = 1000;
@@ -76,6 +77,24 @@ export function appendResult(result: GameResult): GameResult[] {
 
 export function clearHistory(): void {
   write(KEYS.history, []);
+}
+
+/** One resumable save per game. */
+export function loadSaves(): Record<string, GameSave> {
+  return read<Record<string, GameSave>>(KEYS.saves) ?? {};
+}
+
+export function putSave(save: GameSave): void {
+  const saves = loadSaves();
+  saves[save.gameId] = save;
+  write(KEYS.saves, saves);
+}
+
+export function deleteSave(gameId: string): void {
+  const saves = loadSaves();
+  if (!(gameId in saves)) return;
+  delete saves[gameId];
+  write(KEYS.saves, saves);
 }
 
 export function resetAll(): void {

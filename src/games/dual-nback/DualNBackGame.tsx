@@ -36,25 +36,51 @@ function generateSequence(trials: number, n: number, symbols: number): number[] 
   return seq;
 }
 
-export function DualNBackGame({ difficulty, assists, paused, events }: GameProps) {
-  const cfg = CONFIG[difficulty];
-  const seqPos = useMemo(() => generateSequence(cfg.trials, cfg.n, 9), [cfg]);
-  const seqLet = useMemo(() => generateSequence(cfg.trials, cfg.n, LETTERS.length), [cfg]);
+interface DualSave {
+  seqPos: number[];
+  seqLet: number[];
+  idx: number;
+  counts: { hit: number; miss: number; fa: number; cr: number };
+  score: number;
+  errors: number;
+  assistsUsed: string[];
+}
 
-  const [idx, setIdx] = useState(-1);
+export function DualNBackGame({
+  difficulty,
+  assists,
+  paused,
+  events,
+  savedState,
+  registerSnapshot
+}: GameProps) {
+  const cfg = CONFIG[difficulty];
+  const saved = savedState as DualSave | undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const seqPos = useMemo(() => saved?.seqPos ?? generateSequence(cfg.trials, cfg.n, 9), [cfg]);
+  const seqLet = useMemo(
+    () => saved?.seqLet ?? generateSequence(cfg.trials, cfg.n, LETTERS.length),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cfg]
+  );
+
+  const [idx, setIdx] = useState(saved?.idx ?? -1);
   const [showStim, setShowStim] = useState(false);
   const [pressedPos, setPressedPos] = useState(false);
   const [pressedLet, setPressedLet] = useState(false);
-  const [score, setScore] = useState(0);
-  const [errors, setErrors] = useState(0);
+  const [score, setScore] = useState(saved?.score ?? 0);
+  const [errors, setErrors] = useState(saved?.errors ?? 0);
   const [feedback, setFeedback] = useState<'good' | 'bad' | null>(null);
 
   const pressedPosRef = useRef(false);
   const pressedLetRef = useRef(false);
-  const counts = useRef({ hit: 0, miss: 0, fa: 0, cr: 0 });
+  const counts = useRef(saved ? { ...saved.counts } : { hit: 0, miss: 0, fa: 0, cr: 0 });
   const done = useRef(false);
   const assistsUsed = useRef<Set<string>>(
-    new Set(['feedback', 'showHistory', 'slowMode'].filter((a) => assists[a]))
+    new Set([
+      ...(saved?.assistsUsed ?? []),
+      ...['feedback', 'showHistory', 'slowMode'].filter((a) => assists[a])
+    ])
   );
 
   useEffect(() => {
@@ -161,6 +187,18 @@ export function DualNBackGame({ difficulty, assists, paused, events }: GameProps
 
   const ghostPos = assists.showHistory && idx >= cfg.n ? seqPos[idx - cfg.n] : null;
   const ghostLet = assists.showHistory && idx >= cfg.n ? LETTERS[seqLet[idx - cfg.n]] : null;
+
+  useEffect(() => {
+    registerSnapshot(() => ({
+      seqPos,
+      seqLet,
+      idx,
+      counts: { ...counts.current },
+      score,
+      errors,
+      assistsUsed: [...assistsUsed.current]
+    }));
+  });
 
   return (
     <div className={`nback ${paused ? 'board-hidden' : ''}`}>

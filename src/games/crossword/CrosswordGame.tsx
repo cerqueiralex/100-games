@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, CheckIcon } from '../../platform/design/icons';
-import { buildPuzzle, type Dir, type Slot } from './logic/engine';
+import { buildPuzzle, type CrosswordDef, type Dir, type Slot } from './logic/engine';
 import { pickPuzzle } from './logic/puzzles';
 
 const LETTER_POINTS: Record<Difficulty, number> = { easy: 15, medium: 20, hard: 30 };
@@ -13,20 +13,45 @@ const BONUS_PER_SEC: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 
 
 const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
-export function CrosswordGame({ difficulty, assists, paused, elapsedSec, events }: GameProps) {
-  const built = useMemo(() => buildPuzzle(pickPuzzle(difficulty)), [difficulty]);
+interface CrosswordSave {
+  def: CrosswordDef;
+  letters: string[];
+  revealed: number[];
+  wrong: number[];
+  errors: number;
+  hintsUsed: number;
+  assistsUsed: string[];
+}
+
+export function CrosswordGame({
+  difficulty,
+  assists,
+  paused,
+  elapsedSec,
+  events,
+  savedState,
+  registerSnapshot
+}: GameProps) {
+  const saved = savedState as CrosswordSave | undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const def = useMemo(() => saved?.def ?? pickPuzzle(difficulty), [difficulty]);
+  const built = useMemo(() => buildPuzzle(def), [def]);
   const size = built.rows * built.cols;
 
-  const [letters, setLetters] = useState<string[]>(() => new Array(size).fill(''));
-  const [revealed, setRevealed] = useState<Set<number>>(() => new Set());
-  const [wrong, setWrong] = useState<Set<number>>(() => new Set());
+  const [letters, setLetters] = useState<string[]>(() =>
+    saved ? [...saved.letters] : new Array(size).fill('')
+  );
+  const [revealed, setRevealed] = useState<Set<number>>(() => new Set(saved?.revealed ?? []));
+  const [wrong, setWrong] = useState<Set<number>>(() => new Set(saved?.wrong ?? []));
   const [sel, setSel] = useState<number>(() => built.slots[0].cells[0]);
   const [dir, setDir] = useState<Dir>('across');
-  const [errors, setErrors] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
+  const [errors, setErrors] = useState(saved?.errors ?? 0);
+  const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
   const [toast, setToast] = useState<string | null>(null);
 
-  const assistsUsed = useRef<Set<string>>(new Set(assists.autoCheck ? ['autoCheck'] : []));
+  const assistsUsed = useRef<Set<string>>(
+    new Set([...(saved?.assistsUsed ?? []), ...(assists.autoCheck ? ['autoCheck'] : [])])
+  );
   const done = useRef(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const elapsedRef = useRef(elapsedSec);
@@ -305,6 +330,18 @@ export function CrosswordGame({ difficulty, assists, paused, elapsedSec, events 
   }, [typeLetter, backspace, cycleSlot, paused, sel, built]);
 
   const wordCells = useMemo(() => new Set(currentSlot.cells), [currentSlot]);
+
+  useEffect(() => {
+    registerSnapshot(() => ({
+      def,
+      letters,
+      revealed: [...revealed],
+      wrong: [...wrong],
+      errors,
+      hintsUsed,
+      assistsUsed: [...assistsUsed.current]
+    }));
+  });
 
   return (
     <div className={`crossword ${paused ? 'board-hidden' : ''}`}>

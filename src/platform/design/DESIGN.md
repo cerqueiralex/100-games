@@ -128,6 +128,24 @@ Convention: a `tutorial.tsx` file in the game's folder exporting
   button on the game's setup screen and a help icon in the in-game header
   (which pauses the game). Games never render tutorials themselves.
 
+## Save & resume (required for every game)
+
+Every game must support mid-game saving via two `GameProps` members:
+
+- **`registerSnapshot(fn)`** — call it in a dependency-less `useEffect`
+  (re-registering every render so it never goes stale) with a function
+  returning a JSON-serializable snapshot: the generated content (board,
+  solution, level/def) plus all progress (values, score, errors, hints,
+  `assistsUsed` as an array — Sets/Maps must be converted).
+- **`savedState`** — when present, every state initializer must hydrate
+  from it instead of generating fresh content, including refs like
+  `assistsUsed` and derived counters.
+
+The shell owns everything else: the header Save button, the saved-game
+card on the setup screen, elapsed-time restoration, and clearing the
+save when its session finishes. Timed games should resume by replaying
+the current sequence/trial rather than mid-animation.
+
 ## Games
 
 Games must consume `GameProps` and express all their UI with these tokens
