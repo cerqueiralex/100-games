@@ -3,6 +3,7 @@ import { useAppState } from '../AppState';
 import { GAMES, getGame } from '../registry';
 import { computeStats, formatDate, formatDuration } from '../stats';
 import { Chip, Dropdown, Modal, StatCard } from '../components/ui';
+import { ActivityChart, GamesPieChart, TrendChart } from '../components/charts';
 import type { GameResult } from '../types';
 
 const EMOJIS = ['🎮', '🦊', '🐼', '🦉', '🐯', '🚀', '🌙', '⚡', '🎯', '🧩', '👾', '🏆'];
@@ -95,6 +96,30 @@ export function ProfilePage() {
           ]}
         />
       </div>
+
+      {filter === 'all' ? (
+        <>
+          <section className="setup-section">
+            <h3 className="section-title">Most played</h3>
+            <div className="chart-card fx-card">
+              <GamesPieChart history={history} />
+            </div>
+          </section>
+          <section className="setup-section">
+            <h3 className="section-title">Activity — last 30 days</h3>
+            <div className="chart-card fx-card">
+              <ActivityChart history={history} />
+            </div>
+          </section>
+        </>
+      ) : (
+        <section className="setup-section">
+          <h3 className="section-title">Progress — last 30 days</h3>
+          <div className="chart-card fx-card">
+            <TrendChart results={filtered} />
+          </div>
+        </section>
+      )}
 
       <section className="setup-section">
         <h3 className="section-title">Statistics</h3>

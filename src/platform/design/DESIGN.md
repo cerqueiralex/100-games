@@ -75,12 +75,15 @@ System font stack (SF Pro on Apple devices). Weights: 800 page titles,
 
 ## Depth & motion (the surface standard)
 
-The platform's card look is **iOS-style frosted glass**, defined once in
-`effects.css` — aim for "designed by Apple" (no textures/patterns):
+The platform's card look is **flat frosted glass**, defined once in
+`effects.css` — no textures, patterns or gradients anywhere in the UI
+(the only sanctioned radial gradient is the transient `.fx-glow` cursor
+light):
 
-- **`.fx-card`** is THE surface for cards: translucent glass base with
-  backdrop blur + saturation, a specular top-edge highlight, and layered
-  drop/inset shadows for physical depth.
+- **`.fx-card`** is THE surface for cards: a flat translucent base with
+  backdrop blur + saturation, hairline borders (lighter top edge), and
+  delicate drop shadows. Game logo chips are flat accent fills with no
+  shadows.
 - **One rule styles everything**: the glass rule in `effects.css` is
   applied via `.fx-card` AND bound directly to every shared card-surface
   class (settings rows, toggles, theme/accent pickers, search bar,
