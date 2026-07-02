@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, EraseIcon } from '../../platform/design/icons';
+import { PadTool } from '../../platform/components/ui';
 import { pickPhrase, type CryptoPhrase } from './logic/phrases';
 
 const LETTER_PTS: Record<Difficulty, number> = { easy: 25, medium: 35, hard: 50 };
@@ -284,15 +285,15 @@ export function CryptogramGame({
 
       <div className="game-tools fx-card">
         <div className="sudoku-controls">
-          <button className="pad-tool" onClick={erase}>
+          <PadTool silent onClick={erase}>
             <EraseIcon />
             <span>Erase</span>
-          </button>
+          </PadTool>
           {assists.reveal && (
-            <button className="pad-tool" onClick={reveal}>
+            <PadTool silent onClick={reveal}>
               <BulbIcon />
               <span>Reveal letter</span>
-            </button>
+            </PadTool>
           )}
         </div>
         <div className="cw-keyboard">

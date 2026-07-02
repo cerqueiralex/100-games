@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, CheckIcon, EraseIcon, RestartIcon } from '../../platform/design/icons';
+import { PadTool } from '../../platform/components/ui';
 import { buildWheelLevel, pickLevel, type WheelLevel } from './logic/levels';
 
 const WORD_PTS: Record<Difficulty, number> = { easy: 20, medium: 30, hard: 40 };
@@ -238,24 +239,24 @@ export function WordWheelGame({
       </div>
 
       <div className="sudoku-controls">
-        <button className="pad-tool" onClick={() => setPicked((p) => p.slice(0, -1))}>
+        <PadTool onClick={() => setPicked((p) => p.slice(0, -1))}>
           <EraseIcon />
           <span>Undo</span>
-        </button>
-        <button className="pad-tool" onClick={shuffle}>
+        </PadTool>
+        <PadTool silent onClick={shuffle}>
           <RestartIcon />
           <span>Shuffle</span>
-        </button>
+        </PadTool>
         {assists.revealLetter && (
-          <button className="pad-tool" onClick={useHint}>
+          <PadTool silent onClick={useHint}>
             <BulbIcon />
             <span>Hint</span>
-          </button>
+          </PadTool>
         )}
-        <button className="pad-tool active" onClick={submit} disabled={current.length < 2}>
+        <PadTool active silent onClick={submit} disabled={current.length < 2}>
           <CheckIcon />
           <span>Submit</span>
-        </button>
+        </PadTool>
       </div>
       </div>
     </div>

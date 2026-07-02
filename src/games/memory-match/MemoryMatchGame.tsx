@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { EyeIcon } from '../../platform/design/icons';
+import { PadTool } from '../../platform/components/ui';
 
 /* Card faces are game content (like avatars), not UI chrome — emojis allowed. */
 const FACES = [
@@ -225,10 +226,10 @@ export function MemoryMatchGame({
       {assists.peek && (
         <div className="game-tools fx-card">
         <div className="sudoku-controls">
-          <button className="pad-tool" onClick={peek}>
+          <PadTool silent onClick={peek}>
             <EyeIcon />
             <span>Peek</span>
-          </button>
+          </PadTool>
         </div>
         </div>
       )}

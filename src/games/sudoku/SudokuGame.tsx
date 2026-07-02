@@ -9,6 +9,7 @@ import {
   SameIcon,
   TargetIcon
 } from '../../platform/design/icons';
+import { PadTool } from '../../platform/components/ui';
 import {
   boxOf,
   colOf,
@@ -355,26 +356,19 @@ export function SudokuGame({
 
       <div className="game-tools fx-card">
       <div className="sudoku-controls">
-        <button
-          className={`pad-tool ${notesMode ? 'active' : ''}`}
-          aria-pressed={notesMode}
-          onClick={() => {
-            sfx.tap();
-            setNotesMode((m) => !m);
-          }}
-        >
+        <PadTool active={notesMode} onClick={() => setNotesMode((m) => !m)}>
           <PencilIcon />
           <span>Notes</span>
-        </button>
-        <button className="pad-tool" onClick={erase}>
+        </PadTool>
+        <PadTool silent onClick={erase}>
           <EraseIcon />
           <span>Erase</span>
-        </button>
+        </PadTool>
         {assists.smartHints && (
-          <button className="pad-tool" onClick={useHint}>
+          <PadTool silent onClick={useHint}>
             <BulbIcon />
             <span>Hint</span>
-          </button>
+          </PadTool>
         )}
       </div>
 
@@ -386,18 +380,10 @@ export function SudokuGame({
             ['highlightSame', 'Same', SameIcon]
           ] as const
         ).map(([id, label, Icon]) => (
-          <button
-            key={id}
-            className={`pad-tool ${assists[id] ? 'active' : ''}`}
-            aria-pressed={assists[id]}
-            onClick={() => {
-              sfx.tap();
-              onToggleAssist(id, !assists[id]);
-            }}
-          >
+          <PadTool key={id} active={assists[id]} onClick={() => onToggleAssist(id, !assists[id])}>
             <Icon />
             <span>{label}</span>
-          </button>
+          </PadTool>
         ))}
       </div>
 

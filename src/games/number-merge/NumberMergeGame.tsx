@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, RestartIcon } from '../../platform/design/icons';
+import { PadTool } from '../../platform/components/ui';
 
 const COLS = 5;
 const ROWS = 7;
@@ -295,16 +296,16 @@ export function NumberMergeGame({
       <div className="game-tools fx-card">
       <div className="sudoku-controls">
         {assists.undo && (
-          <button className="pad-tool" onClick={undo} disabled={undosLeft === 0}>
+          <PadTool silent onClick={undo} disabled={undosLeft === 0}>
             <RestartIcon />
             <span>Undo ({undosLeft})</span>
-          </button>
+          </PadTool>
         )}
         {assists.showHint && (
-          <button className="pad-tool" onClick={showHint}>
+          <PadTool silent onClick={showHint}>
             <BulbIcon />
             <span>Hint</span>
-          </button>
+          </PadTool>
         )}
       </div>
       </div>

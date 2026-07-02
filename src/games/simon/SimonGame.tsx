@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { playNote, sfx } from '../../platform/audio';
 import { RestartIcon } from '../../platform/design/icons';
+import { PadTool } from '../../platform/components/ui';
 
 interface Config {
   target: number;
@@ -230,10 +231,10 @@ export function SimonGame({
       {assists.repeatSequence && (
         <div className="game-tools fx-card">
         <div className="sudoku-controls">
-          <button className="pad-tool" onClick={replay} disabled={phase !== 'input'}>
+          <PadTool silent onClick={replay} disabled={phase !== 'input'}>
             <RestartIcon />
             <span>Replay</span>
-          </button>
+          </PadTool>
         </div>
         </div>
       )}

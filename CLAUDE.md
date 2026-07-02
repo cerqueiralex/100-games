@@ -47,9 +47,10 @@ Every game result stores both `assistsEnabled` and `assistsUsed`; `cleanWin` = w
 
 - Colors only via tokens in `design/tokens.css`. Surface themes (`data-theme`: black/dim/light) and accent themes (`data-accent`: orange default, blue/green/red/purple/white) are attributes on `<html>` set by `AppState`. The accent recolors every tool in every game; semantic colors (`--good`, `--bad`) never follow the accent.
 - Surfaces are **flat frosted glass with NO gradients**, defined once in `design/effects.css` and bound both to `.fx-card` and to every shared card-component class listed there — component CSS never declares its own card background/border (this is what keeps Settings etc. in sync with redesigns). The only sanctioned gradient is the transient `.fx-glow` cursor light used by `design/Tilt.tsx`.
-- Charts (profile page) are dependency-free SVG components in `platform/components/charts.tsx`, colored per game from the `--play-*` content palette.
+- Charts (profile page) are dependency-free SVG components in `platform/components/charts.tsx`, colored per game from the `--play-*` content palette (via the chart-safe slot list in `charts.tsx` — never `--play-9`, which is white).
+- Tile boards must keep stable geometry (DESIGN.md "Tile grids"): pin both grid axes (`grid-auto-rows: 1fr` or `aspect-ratio` on the tile), and tile state/press styles may change paint only (colors, transform) — never border-width, padding, or font-size.
 - Icons only from `design/icons.tsx` — monochrome SVG, `currentColor`. **No emojis in UI controls** (emojis are fine as game content, e.g. memory-card faces, and celebratory content).
-- In-game toolbars are rows of `pad-tool` buttons in equal-width grids (`grid-auto-flow: column; grid-auto-columns: 1fr`).
+- In-game toolbars are rows of `PadTool` buttons (`platform/components/ui`) in equal-width grids (`grid-auto-flow: column; grid-auto-columns: 1fr`). `PadTool` is the standard for every game tool: accent-tinted with hover/press effects and a built-in click sound (`silent` prop when the handler plays its own sfx, `active` for toggles) — never hand-write `<button className="pad-tool">`.
 - All CSS lives in `src/styles/global.css` (game sections are marked); tokens/themes live in `design/tokens.css`, imported at its top.
 
 ## Game content notes

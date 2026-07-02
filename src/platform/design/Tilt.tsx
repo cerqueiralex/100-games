@@ -19,6 +19,13 @@ export function Tilt({
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
+  /* The transform lives on the INNER layer while this outer element stays
+     untransformed. Two reasons (hit-testing bugs otherwise — clicks fell
+     on the wrapper and cards needed several attempts):
+     - the rect we measure here must be the static layout box, not the
+       mid-transition projected box, or the angles feed back on themselves;
+     - the interactive child and the transformed layer must move as one,
+       so mousedown/mouseup can't land on different elements mid-click. */
   const onMove = (e: React.PointerEvent) => {
     const el = ref.current;
     if (!el) return;
@@ -45,7 +52,7 @@ export function Tilt({
       onPointerMove={HOVERABLE ? onMove : undefined}
       onPointerLeave={HOVERABLE ? onLeave : undefined}
     >
-      {children}
+      <div className="fx-tilt-inner">{children}</div>
       <span className="fx-glow" aria-hidden />
     </div>
   );

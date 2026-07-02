@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon } from '../../platform/design/icons';
+import { PadTool } from '../../platform/components/ui';
 import { generateFlowLevel, type FlowLevel } from './logic/generator';
 
 const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
@@ -328,10 +329,10 @@ export function ColorConnectGame({
       {assists.solveColor && (
         <div className="game-tools fx-card">
         <div className="sudoku-controls">
-          <button className="pad-tool" onClick={useHint}>
+          <PadTool silent onClick={useHint}>
             <BulbIcon />
             <span>Solve a color</span>
-          </button>
+          </PadTool>
         </div>
         </div>
       )}

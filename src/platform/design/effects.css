@@ -61,18 +61,32 @@
 
 /* ---------- mouse-reactive tilt + cursor glow (used via <Tilt>) ---------- */
 
+/* Outer wrapper NEVER transforms: it is the stable box that pointer math
+   and hit-testing rely on (see Tilt.tsx). All motion goes on the inner
+   layer so the interactive card and the transform move as one. */
 .fx-tilt {
   position: relative;
-  transform: perspective(900px) rotateX(var(--tx, 0deg)) rotateY(var(--ty, 0deg));
-  transform-style: preserve-3d;
-  transition: transform 0.18s ease;
-  will-change: transform;
   border-radius: var(--fx-radius, var(--radius-l));
   width: 100%;
 }
 
+.fx-tilt-inner {
+  transform: perspective(900px) rotateX(var(--tx, 0deg)) rotateY(var(--ty, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.18s ease, scale 0.12s ease;
+  will-change: transform;
+  border-radius: inherit;
+  width: 100%;
+}
+
+/* press feedback for the whole tilted unit — the button no longer scales
+   itself, so its hitbox can't shrink away from the pointer mid-click */
+.fx-tilt:active .fx-tilt-inner {
+  scale: 0.98;
+}
+
 /* children fill the wrapper — buttons would otherwise shrink to content */
-.fx-tilt > * {
+.fx-tilt-inner > * {
   width: 100%;
   transform-style: preserve-3d;
 }

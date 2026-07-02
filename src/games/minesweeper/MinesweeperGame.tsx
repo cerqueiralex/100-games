@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, FlagIcon, MineIcon } from '../../platform/design/icons';
+import { PadTool } from '../../platform/components/ui';
 
 const CONFIG: Record<Difficulty, { size: number; mines: number }> = {
   easy: { size: 8, mines: 8 },
@@ -318,7 +319,7 @@ export function MinesweeperGame({
               aria-label={`Cell ${Math.floor(i / size) + 1},${(i % size) + 1}`}
             >
               {showMine ? (
-                <MineIcon size={14} />
+                <MineIcon size={16} />
               ) : flagged.has(i) && !isRevealed ? (
                 <FlagIcon size={13} />
               ) : isRevealed && count > 0 ? (
@@ -333,22 +334,15 @@ export function MinesweeperGame({
 
       <div className="game-tools fx-card">
         <div className="sudoku-controls">
-          <button
-            className={`pad-tool ${flagMode ? 'active' : ''}`}
-            aria-pressed={flagMode}
-            onClick={() => {
-              sfx.tap();
-              setFlagMode((m) => !m);
-            }}
-          >
+          <PadTool active={flagMode} onClick={() => setFlagMode((m) => !m)}>
             <FlagIcon />
             <span>Flag mode</span>
-          </button>
+          </PadTool>
           {assists.hintSafe && (
-            <button className="pad-tool" onClick={hintSafe}>
+            <PadTool silent onClick={hintSafe}>
               <BulbIcon />
               <span>Safe cell</span>
-            </button>
+            </PadTool>
           )}
         </div>
         <p className="ms-hint-text">Tap to reveal · long-press or flag mode to flag · tap a number to chord</p>

@@ -232,8 +232,9 @@ p {
   transition: transform 0.12s ease, background 0.15s;
 }
 
+/* press scale lives on .fx-tilt-inner (effects.css) — a transform here
+   would shrink the button's hitbox away from the pointer mid-click */
 .game-card:active {
-  transform: scale(0.98);
   background: var(--surface-2);
 }
 
@@ -564,7 +565,8 @@ p {
   border-radius: var(--radius-l);
 }
 
-.game-tools .pad-tool,
+/* (pad-tool is NOT in this list — tool buttons carry their own accent
+   paint, see the .pad-tool standard) */
 .game-tools .pad-btn,
 .game-tools .cw-arrow,
 .game-tools .cw-clue,
@@ -1403,6 +1405,7 @@ p {
 .sudoku-board {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
+  grid-auto-rows: 1fr;
   aspect-ratio: 1;
   width: 100%;
   border: 2px solid var(--text-dim);
@@ -1506,6 +1509,9 @@ p {
   gap: 8px;
 }
 
+/* Tool buttons — the accent-tinted standard for every in-game tool
+   (see DESIGN.md "Tool buttons"). Base tint → hover strengthens →
+   press scales (paint/transform only, geometry never changes). */
 .pad-tool {
   display: flex;
   align-items: center;
@@ -1514,22 +1520,40 @@ p {
   height: 46px;
   padding: 0 8px;
   border-radius: var(--radius-s);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-dim);
+  color: var(--accent);
   white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
 }
 
 .pad-tool svg {
   flex-shrink: 0;
 }
 
+@media (hover: hover) {
+  .pad-tool:hover:not(:disabled):not(.active) {
+    background: color-mix(in srgb, var(--accent) 26%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  }
+}
+
+.pad-tool:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* toggled ON = solid accent fill with contrasting ink — unmistakably
+   different from the soft tint of an untoggled tool */
 .pad-tool.active {
-  background: var(--accent-soft);
+  background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--on-accent);
+}
+
+.pad-tool:disabled {
+  opacity: 0.4;
 }
 
 .sudoku-pad {
@@ -1810,6 +1834,7 @@ p {
 .simon-board {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
   gap: 12px;
   width: min(100%, 340px);
   margin: 8px auto;
@@ -2321,6 +2346,7 @@ p {
 
 .ip-board {
   display: grid;
+  grid-auto-rows: 1fr;
   gap: 3px;
   aspect-ratio: 1;
   background: var(--surface);
@@ -2390,6 +2416,7 @@ p {
 
 .mz-board {
   display: grid;
+  grid-auto-rows: 1fr;
   aspect-ratio: 1;
   background: var(--surface);
   border: 2px solid var(--text-dim);
@@ -2547,12 +2574,16 @@ p {
 
 .ms-board {
   display: grid;
+  grid-auto-rows: 1fr; /* pin row tracks — content must never size tiles (DESIGN.md "Tile grids") */
   gap: 3px;
   aspect-ratio: 1;
   touch-action: manipulation;
   user-select: none;
 }
 
+/* covered tiles are raised (bevel via inset shadows — paint only, per the
+   tile-grid standard), revealed tiles sink flat: the classic-minesweeper
+   depth cue */
 .ms-cell {
   display: grid;
   place-items: center;
@@ -2563,20 +2594,73 @@ p {
   font-weight: 800;
   color: var(--accent);
   padding: 0;
+  box-shadow: inset 2px 2px 0 var(--bevel-hi), inset -2px -2px 0 var(--bevel-lo);
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* subtle life: covered cells lift on hover, dip on press (transform only —
+   never geometry, per DESIGN.md "Tile grids") */
+@media (hover: hover) {
+  .ms-cell:not(.open):hover {
+    background: color-mix(in srgb, var(--accent) 9%, var(--surface-2));
+    transform: scale(1.04);
+  }
+}
+
+.ms-cell:not(.open):active {
+  transform: scale(0.9);
+  transition-duration: 0.06s;
 }
 
 .ms-cell.open {
   background: transparent;
   border-color: color-mix(in srgb, var(--border) 45%, transparent);
+  box-shadow: inset 1px 1px 0 var(--bevel-lo);
+  animation: ms-reveal 0.16s ease;
 }
 
+@keyframes ms-reveal {
+  from {
+    transform: scale(0.85);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* mines paint the whole cell with the platform's semantic red */
 .ms-cell.mine {
-  color: var(--bad);
+  background: var(--bad);
+  border-color: var(--bad);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+/* the pixel-art mine and flag scale with the cell, like the classic tiles */
+.ms-cell.mine svg {
+  width: 45%;
+  height: 45%;
+}
+
+.ms-cell:not(.open) svg {
+  width: 44%;
+  height: 44%;
 }
 
 .ms-cell.boom {
-  background: var(--bad-soft);
-  border-color: var(--bad);
+  background: var(--bad);
+  border-color: var(--ink);
+  animation: ms-boom 0.35s ease;
+}
+
+@keyframes ms-boom {
+  0% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .ms-cell .ms-flag {

@@ -187,20 +187,34 @@ export function EyeIcon({ size = 16 }: IconProps) {
   );
 }
 
+/* Pixel-art flag matching MineIcon: pole on the left, a bold triangular
+   banner waving right, base under the pole — unmistakably a flag. */
 export function FlagIcon({ size = 16 }: IconProps) {
   return (
     <Svg size={size}>
-      <path d="M5 21V4" />
-      <path d="M5 4h11l-2.6 4L16 12H5" />
+      <path
+        fill="currentColor"
+        stroke="none"
+        shapeRendering="crispEdges"
+        d="M5 3h4v16H5z M9 3h6v2H9z M9 5h10v2H9z M9 7h14v2H9z M9 9h10v2H9z M9 11h6v2H9z M3 19h10v2H3z"
+      />
     </Svg>
   );
 }
 
+/* Classic pixel-art mine on an 11×11 pixel grid (2 units per pixel).
+   Single evenodd path in currentColor; the highlight pixel is a hole,
+   so the cell background shines through and the icon stays monochrome. */
 export function MineIcon({ size = 16 }: IconProps) {
   return (
     <Svg size={size}>
-      <circle cx="12" cy="12" r="5" />
-      <path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" />
+      <path
+        fill="currentColor"
+        stroke="none"
+        fillRule="evenodd"
+        shapeRendering="crispEdges"
+        d="M11 1h2v4h-2z M11 19h2v4h-2z M1 11h4v2H1z M19 11h4v2h-4z M5 5h2v2H5z M17 5h2v2h-2z M5 17h2v2H5z M17 17h2v2h-2z M9 5h6v2H9z M7 7h10v2H7z M5 9h14v6H5z M7 15h10v2H7z M9 17h6v2H9z M7 9h4v4H7z"
+      />
     </Svg>
   );
 }

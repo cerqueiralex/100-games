@@ -1,8 +1,38 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { sfx } from '../audio';
 
 /** Icons live in the design system — re-exported here for convenience. */
 export * from '../design/icons';
+
+/**
+ * The standard in-game tool button (see DESIGN.md "Tool buttons"). Accent
+ * paint, hover/press effects and the click sound come built in — games must
+ * use this instead of hand-writing `<button className="pad-tool">`. Pass
+ * `active` for toggles (renders the pressed state + aria-pressed) and
+ * `silent` when the handler plays its own sfx (e.g. hints).
+ */
+export function PadTool({
+  active,
+  silent,
+  className,
+  onClick,
+  children,
+  ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement> & { active?: boolean; silent?: boolean }) {
+  return (
+    <button
+      {...rest}
+      aria-pressed={active ?? rest['aria-pressed']}
+      className={['pad-tool', active ? 'active' : '', className ?? ''].filter(Boolean).join(' ')}
+      onClick={(e) => {
+        if (!silent) sfx.tap();
+        onClick?.(e);
+      }}
+    >
+      {children}
+    </button>
+  );
+}
 
 /**
  * The design-system dropdown — use this instead of native <select> anywhere

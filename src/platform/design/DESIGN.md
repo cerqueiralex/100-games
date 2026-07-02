@@ -99,6 +99,11 @@ light):
 - **`<Tilt>`** (Tilt.tsx) wraps large interactive cards only (game cards,
   hero surfaces — never small buttons): a ≤4° mouse-following 3D tilt with
   an accent glow that tracks the cursor. It is a no-op on touch devices.
+  Load-bearing invariant: the outer `.fx-tilt` box NEVER transforms — all
+  motion (tilt + press scale) lives on `.fx-tilt-inner`, and the wrapped
+  interactive element must not carry its own `:active` transform. Breaking
+  this desyncs hit-testing from the visuals and clicks start missing the
+  card (the "3 clicks to open a game" bug).
 - **3D logos**: `.game-card-icon` chips are glassy accent gradients with
   bevel shadows that float on `translateZ` inside tilted cards.
 - Effects use neutral white/black alphas by design — they are the one
@@ -110,6 +115,47 @@ light):
 Transitions 0.12–0.2s ease. Press feedback: `scale(0.98)`. Every meaningful
 action can play a `sfx` sound (respecting sound settings). Board state
 changes (correct placement) may flash `--good-soft` briefly.
+
+## Tile grids (stable geometry — required for every tile board)
+
+Tile geometry must never depend on tile *content or state* — revealing a
+number, flipping a card, or pressing a tile must not move or resize any
+other tile. Concretely:
+
+- **Pin both grid axes.** `grid-template-columns: repeat(n, 1fr)` plus
+  either `grid-auto-rows: 1fr` on the board (when the board carries
+  `aspect-ratio`) or `aspect-ratio: 1` on the tile itself. Never leave
+  rows as implicit content-sized tracks: a row of empty tiles renders
+  shorter than a row with digits, and the board visibly deforms as tiles
+  fill in (the original Minesweeper bug).
+- **State classes only change paint, not layout**: background, color,
+  border-*color*, opacity, transform, box-shadow. Never border-width,
+  padding, font-size, or display between states — keep the border always
+  present and swap its color (use `transparent` to hide it).
+- **Press feedback is `transform: scale(...)`** (per Motion & feedback),
+  never a size/padding change — transforms don't reflow neighbors.
+
+## Tool buttons (the in-game toolbar standard)
+
+Every in-game tool (hint, erase, flag mode, undo, assist toggles, …) is a
+**`PadTool`** from `platform/components/ui` — never a hand-written
+`<button className="pad-tool">`. The component and its CSS provide the
+standard for free:
+
+- **Accent paint**: tools are tinted with the active accent
+  (`--accent-soft` fill, accent text/border) so they read as interactive
+  in every theme — never gray/`--text-dim`.
+- **Hover** strengthens the tint (hover-capable devices only), **press**
+  scales down (`scale(0.96)`). The toggled state (`active` prop) is a
+  **solid accent fill with `--on-accent` ink** and `aria-pressed` — an
+  ON tool must be unmistakable next to an OFF one, never just a slightly
+  stronger tint.
+- **Click sound**: `PadTool` plays `sfx.tap()` on every click. Pass
+  `silent` when the handler plays its own sound (hints play `sfx.hint()`,
+  submit-style actions play their own success/error sounds) so nothing
+  double-fires.
+- Toolbars remain rows of equal-width tools
+  (`grid-auto-flow: column; grid-auto-columns: 1fr`).
 
 ## Tutorials (required for every game)
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon } from '../../platform/design/icons';
+import { PadTool } from '../../platform/components/ui';
 
 type Mark = 'X' | 'O' | null;
 
@@ -298,10 +299,10 @@ export function TicTacToeGame({
       {assists.suggest && (
         <div className="game-tools fx-card">
         <div className="sudoku-controls">
-          <button className="pad-tool" onClick={useSuggest} disabled={!yourTurn}>
+          <PadTool silent onClick={useSuggest} disabled={!yourTurn}>
             <BulbIcon />
             <span>Suggest move</span>
-          </button>
+          </PadTool>
         </div>
         </div>
       )}

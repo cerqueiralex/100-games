@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BackIcon, BulbIcon } from '../../platform/design/icons';
+import { PadTool } from '../../platform/components/ui';
 
 const SIZE: Record<Difficulty, number> = { easy: 8, medium: 12, hard: 15 };
 const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
@@ -256,10 +257,10 @@ export function MazeGame({
           </button>
         </div>
         {assists.showPath && (
-          <button className="pad-tool" onClick={useHint}>
+          <PadTool silent onClick={useHint}>
             <BulbIcon />
             <span>Show path</span>
-          </button>
+          </PadTool>
         )}
       </div>
     </div>

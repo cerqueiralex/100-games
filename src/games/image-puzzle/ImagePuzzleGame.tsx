@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { EyeIcon } from '../../platform/design/icons';
+import { PadTool } from '../../platform/components/ui';
 
 const SIZE: Record<Difficulty, number> = { easy: 3, medium: 4, hard: 5 };
 const SHUFFLE_MOVES: Record<Difficulty, number> = { easy: 50, medium: 140, hard: 280 };
@@ -244,10 +245,10 @@ export function ImagePuzzleGame({
       {assists.preview && (
         <div className="game-tools fx-card">
         <div className="sudoku-controls">
-          <button className="pad-tool" onClick={preview}>
+          <PadTool silent onClick={preview}>
             <EyeIcon />
             <span>Preview image</span>
-          </button>
+          </PadTool>
         </div>
         </div>
       )}

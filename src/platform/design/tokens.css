@@ -16,6 +16,8 @@
   --text-dim: #98989f;
   --cell-peer: #17171b;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+  --bevel-hi: rgba(255, 255, 255, 0.07);
+  --bevel-lo: rgba(0, 0, 0, 0.55);
 }
 
 :root[data-theme='dim'] {
@@ -25,6 +27,8 @@
   --border: #303138;
   --cell-peer: #222327;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --bevel-hi: rgba(255, 255, 255, 0.08);
+  --bevel-lo: rgba(0, 0, 0, 0.42);
 }
 
 :root[data-theme='light'] {
@@ -36,6 +40,8 @@
   --text-dim: #6a6a72;
   --cell-peer: #eaeef5;
   --shadow: 0 8px 24px rgba(20, 20, 40, 0.06);
+  --bevel-hi: rgba(255, 255, 255, 0.9);
+  --bevel-lo: rgba(20, 20, 40, 0.14);
 }
 
 /* ---------- accent themes (Settings → Theme color) ----------
@@ -64,9 +70,17 @@
   --accent: #bf5af2;
 }
 
-/* monochrome: pure black & white — white is the highlight color */
+/* monochrome: pure black & white — white is the highlight color.
+   On the light surface theme the highlight flips to near-black, so
+   accent-painted UI (tool buttons, charts, toggles) never goes
+   white-on-white. */
 :root[data-accent='white'] {
   --accent: #ffffff;
+}
+
+:root[data-theme='light'][data-accent='white'] {
+  --accent: #1c1c1e;
+  --on-accent: #ffffff;
 }
 
 /* ---------- semantic + derived tokens ---------- */
@@ -78,6 +92,15 @@
   --bad: #ff453a;
   --bad-soft: rgba(255, 69, 58, 0.14);
   --warn: #ffd60a;
+
+  /* fixed near-black ink for glyphs sitting on colored fills (e.g. the
+     mine on a --bad cell) — deliberately does NOT follow the theme. */
+  --ink: #1c1c1e;
+
+  /* text/icon color on SOLID accent fills (active tool buttons) — every
+     accent is bright, so ink works; the light+white-accent combo flips
+     the accent to near-black and overrides this to white below. */
+  --on-accent: #1c1c1e;
 
   /* derived from the active accent — use these, never re-mix inline */
   --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
@@ -106,4 +129,7 @@
   --play-10: #5e5ce6;
   --play-11: #66d4cf;
   --play-12: #ac8e68;
+  --play-13: #a8d420;
+  --play-14: #98989d;
+  --play-15: #e64ad0;
 }

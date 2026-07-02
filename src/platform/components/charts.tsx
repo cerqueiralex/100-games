@@ -7,9 +7,13 @@ import { sfx } from '../audio';
 /* Dependency-free SVG charts, colored from the design-system content
    palette so they follow themes. One stable color per registered game. */
 
+/* Palette slots charts may use. --play-9 (white) is excluded: it is invisible
+   against the card surfaces in the light theme (and black would be in dark). */
+const CHART_SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 13, 10, 11, 12, 14, 15];
+
 export function gameColor(gameId: string): string {
   const i = GAMES.findIndex((g) => g.id === gameId);
-  return `var(--play-${((i < 0 ? 0 : i) % 12) + 1})`;
+  return `var(--play-${CHART_SLOTS[(i < 0 ? 0 : i) % CHART_SLOTS.length]})`;
 }
 
 const gameName = (gameId: string) => GAMES.find((g) => g.id === gameId)?.name ?? gameId;
