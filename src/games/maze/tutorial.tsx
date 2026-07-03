@@ -2,8 +2,8 @@ import type { TutorialStep } from '../../platform/types';
 
 export const mazeTutorial: TutorialStep[] = [
   {
-    title: 'Find the exit',
-    text: 'You start in the top-left corner; the exit glows in the bottom-right. Every maze is freshly generated, so no two runs are alike.',
+    title: 'Find the target',
+    text: 'You start in the top-left corner; the exit is the pulsing target at the bottom of the maze. Every maze is freshly generated, so no two runs are alike.',
     art: (
       <div className="tut-grid" style={{ gridTemplateColumns: 'repeat(3, auto)' }}>
         <span className="tut-cell sel" />
@@ -19,31 +19,30 @@ export const mazeTutorial: TutorialStep[] = [
     )
   },
   {
-    title: 'Corridor running',
-    text: 'Tap a direction (or use arrow keys) and you glide down the corridor — around corners too — until you reach a junction. No tap-tap-tapping through hallways.',
+    title: 'One step at a time',
+    text: 'Each tap on the D-pad (or arrow key) moves the ball exactly one cell, and every step counts. Prefer gestures? Toggle the Drag tool and pull the ball through the corridors with your finger.',
     art: (
       <div className="tut-row">
         <span className="tut-cell hl" />
-        <span className="tut-cell hl" />
-        <span className="tut-cell hl" />
         <span className="tut-cell sel" />
-        <span className="tut-label">one tap</span>
+        <span className="tut-cell" />
+        <span className="tut-label">one tap · one step</span>
       </div>
     )
   },
   {
-    title: 'Beat the shortest path',
-    text: 'The maze knows its optimal route length. Every step beyond it costs points, and finishing fast earns a time bonus.',
+    title: 'Pick your size',
+    text: 'Classic mazes grow bigger and twistier with difficulty. Or build a custom maze: choose the width and stretch the height as far as you dare — tall boards scroll as you descend.',
     art: (
       <div className="tut-row">
-        <span className="chip good">Shortest: 28</span>
-        <span className="chip">Your steps: 31</span>
+        <span className="chip">13×13</span>
+        <span className="chip accent">11×90</span>
       </div>
     )
   },
   {
     title: 'Breadcrumbs & the path',
-    text: 'Breadcrumbs tint everywhere you have been; Show path flashes the optimal route for 2 seconds. Both count as help.',
+    text: 'Breadcrumbs paint the trail you have walked; Show path briefly draws the optimal route. Both count as help — a clean win means you navigated alone.',
     art: (
       <div className="tut-row">
         <span className="tut-cell hl" />

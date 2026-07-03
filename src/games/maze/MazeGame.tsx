@@ -1,12 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
-import { BackIcon, BulbIcon } from '../../platform/design/icons';
+import { BulbIcon, DpadArrowIcon, MoveIcon } from '../../platform/design/icons';
 import { PadTool } from '../../platform/components/ui';
 
-const SIZE: Record<Difficulty, number> = { easy: 8, medium: 12, hard: 15 };
-const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
-const PAR_SEC: Record<Difficulty, number> = { easy: 60, medium: 150, hard: 300 };
+const SIZE: Record<Difficulty, number> = { easy: 9, medium: 13, hard: 17 };
+const PAR_SEC: Record<Difficulty, number> = { easy: 60, medium: 180, hard: 360 };
+
+/** generation tuning: twistier corridors + best-of-N boards = harder mazes */
+const GEN: Record<Difficulty, { turnBias: number; attempts: number }> = {
+  easy: { turnBias: 0.2, attempts: 1 },
+  medium: { turnBias: 0.55, attempts: 6 },
+  hard: { turnBias: 0.75, attempts: 12 }
+};
+
+const CUSTOM_COLS = [9, 11, 13, 15];
+const CUSTOM_ROWS = [15, 25, 40, 60, 90, 130];
 
 // wall bits per cell
 const N = 1, E = 2, S = 4, W = 8;
@@ -17,72 +26,120 @@ const DIRS = [
   { bit: W, dr: 0, dc: -1, opp: E }
 ];
 
-interface Maze {
-  size: number;
-  walls: number[]; // bitmask per cell
-  par: number; // BFS shortest path length
-  solution: number[]; // shortest path cell indices
+interface MazeConfig {
+  kind: 'classic' | 'custom';
+  cols: number;
+  rows: number;
 }
 
-function generateMaze(size: number): Maze {
-  const n = size * size;
+interface Maze {
+  cols: number;
+  rows: number;
+  walls: number[]; // bitmask per cell
+  exit: number;
+  par: number; // moves on the shortest path
+  solution: number[]; // shortest path cell indices, start → exit
+}
+
+/** depth-first backtracker; turnBias > 0 prefers changing direction, which
+    makes corridors twisty and boards much harder to read */
+function carve(cols: number, rows: number, turnBias: number): number[] {
+  const n = cols * rows;
   const walls = new Array<number>(n).fill(N | E | S | W);
   const visited = new Array<boolean>(n).fill(false);
-  const stack = [0];
+  const stack: { cell: number; dir: number }[] = [{ cell: 0, dir: 0 }];
   visited[0] = true;
   while (stack.length) {
-    const cur = stack[stack.length - 1];
-    const r = Math.floor(cur / size);
-    const c = cur % size;
+    const top = stack[stack.length - 1];
+    const r = Math.floor(top.cell / cols);
+    const c = top.cell % cols;
     const options = DIRS.filter(({ dr, dc }) => {
       const nr = r + dr;
       const nc = c + dc;
-      return nr >= 0 && nr < size && nc >= 0 && nc < size && !visited[nr * size + nc];
+      return nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited[nr * cols + nc];
     });
     if (options.length === 0) {
       stack.pop();
       continue;
     }
-    const d = options[Math.floor(Math.random() * options.length)];
-    const next = (r + d.dr) * size + (c + d.dc);
-    walls[cur] &= ~d.bit;
+    let pool = options;
+    if (Math.random() < turnBias) {
+      const turning = options.filter((d) => d.bit !== top.dir);
+      if (turning.length) pool = turning;
+    }
+    const d = pool[Math.floor(Math.random() * pool.length)];
+    const next = (r + d.dr) * cols + (c + d.dc);
+    walls[top.cell] &= ~d.bit;
     walls[next] &= ~d.opp;
     visited[next] = true;
-    stack.push(next);
+    stack.push({ cell: next, dir: d.bit });
   }
-  // BFS for par + solution
+  return walls;
+}
+
+/** BFS from the start; the exit is the hardest-to-reach cell of the LAST
+    row, so tall (custom) mazes always finish at the bottom edge */
+function solve(walls: number[], cols: number, rows: number): { exit: number; solution: number[] } {
+  const n = cols * rows;
   const prev = new Array<number>(n).fill(-1);
+  const dist = new Array<number>(n).fill(-1);
   const queue = [0];
-  const seen = new Array<boolean>(n).fill(false);
-  seen[0] = true;
-  while (queue.length) {
-    const cur = queue.shift()!;
-    if (cur === n - 1) break;
-    const r = Math.floor(cur / size);
-    const c = cur % size;
+  dist[0] = 0;
+  for (let qi = 0; qi < queue.length; qi++) {
+    const cur = queue[qi];
+    const r = Math.floor(cur / cols);
+    const c = cur % cols;
     for (const d of DIRS) {
       if (walls[cur] & d.bit) continue;
-      const nxt = (r + d.dr) * size + (c + d.dc);
-      if (!seen[nxt]) {
-        seen[nxt] = true;
+      const nxt = (r + d.dr) * cols + (c + d.dc);
+      if (dist[nxt] === -1) {
+        dist[nxt] = dist[cur] + 1;
         prev[nxt] = cur;
         queue.push(nxt);
       }
     }
   }
+  let exit = n - 1;
+  for (let c = 0; c < cols; c++) {
+    const cell = (rows - 1) * cols + c;
+    if (dist[cell] > dist[exit]) exit = cell;
+  }
   const solution: number[] = [];
-  for (let at = n - 1; at !== -1; at = prev[at]) solution.unshift(at);
-  return { size, walls, par: solution.length - 1, solution };
+  for (let at = exit; at !== -1; at = prev[at]) solution.unshift(at);
+  return { exit, solution };
+}
+
+function generateMaze(cols: number, rows: number, turnBias: number, attempts: number): Maze {
+  let best: Maze | null = null;
+  for (let a = 0; a < attempts; a++) {
+    const walls = carve(cols, rows, turnBias);
+    const { exit, solution } = solve(walls, cols, rows);
+    const maze: Maze = { cols, rows, walls, exit, par: solution.length - 1, solution };
+    if (!best || maze.par > best.par) best = maze;
+  }
+  return best!;
 }
 
 interface MazeSave {
+  config: MazeConfig;
   maze: Maze;
   pos: number;
   steps: number;
-  trail: number[];
+  path: number[]; // the trail: the simple path from the start to the player
   hintsUsed: number;
   assistsUsed: string[];
 }
+
+/** walking forward extends the trail; stepping back onto it erases the
+    segment you came from, so the trail is always one connected line */
+function stepTrail(p: number[], next: number): number[] {
+  return p.length >= 2 && p[p.length - 2] === next ? p.slice(0, -1) : [...p, next];
+}
+
+/* ---------- SVG geometry (10 user-units per cell) ---------- */
+const U = 10;
+const cx = (cell: number, cols: number) => (cell % cols) * U + U / 2;
+const cy = (cell: number, cols: number) => Math.floor(cell / cols) * U + U / 2;
 
 export function MazeGame({
   difficulty,
@@ -91,21 +148,51 @@ export function MazeGame({
   elapsedSec,
   events,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  holdClock
 }: GameProps) {
-  const size = SIZE[difficulty];
-  const saved = savedState as MazeSave | undefined;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const maze = useMemo(() => saved?.maze ?? generateMaze(size), [size]);
-  const exit = size * size - 1;
+  // older saves (pre custom-size) stored maze.size — treat them as no save
+  const saved =
+    savedState && (savedState as MazeSave).maze?.cols ? (savedState as MazeSave) : undefined;
+
+  const [config, setConfig] = useState<MazeConfig | null>(saved?.config ?? null);
+  const [pickCols, setPickCols] = useState(11);
+  const [pickRows, setPickRows] = useState(25);
+
+  // the clock only runs once a maze is actually chosen — not on the menu
+  useEffect(() => {
+    holdClock(config === null);
+  }, [config, holdClock]);
+
+  const maze = useMemo(() => {
+    if (!config) return null;
+    if (saved?.maze) return saved.maze;
+    const gen = config.kind === 'classic' ? GEN[difficulty] : GEN.hard;
+    // cap best-of attempts on huge custom boards
+    const attempts =
+      config.kind === 'classic'
+        ? gen.attempts
+        : Math.max(2, Math.min(10, Math.floor(30000 / (config.cols * config.rows))));
+    return generateMaze(config.cols, config.rows, gen.turnBias, attempts);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config]);
 
   const [pos, setPos] = useState(saved?.pos ?? 0);
   const [steps, setSteps] = useState(saved?.steps ?? 0);
-  const [trail, setTrail] = useState<Set<number>>(() => new Set(saved?.trail ?? [0]));
+  const [path, setPath] = useState<number[]>(() => saved?.path ?? [0]);
   const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
   const [showPath, setShowPath] = useState(false);
+  const [dragMode, setDragMode] = useState(false);
 
   const done = useRef(false);
+  // refs mirror pos/steps so rapid drag events never read a stale render
+  const posRef = useRef(pos);
+  posRef.current = pos;
+  const stepsRef = useRef(steps);
+  stepsRef.current = steps;
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const dragging = useRef(false);
+  const lastPt = useRef<{ x: number; y: number } | null>(null);
   const assistsUsed = useRef<Set<string>>(
     new Set([...(saved?.assistsUsed ?? []), ...(assists.breadcrumbs ? ['breadcrumbs'] : [])])
   );
@@ -113,64 +200,140 @@ export function MazeGame({
   elapsedRef.current = elapsedSec;
 
   useEffect(() => {
+    if (!config || !maze) return;
     events.onStats({
       score: 0,
       errors: 0,
       hintsUsed,
       assistsUsed: [...assistsUsed.current],
-      extra: { steps, par: maze.par }
+      extra: { steps, par: maze.par, size: `${config.cols}×${config.rows}` }
     });
-  }, [steps, hintsUsed, maze.par, events]);
+  }, [steps, hintsUsed, maze, config, events]);
 
   const finish = useCallback(
     (finalSteps: number, h: number) => {
-      if (done.current) return;
+      if (done.current || !config || !maze) return;
       done.current = true;
-      const bonus = Math.max(0, PAR_SEC[difficulty] - elapsedRef.current) * MULT[difficulty];
-      const score = Math.max(100, 600 * MULT[difficulty] - (finalSteps - maze.par) * 5) + bonus;
+      const mult =
+        config.kind === 'classic'
+          ? { easy: 1, medium: 2, hard: 3 }[difficulty]
+          : Math.max(2, Math.round((config.cols * config.rows) / 90));
+      const parSec = config.kind === 'classic' ? PAR_SEC[difficulty] : Math.round(maze.par * 1.5);
+      const bonus = Math.max(0, parSec - elapsedRef.current) * mult;
+      const score = Math.max(100, 600 * mult - (finalSteps - maze.par) * 5) + bonus;
       events.onFinish({
         outcome: 'won',
         score,
         errors: 0,
         hintsUsed: h,
         assistsUsed: [...assistsUsed.current],
-        extra: { steps: finalSteps, par: maze.par }
+        extra: { steps: finalSteps, par: maze.par, size: `${config.cols}×${config.rows}` }
       });
     },
-    [difficulty, maze.par, events]
+    [difficulty, maze, config, events]
   );
 
-  /** Move and keep running through corridors until a junction, wall or the exit. */
+  /** one cell per tap — no corridor running */
   const move = useCallback(
     (bit: number) => {
-      if (paused || done.current) return;
-      let cur = pos;
-      let dir = DIRS.find((d) => d.bit === bit)!;
-      if (maze.walls[cur] & dir.bit) return;
-      let count = 0;
-      const newTrail = new Set(trail);
-      for (;;) {
-        cur = (Math.floor(cur / size) + dir.dr) * size + ((cur % size) + dir.dc);
-        count++;
-        newTrail.add(cur);
-        if (cur === exit) break;
-        // continue only through corridors (exactly one way forward)
-        const exits = DIRS.filter((d) => !(maze.walls[cur] & d.bit) && d.bit !== dir.opp);
-        if (exits.length !== 1) break;
-        dir = exits[0];
-      }
+      if (paused || done.current || !maze) return;
+      if (maze.walls[pos] & bit) return;
+      const d = DIRS.find((dd) => dd.bit === bit)!;
+      const next = (Math.floor(pos / maze.cols) + d.dr) * maze.cols + ((pos % maze.cols) + d.dc);
       sfx.tap();
-      setPos(cur);
-      setTrail(newTrail);
-      const total = steps + count;
+      setPos(next);
+      setPath((p) => stepTrail(p, next));
+      const total = steps + 1;
       setSteps(total);
-      if (cur === exit) {
+      if (next === maze.exit) {
         sfx.place();
         finish(total, hintsUsed);
       }
     },
-    [paused, pos, maze, size, exit, trail, steps, hintsUsed, finish]
+    [paused, pos, maze, steps, hintsUsed, finish]
   );
+
+  /* ---- drag mode: pull the ball through the maze, Color Connect style.
+     Rect-math cell hit-testing + segment interpolation; the ball only ever
+     advances one LEGAL adjacent cell at a time, so walls still block. ---- */
+
+  const applySteps = useCallback(
+    (targets: number[]) => {
+      if (!maze || done.current || paused) return;
+      let cur = posRef.current;
+      const added: number[] = [];
+      for (const t of targets) {
+        if (t === cur) continue;
+        const dr = Math.floor(t / maze.cols) - Math.floor(cur / maze.cols);
+        const dc = (t % maze.cols) - (cur % maze.cols);
+        if (Math.abs(dr) + Math.abs(dc) !== 1) break;
+        const d = DIRS.find((dd) => dd.dr === dr && dd.dc === dc)!;
+        if (maze.walls[cur] & d.bit) break;
+        cur = t;
+        added.push(t);
+        if (t === maze.exit) break;
+      }
+      if (!added.length) return;
+      posRef.current = cur;
+      setPos(cur);
+      setPath((p) => added.reduce(stepTrail, p));
+      const total = stepsRef.current + added.length;
+      stepsRef.current = total;
+      setSteps(total);
+      sfx.tap();
+      if (cur === maze.exit) {
+        sfx.place();
+        finish(total, hintsUsed);
+      }
+    },
+    [maze, paused, hintsUsed, finish]
+  );
+
+  /** pointer position in SVG user units */
+  const toUnits = (e: React.PointerEvent) => {
+    const rect = svgRef.current!.getBoundingClientRect();
+    const scale = rect.width / (maze!.cols * U + 3);
+    return { x: (e.clientX - rect.left) / scale - 1.5, y: (e.clientY - rect.top) / scale - 1.5 };
+  };
+
+  const unitCell = (x: number, y: number) => {
+    if (!maze) return -1;
+    const c = Math.floor(x / U);
+    const r = Math.floor(y / U);
+    return c < 0 || c >= maze.cols || r < 0 || r >= maze.rows ? -1 : r * maze.cols + c;
+  };
+
+  const onBoardDown = (e: React.PointerEvent) => {
+    if (!dragMode || !maze || paused || done.current) return;
+    const p = toUnits(e);
+    const dx = p.x - cx(posRef.current, maze.cols);
+    const dy = p.y - cy(posRef.current, maze.cols);
+    // grab only when the press lands on (or right next to) the ball
+    if (dx * dx + dy * dy > (U * 1.3) ** 2) return;
+    dragging.current = true;
+    lastPt.current = p;
+    svgRef.current?.setPointerCapture(e.pointerId);
+  };
+
+  const onBoardMove = (e: React.PointerEvent) => {
+    if (!dragging.current || !lastPt.current || !maze) return;
+    const p = toUnits(e);
+    const from = lastPt.current;
+    const dist = Math.hypot(p.x - from.x, p.y - from.y);
+    const samples = Math.max(1, Math.ceil(dist / (U / 2)));
+    const targets: number[] = [];
+    for (let i = 1; i <= samples; i++) {
+      const cell = unitCell(from.x + ((p.x - from.x) * i) / samples, from.y + ((p.y - from.y) * i) / samples);
+      if (cell >= 0 && cell !== targets[targets.length - 1]) targets.push(cell);
+    }
+    applySteps(targets);
+    lastPt.current = p;
+  };
+
+  const onBoardUp = () => {
+    dragging.current = false;
+    lastPt.current = null;
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -185,26 +348,117 @@ export function MazeGame({
   }, [move]);
 
   const useHint = () => {
-    if (paused || done.current || !assists.showPath || showPath) return;
+    if (paused || done.current || !maze || !assists.showPath || showPath) return;
     assistsUsed.current.add('showPath');
     setHintsUsed((h) => h + 1);
     sfx.hint();
     setShowPath(true);
-    window.setTimeout(() => setShowPath(false), 2000);
+    window.setTimeout(() => setShowPath(false), Math.min(5000, 1200 + maze.par * 25));
   };
 
-  const solutionSet = useMemo(() => new Set(maze.solution), [maze]);
-
   useEffect(() => {
-    registerSnapshot(() => ({
-      maze,
-      pos,
-      steps,
-      trail: [...trail],
-      hintsUsed,
-      assistsUsed: [...assistsUsed.current]
-    }));
+    registerSnapshot(() =>
+      config && maze
+        ? ({
+            config,
+            maze,
+            pos,
+            steps,
+            path,
+            hintsUsed,
+            assistsUsed: [...assistsUsed.current]
+          } satisfies MazeSave)
+        : null
+    );
   });
+
+  /* ---------- size menu ---------- */
+
+  if (!config || !maze) {
+    const classic = SIZE[difficulty];
+    return (
+      <div className="maze">
+        <div className="mz-menu">
+          <button
+            className="mz-quick fx-card"
+            onClick={() => {
+              sfx.place();
+              setConfig({ kind: 'classic', cols: classic, rows: classic });
+            }}
+          >
+            <span className="mz-quick-title">Classic maze</span>
+            <span className="mz-quick-sub">
+              {classic}×{classic} on <b>{difficulty}</b> — bigger and twistier with difficulty.
+            </span>
+          </button>
+
+          <section className="mz-custom fx-card">
+            <h3 className="mz-custom-title">Custom maze</h3>
+            <p className="mz-custom-note">
+              Built for portrait play: tall mazes extend downward and the page scrolls with you.
+            </p>
+            <h4 className="mz-set-label">Width</h4>
+            <div className="mz-chips">
+              {CUSTOM_COLS.map((c) => (
+                <button
+                  key={c}
+                  className={`mz-chip ${pickCols === c ? 'active' : ''}`}
+                  onClick={() => {
+                    sfx.tap();
+                    setPickCols(c);
+                  }}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+            <h4 className="mz-set-label">Height</h4>
+            <div className="mz-chips">
+              {CUSTOM_ROWS.map((r) => (
+                <button
+                  key={r}
+                  className={`mz-chip ${pickRows === r ? 'active' : ''}`}
+                  onClick={() => {
+                    sfx.tap();
+                    setPickRows(r);
+                  }}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+            <button
+              className="primary-btn"
+              onClick={() => {
+                sfx.place();
+                setConfig({ kind: 'custom', cols: pickCols, rows: pickRows });
+              }}
+            >
+              Start {pickCols}×{pickRows} maze
+            </button>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------- board ---------- */
+
+  const { cols, rows, walls, exit } = maze;
+
+  // walls as round-capped line segments: N + W per cell, S/E on the borders
+  const wallLines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const w = walls[r * cols + c];
+      const x = c * U;
+      const y = r * U;
+      if (w & N) wallLines.push({ x1: x, y1: y, x2: x + U, y2: y });
+      if (w & W) wallLines.push({ x1: x, y1: y, x2: x, y2: y + U });
+      if (r === rows - 1 && w & S) wallLines.push({ x1: x, y1: y + U, x2: x + U, y2: y + U });
+      if (c === cols - 1 && w & E) wallLines.push({ x1: x + U, y1: y, x2: x + U, y2: y + U });
+    }
+  }
 
   return (
     <div className={`maze ${paused ? 'board-hidden' : ''}`}>
@@ -217,51 +471,96 @@ export function MazeGame({
         </span>
       </div>
 
-      <div className="mz-board" style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}>
-        {maze.walls.map((w, i) => (
-          <div
-            key={i}
-            className={[
-              'mz-cell',
-              w & N ? 'wn' : '',
-              w & E ? 'we' : '',
-              w & S ? 'ws' : '',
-              w & W ? 'ww' : '',
-              assists.breadcrumbs && trail.has(i) ? 'trail' : '',
-              showPath && solutionSet.has(i) ? 'sol' : '',
-              i === exit ? 'exit' : ''
-            ]
-              .filter(Boolean)
-              .join(' ')}
-          >
-            {i === pos && <span className="mz-player" />}
-          </div>
-        ))}
+      <div className="mz-board">
+        <svg
+          ref={svgRef}
+          className={`mz-svg ${dragMode ? 'drag' : ''}`}
+          viewBox={`-1.5 -1.5 ${cols * U + 3} ${rows * U + 3}`}
+          role="img"
+          aria-label="Maze board"
+          onPointerDown={onBoardDown}
+          onPointerMove={onBoardMove}
+          onPointerUp={onBoardUp}
+          onPointerCancel={onBoardUp}
+        >
+          <rect className="mz-floor" x={-1.5} y={-1.5} width={cols * U + 3} height={rows * U + 3} rx={3} />
+
+          {/* walked trail, painted segment by segment behind the player */}
+          {assists.breadcrumbs &&
+            path.slice(1).map((cell, i) => (
+              <line
+                key={`${i}-${cell}`}
+                className="mz-trail-seg"
+                x1={cx(path[i], cols)}
+                y1={cy(path[i], cols)}
+                x2={cx(cell, cols)}
+                y2={cy(cell, cols)}
+                pathLength={100}
+              />
+            ))}
+
+          {/* optimal route reveal (Show path) */}
+          {showPath && (
+            <polyline
+              className="mz-solution"
+              points={maze.solution.map((cell) => `${cx(cell, cols)},${cy(cell, cols)}`).join(' ')}
+              pathLength={100}
+            />
+          )}
+
+          {/* the goal: a pulsing target */}
+          <g className="mz-goal" transform={`translate(${cx(exit, cols)}, ${cy(exit, cols)})`}>
+            <circle className="mz-goal-pulse" r={3.4} />
+            <circle className="mz-goal-ring" r={3} />
+            <circle className="mz-goal-dot" r={1.2} />
+          </g>
+
+          {/* the player glides between cells (CSS transition on transform) */}
+          <g className="mz-player" style={{ transform: `translate(${cx(pos, cols)}px, ${cy(pos, cols)}px)` }}>
+            <circle className="mz-player-pulse" r={3.4} />
+            <circle className="mz-player-core" r={2.9} />
+          </g>
+
+          <g className="mz-walls">
+            {wallLines.map((l, i) => (
+              <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />
+            ))}
+          </g>
+        </svg>
       </div>
 
-      <div className="mz-controls game-tools fx-card">
+      <div className="game-tools fx-card">
+        <div className="sudoku-controls">
+          <PadTool active={dragMode} onClick={() => setDragMode((v) => !v)}>
+            <MoveIcon />
+            <span>Drag</span>
+          </PadTool>
+          {assists.showPath && (
+            <PadTool silent onClick={useHint}>
+              <BulbIcon />
+              <span>Show path</span>
+            </PadTool>
+          )}
+        </div>
+      </div>
+
+      <div className="game-tools fx-card mz-pad-card">
         <div className="mz-dpad">
-          <span />
-          <button className="icon-btn mz-up" onClick={() => move(N)} aria-label="Up">
-            <BackIcon />
+          <button className="mz-dbtn left" onClick={() => move(W)} aria-label="Move left">
+            <DpadArrowIcon />
           </button>
-          <span />
-          <button className="icon-btn mz-left" onClick={() => move(W)} aria-label="Left">
-            <BackIcon />
-          </button>
-          <button className="icon-btn mz-down" onClick={() => move(S)} aria-label="Down">
-            <BackIcon />
-          </button>
-          <button className="icon-btn mz-right" onClick={() => move(E)} aria-label="Right">
-            <BackIcon />
+          <div className="mz-dpad-mid">
+            <button className="mz-dbtn up" onClick={() => move(N)} aria-label="Move up">
+              <DpadArrowIcon />
+            </button>
+            <button className="mz-dbtn down" onClick={() => move(S)} aria-label="Move down">
+              <DpadArrowIcon />
+            </button>
+          </div>
+          <button className="mz-dbtn right" onClick={() => move(E)} aria-label="Move right">
+            <DpadArrowIcon />
           </button>
         </div>
-        {assists.showPath && (
-          <PadTool silent onClick={useHint}>
-            <BulbIcon />
-            <span>Show path</span>
-          </PadTool>
-        )}
       </div>
     </div>
   );

@@ -2633,65 +2633,271 @@ p {
   gap: 12px;
 }
 
+/* ---- board: one SVG, walls as round-capped strokes (smooth corners) ---- */
+
 .mz-board {
-  display: grid;
-  grid-auto-rows: 1fr;
-  aspect-ratio: 1;
-  background: var(--surface);
-  border: 2px solid var(--text-dim);
-  border-radius: 10px;
+  width: 100%;
+  border-radius: 14px;
   overflow: hidden;
 }
 
-.mz-cell {
-  position: relative;
-  display: grid;
-  place-items: center;
+.mz-svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
-.mz-cell.wn { border-top: 2px solid var(--text-dim); }
-.mz-cell.we { border-right: 2px solid var(--text-dim); }
-.mz-cell.ws { border-bottom: 2px solid var(--text-dim); }
-.mz-cell.ww { border-left: 2px solid var(--text-dim); }
-
-.mz-cell.trail {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+/* drag mode: the board owns the pointer (no page scroll mid-drag) */
+.mz-svg.drag {
+  touch-action: none;
+  cursor: grab;
 }
 
-.mz-cell.sol {
-  background: color-mix(in srgb, var(--good) 30%, transparent);
+.mz-svg.drag:active {
+  cursor: grabbing;
 }
 
-.mz-cell.exit {
-  background: var(--good-soft);
-  box-shadow: inset 0 0 0 2px var(--good);
+/* an indigo-tinted floor so the maze isn't a grey box */
+.mz-floor {
+  fill: color-mix(in srgb, var(--play-10) 12%, var(--surface));
 }
 
+.mz-walls line {
+  stroke: color-mix(in srgb, var(--play-6) 45%, var(--text-dim));
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+/* the trail paints itself in behind the player — solid, and backtracking
+   pops segments, so it never overlaps itself */
+.mz-trail-seg {
+  stroke: var(--accent);
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  animation: mz-paint 0.16s ease-out forwards;
+}
+
+@keyframes mz-paint {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Show path: the optimal route draws itself from the start */
+.mz-solution {
+  fill: none;
+  stroke: color-mix(in srgb, var(--good) 65%, transparent);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  animation: mz-paint 0.9s ease-out forwards;
+}
+
+/* the goal: a pulsing target */
+.mz-goal-ring {
+  fill: none;
+  stroke: var(--good);
+  stroke-width: 1;
+}
+
+.mz-goal-dot {
+  fill: var(--good);
+}
+
+.mz-goal-pulse {
+  fill: none;
+  stroke: var(--good);
+  stroke-width: 0.8;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mz-pulse 1.6s ease-out infinite;
+}
+
+@keyframes mz-pulse {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+/* the player glides cell to cell (transition on the group transform) */
 .mz-player {
-  width: 55%;
-  height: 55%;
-  border-radius: 50%;
-  background: var(--accent);
+  transition: transform 0.14s ease;
 }
 
-.mz-controls {
-  display: flex;
-  flex-direction: row;
+/* the ball breathes like the goal target — same pulse, accent colored */
+.mz-player-pulse {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.8;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mz-pulse 1.6s ease-out infinite;
+}
+
+/* no outline: the ball fuses seamlessly with its solid trail */
+.mz-player-core {
+  fill: var(--accent);
+}
+
+/* ---- controls: the D-pad is its own panel, one segmented unit ---- */
+
+.mz-pad-card {
   align-items: center;
-  justify-content: center;
-  gap: 22px;
 }
 
 .mz-dpad {
   display: grid;
-  grid-template-columns: repeat(3, 48px);
-  gap: 6px;
-  justify-content: center;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 3px;
+  width: min(100%, 330px);
+  border-radius: 20px;
+  overflow: hidden;
 }
 
-.mz-up svg { transform: rotate(90deg); }
-.mz-down svg { transform: rotate(-90deg); }
-.mz-right svg { transform: rotate(180deg); }
+.mz-dpad-mid {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: 3px;
+}
+
+.mz-dbtn {
+  display: grid;
+  place-items: center;
+  min-height: 57px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: none;
+  transition: background 0.15s ease;
+}
+
+.mz-dbtn svg {
+  transition: transform 0.1s ease;
+}
+
+.mz-dbtn.left svg {
+  rotate: -90deg;
+}
+
+.mz-dbtn.right svg {
+  rotate: 90deg;
+}
+
+.mz-dbtn.down svg {
+  rotate: 180deg;
+}
+
+@media (hover: hover) {
+  .mz-dbtn:hover {
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+}
+
+.mz-dbtn:active {
+  background: color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+.mz-dbtn:active svg {
+  transform: scale(0.82);
+}
+
+/* ---- pre-game size menu ---- */
+
+.mz-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mz-quick {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  padding: 16px 18px;
+  border-radius: var(--radius-l);
+}
+
+.mz-quick:active {
+  background: var(--surface-2);
+  scale: 0.98;
+}
+
+.mz-quick-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.mz-quick-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.mz-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: var(--radius-l);
+}
+
+.mz-custom .primary-btn {
+  margin-top: 8px;
+}
+
+.mz-custom-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.mz-custom-note {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.mz-set-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 4px;
+}
+
+.mz-chips {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+}
+
+.mz-chip {
+  padding: 12px 0;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-dim);
+  transition: all 0.15s;
+}
+
+.mz-chip.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text);
+}
 
 .board-hidden .mz-board {
   visibility: hidden;

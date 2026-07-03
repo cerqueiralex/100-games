@@ -10,7 +10,7 @@ export const mazeDefinition: GameDefinition = {
   component: MazeGame,
   tutorial: mazeTutorial,
   scoringNote:
-    'Reach the exit of a generated 8×8/12×12/15×15 maze. Score = 600 × difficulty, −5 per step beyond the shortest path, plus a time bonus under par (1/2.5/5 min). Taps run corridors automatically.',
+    'Reach the target one step at a time — classic 9×9/13×13/17×17 mazes, or a custom size that scales as tall as you like. Score = 600 × difficulty, −5 per step beyond the shortest path, plus a time bonus for finishing fast.',
   assistFeatures: [
     {
       id: 'breadcrumbs',

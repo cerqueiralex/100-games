@@ -219,6 +219,31 @@ export function MineIcon({ size = 16 }: IconProps) {
   );
 }
 
+/* Four-way move cursor — the "drag" affordance. */
+export function MoveIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M12 3v18M3 12h18" />
+      <path d="M9.5 5.5L12 3l2.5 2.5M9.5 18.5L12 21l2.5-2.5M5.5 9.5L3 12l2.5 2.5M18.5 9.5L21 12l-2.5 2.5" />
+    </Svg>
+  );
+}
+
+/* Solid rounded triangle for directional pads (points up; rotate via CSS).
+   Stroked in its own color so the corners come out soft. */
+export function DpadArrowIcon({ size = 22 }: IconProps) {
+  return (
+    <Svg size={size} fill>
+      <path
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+        d="M12 6.2l6.2 9.3H5.8z"
+      />
+    </Svg>
+  );
+}
+
 /* Tic-tac-toe marks — geometric vector glyphs (never text: the glyphs must
    be perfectly symmetric). Both are centered on 12,12 with strokeWidth 3
    so they stay bold when scaled up to fill a board cell. */
