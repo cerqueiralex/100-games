@@ -16,8 +16,6 @@
   --text-dim: #98989f;
   --cell-peer: #17171b;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
-  --bevel-hi: rgba(255, 255, 255, 0.07);
-  --bevel-lo: rgba(0, 0, 0, 0.55);
 }
 
 :root[data-theme='dim'] {
@@ -27,8 +25,6 @@
   --border: #303138;
   --cell-peer: #222327;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  --bevel-hi: rgba(255, 255, 255, 0.08);
-  --bevel-lo: rgba(0, 0, 0, 0.42);
 }
 
 :root[data-theme='light'] {
@@ -40,8 +36,6 @@
   --text-dim: #6a6a72;
   --cell-peer: #eaeef5;
   --shadow: 0 8px 24px rgba(20, 20, 40, 0.06);
-  --bevel-hi: rgba(255, 255, 255, 0.9);
-  --bevel-lo: rgba(20, 20, 40, 0.14);
 }
 
 /* ---------- accent themes (Settings → Theme color) ----------

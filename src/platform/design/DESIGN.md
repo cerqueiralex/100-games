@@ -6,8 +6,7 @@ This folder is the single source of truth for the platform's look and feel.
 | File | Purpose |
 | --- | --- |
 | `tokens.css` | All colors, themes, radii, touch-target sizes |
-| `effects.css` | Depth & motion: the frosted-glass surface standard |
-| `Tilt.tsx` | Mouse-reactive 3D tilt + cursor glow wrapper |
+| `effects.css` | Depth: the flat frosted-glass surface standard |
 | `icons.tsx` | Every icon in the platform (monochrome SVG) |
 | `DESIGN.md` | The rules (this file) |
 | `/public/icons/icon.svg` | App logo — source for all PWA/app icons |
@@ -59,7 +58,8 @@ type. Nothing else — every component already inherits.
   cards/inputs · 20 (`--radius-l`) game cards · 24 (`--radius-xl`) modals.
 - **Buttons**: `primary-btn` (filled, one per screen max), `ghost-btn`
   (neutral), `danger-btn` (destructive, always behind a confirm),
-  `icon-btn` (44×44 chrome), `pad-tool` (in-game toolbar).
+  `icon-btn` (44×44 chrome; the in-game header action row uses 51×51 —
+  perfect squares, never stretched), `pad-tool` (in-game toolbar).
 - **Toolbars**: rows of `pad-tool` buttons must use the equal-width grid
   (`.sudoku-controls` / `.cw-tools` pattern: `grid-auto-flow: column;
   grid-auto-columns: 1fr`) so buttons align in width and height. Fixed
@@ -76,36 +76,27 @@ System font stack (SF Pro on Apple devices). Weights: 800 page titles,
 ## Depth & motion (the surface standard)
 
 The platform's card look is **flat frosted glass**, defined once in
-`effects.css` — no textures, patterns or gradients anywhere in the UI
-(the only sanctioned radial gradient is the transient `.fx-glow` cursor
-light):
+`effects.css` — no textures, patterns or gradients anywhere in the UI.
+Depth comes from the drop shadow ONLY: no specular/highlight edges, no
+inset highlights, no bevels, no 3D transforms (tilt, `translateZ`,
+perspective) anywhere, in any theme:
 
 - **`.fx-card`** is THE surface for cards: a flat translucent base with
-  backdrop blur + saturation, hairline borders (lighter top edge), and
-  delicate drop shadows. Game logo chips are flat accent fills with no
-  shadows.
+  backdrop blur + saturation, a uniform hairline border, and delicate
+  drop shadows. Game logo chips are flat accent fills with no shadows.
 - **One rule styles everything**: the glass rule in `effects.css` is
   applied via `.fx-card` AND bound directly to every shared card-surface
-  class (settings rows, toggles, theme/accent pickers, search bar,
-  dropdown, history rows…). Component CSS in `global.css` must NEVER
-  declare its own `background`/`border` for card-like surfaces — layout
-  only. This is what guarantees every screen (Settings included)
-  automatically receives future surface redesigns. When adding a new
-  card-like component: either give it the `fx-card` class or add its
-  class to the effects.css selector list — never a flat
-  `var(--surface)` background.
+  class (settings rows, toggles, theme/accent pickers, dropdown,
+  history rows…). Component CSS in `global.css` must NEVER declare its
+  own `background`/`border` for card-like surfaces — layout only. This
+  is what guarantees every screen (Settings included) automatically
+  receives future surface redesigns. When adding a new card-like
+  component: either give it the `fx-card` class or add its class to the
+  effects.css selector list. Two deliberate flat opt-outs exist (home
+  search bar, in-game info strip) — both are plain
+  `var(--surface)` + `var(--border)` and marked with a comment.
 - **Flat background**: the page background is plain `var(--bg)` — no
   ambient glows, flares or gradients behind the content.
-- **`<Tilt>`** (Tilt.tsx) wraps large interactive cards only (game cards,
-  hero surfaces — never small buttons): a ≤4° mouse-following 3D tilt with
-  an accent glow that tracks the cursor. It is a no-op on touch devices.
-  Load-bearing invariant: the outer `.fx-tilt` box NEVER transforms — all
-  motion (tilt + press scale) lives on `.fx-tilt-inner`, and the wrapped
-  interactive element must not carry its own `:active` transform. Breaking
-  this desyncs hit-testing from the visuals and clicks start missing the
-  card (the "3 clicks to open a game" bug).
-- **3D logos**: `.game-card-icon` chips are glassy accent gradients with
-  bevel shadows that float on `translateZ` inside tilted cards.
 - Effects use neutral white/black alphas by design — they are the one
   sanctioned exception to the "tokens only" color rule, and they live
   exclusively in `effects.css`.

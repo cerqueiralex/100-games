@@ -219,6 +219,25 @@ export function MineIcon({ size = 16 }: IconProps) {
   );
 }
 
+/* Tic-tac-toe marks — geometric vector glyphs (never text: the glyphs must
+   be perfectly symmetric). Both are centered on 12,12 with strokeWidth 3
+   so they stay bold when scaled up to fill a board cell. */
+export function TttCrossIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path strokeWidth="3" d="M6 6l12 12M18 6L6 18" />
+    </Svg>
+  );
+}
+
+export function TttRingIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <circle strokeWidth="3" cx="12" cy="12" r="7" />
+    </Svg>
+  );
+}
+
 export function SaveIcon({ size = 18 }: IconProps) {
   return (
     <Svg size={size}>

@@ -1,9 +1,9 @@
 /*
- * Design-system depth & motion effects — see DESIGN.md "Depth & motion".
- * The platform surface style is iOS-style frosted GLASS: translucency,
- * specular top edge, backdrop blur, ambient light, physical depth.
- *   .fx-card   the glass raised card surface
- *   <Tilt>     mouse-reactive 3D tilt + cursor glow (Tilt.tsx)
+ * Design-system depth effects — see DESIGN.md "Depth & motion".
+ * The platform surface style is FLAT frosted glass: translucency,
+ * backdrop blur and a soft drop shadow. No specular edges, no inset
+ * highlights, no 3D tilt — depth comes from the drop shadow only.
+ *   .fx-card   the glass card surface
  * Neutral white/black alphas here are part of the design system itself.
  * (.fx-card is doubled for specificity so it always beats component rules.)
  */
@@ -25,17 +25,14 @@
 .dropdown-btn,
 .history-row,
 .ttt-score {
-  /* flat translucent glass — no gradients anywhere in the UI */
+  /* flat translucent glass — no gradients or highlight edges anywhere */
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   backdrop-filter: blur(18px) saturate(1.5);
   -webkit-backdrop-filter: blur(18px) saturate(1.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-top-color: rgba(255, 255, 255, 0.22);
-  border-bottom-color: rgba(0, 0, 0, 0.5);
   box-shadow:
     0 14px 30px rgba(0, 0, 0, 0.21),
-    0 2px 6px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 :root[data-theme='light'] .fx-card.fx-card,
@@ -50,64 +47,9 @@
 :root[data-theme='light'] .ttt-score {
   background: color-mix(in srgb, var(--surface) 85%, transparent);
   border: 1px solid rgba(0, 0, 0, 0.07);
-  border-top-color: rgba(255, 255, 255, 0.95);
   box-shadow:
     0 10px 24px rgba(20, 20, 40, 0.06),
-    0 2px 5px rgba(20, 20, 40, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-/* ---------- mouse-reactive tilt + cursor glow (used via <Tilt>) ---------- */
-
-/* Outer wrapper NEVER transforms: it is the stable box that pointer math
-   and hit-testing rely on (see Tilt.tsx). All motion goes on the inner
-   layer so the interactive card and the transform move as one. */
-.fx-tilt {
-  position: relative;
-  border-radius: var(--fx-radius, var(--radius-l));
-  width: 100%;
-}
-
-.fx-tilt-inner {
-  transform: perspective(900px) rotateX(var(--tx, 0deg)) rotateY(var(--ty, 0deg));
-  transform-style: preserve-3d;
-  transition: transform 0.18s ease, scale 0.12s ease;
-  will-change: transform;
-  border-radius: inherit;
-  width: 100%;
-}
-
-/* press feedback for the whole tilted unit — the button no longer scales
-   itself, so its hitbox can't shrink away from the pointer mid-click */
-.fx-tilt:active .fx-tilt-inner {
-  scale: 0.98;
-}
-
-/* children fill the wrapper — buttons would otherwise shrink to content */
-.fx-tilt-inner > * {
-  width: 100%;
-  transform-style: preserve-3d;
-}
-
-.fx-glow {
-  position: absolute;
-  inset: 0;
-  border-radius: var(--fx-radius, var(--radius-l));
-  background: radial-gradient(
-    240px circle at var(--gx, 50%) var(--gy, 50%),
-    color-mix(in srgb, var(--accent) 8%, rgba(255, 255, 255, 0.035)),
-    transparent 65%
-  );
-  opacity: 0;
-  transition: opacity 0.25s ease;
-  pointer-events: none;
-  z-index: 3;
-}
-
-@media (hover: hover) {
-  .fx-tilt:hover .fx-glow {
-    opacity: 1;
-  }
+    0 2px 5px rgba(20, 20, 40, 0.035);
 }
 
 /* ---------- game logos: flat accent chips (no gradients, no shadows) ---------- */
@@ -115,13 +57,4 @@
 .game-card-icon {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-  /* floats above the glass while the card tilts */
-  transform: translateZ(26px);
-  transition: transform 0.18s ease;
-}
-
-@media (hover: hover) {
-  .fx-tilt:hover .game-card-icon {
-    transform: translateZ(40px) scale(1.05);
-  }
 }

@@ -144,11 +144,25 @@ p {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  transition: background 0.15s;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
 }
 
-.icon-btn:active {
+@media (hover: hover) {
+  .icon-btn:hover:not(:disabled) {
+    background: var(--surface-2);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    transform: translateY(-1px);
+  }
+}
+
+.icon-btn:active:not(:disabled) {
   background: var(--surface-2);
+  transform: scale(0.92);
+  transition-duration: 0.06s;
+}
+
+.icon-btn:disabled {
+  opacity: 0.45;
 }
 
 /* ===== home ===== */
@@ -228,17 +242,33 @@ p {
 .game-card {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   text-align: left;
   border-radius: 20px;
-  padding: 18px;
+  padding: 16px 18px;
   transition: transform 0.12s ease, background 0.15s;
 }
 
-/* press scale lives on .fx-tilt-inner (effects.css) — a transform here
-   would shrink the button's hitbox away from the pointer mid-click */
 .game-card:active {
   background: var(--surface-2);
+  scale: 0.98;
+}
+
+/* the info column: icon + name/tagline on top, stats pill on its own row
+   below so it never squeezes the title. Pin and arrow live OUTSIDE this
+   column, so the card's align-items centers them on the full height. */
+.game-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.game-card-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .game-card-icon {
@@ -275,21 +305,20 @@ p {
 }
 
 .game-card-stats {
+  align-self: flex-start;
   font-size: 12px;
   color: var(--text-dim);
-  margin-top: 3px;
 }
 
 .game-card-stats.has-stats {
-  align-self: flex-start;
   background: var(--accent-soft);
   border: 1px solid var(--accent);
   color: var(--accent);
   border-radius: 999px;
-  padding: 3px 10px;
-  margin-top: 6px;
+  padding: 4px 12px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .game-card-go {
@@ -544,13 +573,40 @@ p {
   padding-bottom: 16px;
 }
 
-/* segregated glass top bar, aligned to the standard game width */
+/* segregated glass top bar, full width of the game column.
+   Two stacked rows: back + centered title/difficulty/time, then the
+   action buttons on their own row. */
 .game-header {
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
-  max-width: 480px;
-  margin: 0 auto 16px;
-  padding: 8px 10px;
+  /* 12px is THE vertical rhythm of the game column: header → info strip →
+     board → tools all sit exactly 12px apart (wrappers use gap: 12px) */
+  margin: 0 0 12px;
+  padding: 10px;
   border-radius: var(--radius-l);
+}
+
+.game-header-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+/* perfect squares (width = height), 15% up from the 44px standard for
+   comfortable mobile taps */
+.game-header-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.game-header-actions .icon-btn {
+  width: 51px;
+  height: 51px;
+  border-radius: 16px;
+  flex: 0 0 auto;
 }
 
 /* every game renders inside the same centered column */
@@ -558,12 +614,11 @@ p {
   width: 100%;
 }
 
-/* the bottom tools tab — visually separated from the board */
+/* the bottom tools tab — the game wrapper's 12px gap spaces it */
 .game-tools {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 16px;
   padding: 12px;
   border-radius: var(--radius-l);
 }
@@ -629,7 +684,7 @@ p {
 }
 
 .info-item {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-dim);
 }
 
@@ -782,6 +837,13 @@ p {
   font-size: 12.5px;
   color: var(--text-dim);
   line-height: 1.4;
+}
+
+/* local-multiplayer finish: the who-won line under the headline */
+.finish-subline {
+  font-size: 14.5px;
+  color: var(--text-dim);
+  margin: 2px 0 6px;
 }
 
 /* ===== chips ===== */
@@ -1399,10 +1461,20 @@ p {
   gap: 12px;
 }
 
+/* the live score/errors/progress strip every game shows above its board.
+   Deliberately flat and neutral (surface + border tokens, no accent, no
+   glass) so it reads as chrome, separate from the header and the board. */
 .sudoku-info {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 20px;
+  align-items: center;
+  column-gap: 24px;
+  row-gap: 4px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
 }
 
 .sudoku-board {
@@ -2074,7 +2146,7 @@ p {
 .nmerge {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .nm-preview {
@@ -2266,20 +2338,129 @@ p {
 }
 
 .ttt-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: 14px;
   font-weight: 650;
 }
 
+/* the score itself sits in a bordered badge, clearly apart from the name */
 .ttt-side b {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
   font-size: 18px;
+  border-radius: var(--radius-s);
+  font-variant-numeric: tabular-nums;
 }
 
 .ttt-side.you b {
   color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
 }
 
 .ttt-side.bot b {
   color: var(--bad);
+  background: var(--bad-soft);
+  border: 1px solid var(--bad);
+}
+
+/* local (pass-the-phone) matches: score badges follow the MARK's board
+   color — X green, O red — so each side maps to its tiles at a glance */
+.ttt-side.mx b {
+  color: var(--play-1);
+  background: color-mix(in srgb, var(--play-1) 14%, transparent);
+  border: 1px solid var(--play-1);
+}
+
+.ttt-side.mo b {
+  color: var(--play-2);
+  background: color-mix(in srgb, var(--play-2) 14%, transparent);
+  border: 1px solid var(--play-2);
+}
+
+/* ---- pre-game match menu (opponent / mark / rounds) ---- */
+
+.ttt-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius-l);
+}
+
+.ttt-setup .primary-btn {
+  margin-top: 8px;
+}
+
+.ttt-setup-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 6px;
+}
+
+.ttt-setup-note {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.ttt-opt-row {
+  display: grid;
+  gap: 10px;
+}
+
+.ttt-opt-row.cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.ttt-opt-row.cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.ttt-opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 4px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-dim);
+  transition: all 0.15s;
+}
+
+.ttt-opt svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.ttt-opt.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* the mark pickers tint with the mark's board color, not the accent */
+.ttt-opt.mark-x.active {
+  background: color-mix(in srgb, var(--play-1) 16%, transparent);
+  border-color: var(--play-1);
+}
+
+.ttt-opt.mark-o.active {
+  background: color-mix(in srgb, var(--play-2) 16%, transparent);
+  border-color: var(--play-2);
 }
 
 .ttt-vs {
@@ -2308,22 +2489,57 @@ p {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
-  font-size: clamp(28px, 10vw, 44px);
-  line-height: 1;
-  font-weight: 800;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
+/* the marks fill half the cell and pop in (transform only — geometry
+   stays pinned per the tile-grid standard) */
+.ttt-cell svg {
+  width: 52%;
+  height: 52%;
+  animation: ttt-pop 0.18s ease;
+}
+
+@keyframes ttt-pop {
+  from {
+    transform: scale(0.6);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* empty cells invite the tap: lift on hover, dip on press */
+@media (hover: hover) {
+  .ttt-cell:not(.x):not(.o):hover {
+    background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    transform: scale(1.04);
+  }
+}
+
+.ttt-cell:not(.x):not(.o):active {
+  transform: scale(0.92);
+  transition-duration: 0.06s;
+}
+
+/* marks are white vector glyphs on solid content-palette fills:
+   X = green tile, O = red tile (game content, fixed across accents) */
 .ttt-cell.x {
-  color: var(--accent);
+  color: var(--play-9);
+  background: var(--play-1);
+  border-color: var(--play-1);
 }
 
 .ttt-cell.o {
-  color: var(--bad);
+  color: var(--play-9);
+  background: var(--play-2);
+  border-color: var(--play-2);
 }
 
+/* marked tiles are solid, so the winning line reads as a white inner ring */
 .ttt-cell.win {
-  background: var(--good-soft);
-  border-color: var(--good);
+  box-shadow: inset 0 0 0 3px var(--play-9);
 }
 
 .ttt-cell.suggest {
@@ -2584,9 +2800,8 @@ p {
   user-select: none;
 }
 
-/* covered tiles are raised (bevel via inset shadows — paint only, per the
-   tile-grid standard), revealed tiles sink flat: the classic-minesweeper
-   depth cue */
+/* covered tiles are flat solid chips; revealed tiles go transparent —
+   the covered/open contrast alone carries the depth cue */
 .ms-cell {
   display: grid;
   place-items: center;
@@ -2597,9 +2812,7 @@ p {
   font-weight: 800;
   color: var(--accent);
   padding: 0;
-  box-shadow: inset 2px 2px 0 var(--bevel-hi), inset -2px -2px 0 var(--bevel-lo);
-  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 /* subtle life: covered cells lift on hover, dip on press (transform only —
@@ -2619,7 +2832,6 @@ p {
 .ms-cell.open {
   background: transparent;
   border-color: color-mix(in srgb, var(--border) 45%, transparent);
-  box-shadow: inset 1px 1px 0 var(--bevel-lo);
   animation: ms-reveal 0.16s ease;
 }
 
@@ -2637,7 +2849,6 @@ p {
   background: var(--bad);
   border-color: var(--bad);
   color: var(--ink);
-  box-shadow: none;
 }
 
 /* the pixel-art mine and flag scale with the cell, like the classic tiles */
@@ -2696,7 +2907,7 @@ p {
 .logic-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 /* --- puzzle picker --- */

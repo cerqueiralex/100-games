@@ -7,7 +7,7 @@ const C = ({ v, c = '' }: { v?: string; c?: string }) => (
 export const ticTacToeTutorial: TutorialStep[] = [
   {
     title: 'Three in a row',
-    text: 'You are X, the robot is O. Take turns placing marks — three of yours in a row, column or diagonal wins the round.',
+    text: 'Take turns placing marks — three of yours in a row, column or diagonal wins the round. Play the robot, or pass the phone to a friend.',
     art: (
       <div className="tut-grid" style={{ gridTemplateColumns: 'repeat(3, auto)' }}>
         <C v="X" c="good" />
@@ -23,13 +23,24 @@ export const ticTacToeTutorial: TutorialStep[] = [
     )
   },
   {
-    title: 'First to three rounds',
-    text: 'A match is a race: the first side to win three rounds takes it. Draws don’t count — you just play again, alternating who starts.',
+    title: 'Set up your match',
+    text: 'Before playing, choose your opponent — the robot, or a friend sharing this phone — pick cross or circle, and set how many rounds to play. Cross opens the first round and the opener alternates each round.',
     art: (
       <div className="tut-row">
-        <span className="chip good">You 2</span>
+        <span className="chip accent">Robot</span>
+        <span className="tut-arrow">or</span>
+        <span className="chip accent">2 players</span>
+      </div>
+    )
+  },
+  {
+    title: 'Most round wins takes it',
+    text: 'When every round is played, the side with more round wins takes the match. Draws use up a round; a tied final score goes to sudden death — the next round win decides it.',
+    art: (
+      <div className="tut-row">
+        <span className="chip good">You 3</span>
         <span className="tut-arrow">vs</span>
-        <span className="chip bad">Robot 1</span>
+        <span className="chip bad">Robot 2</span>
       </div>
     )
   },

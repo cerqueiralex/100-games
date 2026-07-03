@@ -26,6 +26,15 @@ export interface LiveStats {
 
 export interface FinishPayload extends LiveStats {
   outcome: 'won' | 'lost';
+  /**
+   * Local-multiplayer presentation (e.g. pass-the-phone matches): when
+   * `hideStats` is set the completion card shows `headline`/`subline`
+   * (who won) instead of the time/score/errors statistics. The result is
+   * still recorded in history from the device owner's perspective.
+   */
+  hideStats?: boolean;
+  headline?: string;
+  subline?: string;
 }
 
 export interface GameEvents {

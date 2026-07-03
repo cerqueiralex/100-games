@@ -291,54 +291,66 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   return (
     <div className="screen game-screen">
       <header className="screen-header game-header fx-card">
-        <button
-          className="icon-btn"
-          onClick={() =>
-            // finished games and saved sessions exit directly — nothing to abandon
-            phase === 'finished' || sessionHasSave.current ? quit(false) : setConfirmQuit(true)
-          }
-          aria-label={phase === 'finished' ? 'Back to menu' : 'Quit game'}
-        >
-          <BackIcon />
-        </button>
-        <div className="game-header-mid">
-          <span className="game-header-title">{game.name}</span>
-          <span className="game-header-sub">
-            {DIFFICULTY_LABEL[difficulty]} · {formatDuration(elapsedSec)}
-          </span>
+        <div className="game-header-top">
+          <div className="game-header-mid">
+            <span className="game-header-title">{game.name}</span>
+            <span className="game-header-sub">
+              {DIFFICULTY_LABEL[difficulty]} · {formatDuration(elapsedSec)}
+            </span>
+          </div>
         </div>
-        <button
-          className="icon-btn"
-          onClick={() => {
-            sfx.tap();
-            if (phase === 'playing') setPaused(true);
-            setShowTutorial(true);
-          }}
-          aria-label="How to play"
-        >
-          <HelpIcon />
-        </button>
-        {phase === 'playing' && (
-          <button className="icon-btn" onClick={saveGame} aria-label="Save game">
-            <SaveIcon />
+        <div className="game-header-actions">
+          <button
+            className="icon-btn"
+            onClick={() => {
+              sfx.tap();
+              // finished games and saved sessions exit directly — nothing to abandon
+              if (phase === 'finished' || sessionHasSave.current) quit(false);
+              else setConfirmQuit(true);
+            }}
+            aria-label={phase === 'finished' ? 'Back to menu' : 'Quit game'}
+          >
+            <BackIcon />
           </button>
-        )}
-        <button
-          className="icon-btn"
-          onClick={() => setConfirmRestart(true)}
-          aria-label="Restart game"
-          disabled={phase === 'finished'}
-        >
-          <RestartIcon />
-        </button>
-        <button
-          className="icon-btn"
-          onClick={() => setPaused((p) => !p)}
-          aria-label={paused ? 'Resume' : 'Pause'}
-          disabled={phase === 'finished'}
-        >
-          {paused ? <PlayIcon /> : <PauseIcon />}
-        </button>
+          <button
+            className="icon-btn"
+            onClick={() => {
+              sfx.tap();
+              if (phase === 'playing') setPaused(true);
+              setShowTutorial(true);
+            }}
+            aria-label="How to play"
+          >
+            <HelpIcon />
+          </button>
+          {phase === 'playing' && (
+            <button className="icon-btn" onClick={saveGame} aria-label="Save game">
+              <SaveIcon />
+            </button>
+          )}
+          <button
+            className="icon-btn"
+            onClick={() => {
+              sfx.tap();
+              setConfirmRestart(true);
+            }}
+            aria-label="Restart game"
+            disabled={phase === 'finished'}
+          >
+            <RestartIcon />
+          </button>
+          <button
+            className="icon-btn"
+            onClick={() => {
+              sfx.tap();
+              setPaused((p) => !p);
+            }}
+            aria-label={paused ? 'Resume' : 'Pause'}
+            disabled={phase === 'finished'}
+          >
+            {paused ? <PlayIcon /> : <PauseIcon />}
+          </button>
+        </div>
       </header>
 
       <div className="game-body">
@@ -426,44 +438,57 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
             <div className={`finish-emoji ${finish.outcome}`}>
               {finish.outcome === 'won' ? '🏆' : '💥'}
             </div>
-            <h2>{finish.outcome === 'won' ? 'Puzzle complete!' : 'Game over'}</h2>
-            <div className="finish-badges">
-              <Chip tone="accent">{DIFFICULTY_LABEL[difficulty]}</Chip>
-              {finish.outcome === 'won' &&
-                (finish.hintsUsed === 0 && finish.assistsUsed.length === 0 ? (
-                  <Chip tone="good">Clean win — no help</Chip>
-                ) : (
-                  <Chip tone="muted">Won with help</Chip>
-                ))}
-            </div>
-            <div className="finish-grid">
-              <div>
-                <span className="finish-num">{formatDuration(elapsedSec)}</span>
-                <span className="finish-lbl">Time</span>
-              </div>
-              <div>
-                <span className="finish-num">{finish.score.toLocaleString()}</span>
-                <span className="finish-lbl">Score</span>
-              </div>
-              <div>
-                <span className="finish-num">{finish.errors}</span>
-                <span className="finish-lbl">Errors</span>
-              </div>
-              <div>
-                <span className="finish-num">{finish.hintsUsed}</span>
-                <span className="finish-lbl">Hints</span>
-              </div>
-            </div>
-            {finish.assistsUsed.length > 0 && (
-              <p className="finish-assists">
-                Help used: {finish.assistsUsed.map((a) => assistNames.get(a) ?? a).join(', ')}
-              </p>
-            )}
-            {finish.outcome === 'won' && (
-              <button className="share-btn" onClick={() => setShowShare(true)}>
-                <ShareIcon />
-                <span>Share this win</span>
-              </button>
+            <h2>
+              {finish.hideStats && finish.headline
+                ? finish.headline
+                : finish.outcome === 'won'
+                  ? 'Puzzle complete!'
+                  : 'Game over'}
+            </h2>
+            {/* local-multiplayer finish: just who won, no statistics */}
+            {finish.hideStats ? (
+              finish.subline && <p className="finish-subline">{finish.subline}</p>
+            ) : (
+              <>
+                <div className="finish-badges">
+                  <Chip tone="accent">{DIFFICULTY_LABEL[difficulty]}</Chip>
+                  {finish.outcome === 'won' &&
+                    (finish.hintsUsed === 0 && finish.assistsUsed.length === 0 ? (
+                      <Chip tone="good">Clean win — no help</Chip>
+                    ) : (
+                      <Chip tone="muted">Won with help</Chip>
+                    ))}
+                </div>
+                <div className="finish-grid">
+                  <div>
+                    <span className="finish-num">{formatDuration(elapsedSec)}</span>
+                    <span className="finish-lbl">Time</span>
+                  </div>
+                  <div>
+                    <span className="finish-num">{finish.score.toLocaleString()}</span>
+                    <span className="finish-lbl">Score</span>
+                  </div>
+                  <div>
+                    <span className="finish-num">{finish.errors}</span>
+                    <span className="finish-lbl">Errors</span>
+                  </div>
+                  <div>
+                    <span className="finish-num">{finish.hintsUsed}</span>
+                    <span className="finish-lbl">Hints</span>
+                  </div>
+                </div>
+                {finish.assistsUsed.length > 0 && (
+                  <p className="finish-assists">
+                    Help used: {finish.assistsUsed.map((a) => assistNames.get(a) ?? a).join(', ')}
+                  </p>
+                )}
+                {finish.outcome === 'won' && (
+                  <button className="share-btn" onClick={() => setShowShare(true)}>
+                    <ShareIcon />
+                    <span>Share this win</span>
+                  </button>
+                )}
+              </>
             )}
             <div className="modal-actions">
               <button className="ghost-btn" onClick={() => quit(false)}>

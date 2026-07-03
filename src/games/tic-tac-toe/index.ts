@@ -5,12 +5,12 @@ import { ticTacToeTutorial } from './tutorial';
 export const ticTacToeDefinition: GameDefinition = {
   id: 'tic-tac-toe',
   name: 'Tic-Tac-Toe',
-  tagline: 'Beat the robot — first to three round wins.',
+  tagline: 'Beat the robot or a friend — best of N rounds.',
   icon: 'X·O',
   component: TicTacToeGame,
   tutorial: ticTacToeTutorial,
   scoringNote:
-    'You are X. First side to win 3 rounds takes the match (draws replay, starters alternate). +100 × difficulty per round win. The robot gets sharper with difficulty — on hard it is nearly perfect.',
+    'Pick your opponent (robot or a friend on this phone), your mark and the round count on the match menu. Most round wins takes the match; a tie goes to sudden death. +100 × difficulty per round win. The robot gets sharper with difficulty — on hard it is nearly perfect.',
   assistFeatures: [
     {
       id: 'suggest',
