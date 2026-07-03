@@ -185,6 +185,9 @@ p {
   height: 48px;
   margin-bottom: 16px;
   color: var(--text-dim);
+  /* deliberately flat — opted out of the .fx-card glass surface (effects.css) */
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 .search-bar:focus-within {
