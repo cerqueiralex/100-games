@@ -3,7 +3,7 @@ import type { TutorialStep } from '../../platform/types';
 export const wordWheelTutorial: TutorialStep[] = [
   {
     title: 'Spell from the wheel',
-    text: 'Tap letters on the wheel to build a word, then submit it. Each wheel letter can be used once per word.',
+    text: 'Tap letters one by one and press Submit — or hold and DRAG through the letters and release to submit in one motion. Each wheel letter can be used once per word.',
     art: (
       <div className="tut-col">
         <div className="tut-row">
@@ -12,13 +12,24 @@ export const wordWheelTutorial: TutorialStep[] = [
           <span className="tut-key active">A</span>
           <span className="tut-key">S</span>
         </div>
-        <span className="chip accent">TEA ✓</span>
+        <span className="chip accent">drag T→E→A, release ✓</span>
+      </div>
+    )
+  },
+  {
+    title: 'Two ways to play',
+    text: 'Crossword wheel: fill a hand-crafted criss-cross grid. Word hunt: a fresh random wheel hides 3–9 letter words — every one uses the CENTER letter, and the tier list tracks what is left to find.',
+    art: (
+      <div className="tut-row">
+        <span className="chip accent">Crossword</span>
+        <span className="tut-arrow">or</span>
+        <span className="chip accent">Word hunt</span>
       </div>
     )
   },
   {
     title: 'Fill the crossword',
-    text: 'Every correct word drops into the criss-cross grid above. Words share letters where they cross.',
+    text: 'In crossword mode every correct word drops into the criss-cross grid above. Words share letters where they cross.',
     art: (
       <div className="tut-grid" style={{ gridTemplateColumns: 'repeat(3, auto)' }}>
         <span className="tut-cell good">T</span>

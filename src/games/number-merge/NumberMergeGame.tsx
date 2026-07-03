@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, RestartIcon } from '../../platform/design/icons';
@@ -82,6 +83,14 @@ export function NumberMergeGame({
   const [undosLeft, setUndosLeft] = useState(saved?.undosLeft ?? MAX_UNDOS);
   const [hintCells, setHintCells] = useState<Set<number>>(() => new Set());
   const [best, setBest] = useState(saved?.best ?? 0);
+  /* per-merge animation pass: how many rows each tile fell, which cell is
+     the fresh merge result, and a wave counter that remounts tiles so the
+     CSS animations replay on every merge */
+  const [fx, setFx] = useState<{ fall: number[]; mergedAt: number | null; wave: number }>(() => ({
+    fall: new Array(N).fill(0),
+    mergedAt: null,
+    wave: 0
+  }));
 
   const done = useRef(false);
   const dragging = useRef(false);
@@ -171,19 +180,32 @@ export function NumberMergeGame({
       const last = ch[ch.length - 1];
       for (const i of ch) next[i] = 0;
       next[last] = result;
-      // gravity per column, then refill from the top
+      // gravity per column, then refill from the top — tracking how far
+      // every tile falls so the board can animate the drops
       const maxTile = Math.max(result, best);
+      const fall = new Array<number>(N).fill(0);
+      let mergedAt: number | null = null;
       for (let c = 0; c < COLS; c++) {
-        const stack: number[] = [];
+        const stack: { v: number; oldR: number }[] = [];
         for (let r = ROWS - 1; r >= 0; r--) {
           const v = next[r * COLS + c];
-          if (v !== 0) stack.push(v);
+          if (v !== 0) stack.push({ v, oldR: r });
         }
         for (let r = ROWS - 1; r >= 0; r--) {
-          const fromBottom = ROWS - 1 - r;
-          next[r * COLS + c] = stack[fromBottom] ?? spawnValue(maxTile);
+          const k = ROWS - 1 - r;
+          const idx = r * COLS + c;
+          if (k < stack.length) {
+            next[idx] = stack[k].v;
+            fall[idx] = r - stack[k].oldR;
+            if (stack[k].oldR * COLS + c === last) mergedAt = idx;
+          } else {
+            next[idx] = spawnValue(maxTile);
+            // fresh tiles drop in from above the board edge
+            fall[idx] = r + 1;
+          }
         }
       }
+      setFx((f) => ({ fall, mergedAt, wave: f.wave + 1 }));
       const nextScore = score + result;
       const nextBest = Math.max(best, result);
       setBoard(next);
@@ -209,6 +231,8 @@ export function NumberMergeGame({
     setScore(undoState.current.score);
     setBest(undoState.current.best);
     undoState.current = null;
+    // no fall replay when a board is restored
+    setFx((f) => ({ fall: new Array(N).fill(0), mergedAt: null, wave: f.wave + 1 }));
     sfx.hint();
   };
 
@@ -278,19 +302,39 @@ export function NumberMergeGame({
       >
         {board.map((v, i) => (
           <div
-            key={i}
+            key={`${i}-${fx.wave}`}
             className={[
               'nm-tile',
               `v${Math.min(v, 2048)}`,
               chain.includes(i) ? 'in-chain' : '',
-              hintCells.has(i) ? 'hinted' : ''
+              hintCells.has(i) ? 'hinted' : '',
+              fx.fall[i] > 0 ? 'fall' : '',
+              fx.mergedAt === i ? 'merged' : ''
             ]
               .filter(Boolean)
               .join(' ')}
+            style={fx.fall[i] > 0 ? ({ '--fd': fx.fall[i] } as CSSProperties) : undefined}
           >
             {v}
           </div>
         ))}
+
+        {/* the drag chain drawn as a connected rope through the tiles */}
+        {chain.length >= 2 && (
+          <svg className="nm-links" aria-hidden>
+            {chain.slice(1).map((cell, k) => (
+              <line
+                key={`${k}-${cell}`}
+                className={`nm-link v${Math.min(board[cell], 2048)}`}
+                x1={`${((colOf(chain[k]) + 0.5) / COLS) * 100}%`}
+                y1={`${((rowOf(chain[k]) + 0.5) / ROWS) * 100}%`}
+                x2={`${((colOf(cell) + 0.5) / COLS) * 100}%`}
+                y2={`${((rowOf(cell) + 0.5) / ROWS) * 100}%`}
+                pathLength={100}
+              />
+            ))}
+          </svg>
+        )}
       </div>
 
       <div className="game-tools fx-card">

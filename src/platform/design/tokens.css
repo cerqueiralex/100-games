@@ -16,6 +16,9 @@
   --text-dim: #98989f;
   --cell-peer: #17171b;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+  /* the extruded ("candy / pushable") bottom edge on surface-colored
+     elements — see DESIGN.md "Depth & motion" */
+  --edge: rgba(0, 0, 0, 0.5);
 }
 
 :root[data-theme='dim'] {
@@ -25,6 +28,7 @@
   --border: #303138;
   --cell-peer: #222327;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --edge: rgba(0, 0, 0, 0.42);
 }
 
 :root[data-theme='light'] {
@@ -36,6 +40,7 @@
   --text-dim: #6a6a72;
   --cell-peer: #eaeef5;
   --shadow: 0 8px 24px rgba(20, 20, 40, 0.06);
+  --edge: rgba(20, 20, 40, 0.11);
 }
 
 /* ---------- accent themes (Settings → Theme color) ----------

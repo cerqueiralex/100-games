@@ -6,12 +6,12 @@ export const wordWheelDefinition: GameDefinition = {
   id: 'word-wheel',
   category: 'words',
   name: 'Word Wheel',
-  tagline: 'Spell words from the letter wheel to fill the crossword.',
+  tagline: 'Spell words from the letter wheel — crossword or word hunt.',
   icon: 'A◯',
   component: WordWheelGame,
   tutorial: wordWheelTutorial,
   scoringNote:
-    'Scoring: +20/30/40 points per letter of every placed word (easy/medium/hard), −5 per wrong guess, −15 per revealed letter. Finish under par time (3/5/8 min) for a time bonus.',
+    'Two modes: fill the criss-cross grid, or hunt every hidden word on a random wheel (each uses the center letter; bigger wheels on higher difficulty). +20/30/40 points per letter of every word (easy/medium/hard), −5 per wrong guess, −15 per hint. Finish under par time (3/5/8 min) for a bonus.',
   assistFeatures: [
     {
       id: 'revealLetter',

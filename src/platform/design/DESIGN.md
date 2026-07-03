@@ -75,31 +75,38 @@ System font stack (SF Pro on Apple devices). Weights: 800 page titles,
 
 ## Depth & motion (the surface standard)
 
-The platform's card look is **flat frosted glass**, defined once in
-`effects.css` — no textures, patterns or gradients anywhere in the UI.
-Depth comes from the drop shadow ONLY: no specular/highlight edges, no
-inset highlights, no bevels, no 3D transforms (tilt, `translateZ`,
-perspective) anywhere, in any theme:
+The platform's depth language is the **extruded "candy / pushable"
+style** (2.5D flat): every raised element is a flat fill with a darker
+inset bottom edge that reads as the side of a toy block. No textures,
+gradients, drop shadows (on resting surfaces), specular edges or 3D
+transforms anywhere, in any theme:
 
-- **`.fx-card`** is THE surface for cards: a flat translucent base with
-  backdrop blur + saturation, a uniform hairline border, and delicate
-  drop shadows. Game logo chips are flat accent fills with no shadows.
-- **One rule styles everything**: the glass rule in `effects.css` is
-  applied via `.fx-card` AND bound directly to every shared card-surface
-  class (settings rows, toggles, theme/accent pickers, dropdown,
-  history rows…). Component CSS in `global.css` must NEVER declare its
-  own `background`/`border` for card-like surfaces — layout only. This
-  is what guarantees every screen (Settings included) automatically
-  receives future surface redesigns. When adding a new card-like
-  component: either give it the `fx-card` class or add its class to the
-  effects.css selector list. Two deliberate flat opt-outs exist (home
-  search bar, in-game info strip) — both are plain
-  `var(--surface)` + `var(--border)` and marked with a comment.
-- **Flat background**: the page background is plain `var(--bg)` — no
-  ambient glows, flares or gradients behind the content.
+- **The edge**: `box-shadow: inset 0 -3px 0 var(--edge)` (4px for large
+  cards/tiles). `--edge` is a per-theme token in tokens.css for
+  surface-colored elements; SOLID colored fills (accent buttons, game
+  tiles like Number Merge/TTT marks, Simon pads) use a plain black
+  alpha `rgba(0,0,0,0.2–0.28)` so the edge is always a darker shade of
+  the fill itself — never a black or white outline.
+- **Pushable press**: buttons sink on `:active` — `translateY(2px)`
+  plus the edge shrinking to 1px. NEVER add a press transform to an
+  element whose position depends on an inline transform (Word Wheel
+  letters): shrink the edge only.
+- **`.fx-card`** is THE surface for cards: flat translucent base with
+  backdrop blur, hairline border, extruded bottom edge. The rule in
+  `effects.css` is applied via `.fx-card` AND bound to every shared
+  card-surface class; component CSS must NEVER declare its own card
+  `background`/`border` — layout only. New card-like components join
+  the fx-card class or the effects.css selector list.
+- **Elevation exception**: floating overlays (modals, the results pill,
+  sticky start button context) keep `var(--shadow)` — they hover above
+  the page, so a drop shadow is information, not decoration.
+- **Flat opt-outs**: the home search bar, the in-game info strip, and
+  continuous boards whose cells share edges (sudoku, crossword,
+  logic-grid) stay completely flat — extrusion belongs to
+  gap-separated tiles only.
+- **Flat background**: the page background is plain `var(--bg)`.
 - Effects use neutral white/black alphas by design — they are the one
-  sanctioned exception to the "tokens only" color rule, and they live
-  exclusively in `effects.css`.
+  sanctioned exception to the "tokens only" color rule.
 
 ## Motion & feedback
 

@@ -144,7 +144,9 @@ p {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+  box-shadow: inset 0 -3px 0 var(--edge);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 @media (hover: hover) {
@@ -155,9 +157,11 @@ p {
   }
 }
 
+/* pushable: pressing sinks the button and flattens its extruded edge */
 .icon-btn:active:not(:disabled) {
   background: var(--surface-2);
-  transform: scale(0.92);
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
   transition-duration: 0.06s;
 }
 
@@ -254,6 +258,7 @@ p {
   font-weight: 600;
   color: var(--text-dim);
   white-space: nowrap;
+  box-shadow: inset 0 -3px 0 var(--edge);
   transition: all 0.15s;
 }
 
@@ -459,7 +464,13 @@ p {
   font-weight: 600;
   font-size: 15px;
   color: var(--text-dim);
+  box-shadow: inset 0 -3px 0 var(--edge);
   transition: all 0.15s;
+}
+
+.difficulty-btn:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
 }
 
 .difficulty-btn.active {
@@ -490,11 +501,13 @@ p {
   color: var(--bg);
   font-weight: 700;
   font-size: 16px;
-  transition: transform 0.12s;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.28);
+  transition: transform 0.12s, box-shadow 0.12s;
 }
 
 .primary-btn:active {
-  transform: scale(0.98);
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.28);
 }
 
 .start-btn {
@@ -510,6 +523,13 @@ p {
   border: 1px solid var(--border);
   font-weight: 600;
   font-size: 14px;
+  box-shadow: inset 0 -3px 0 var(--edge);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.ghost-btn:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
 }
 
 .ghost-btn.small {
@@ -524,6 +544,13 @@ p {
   color: #fff;
   font-weight: 700;
   font-size: 14px;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.28);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.danger-btn:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.28);
 }
 
 .resume-card {
@@ -1213,6 +1240,7 @@ p {
   padding: 8px 15px;
   border-radius: 999px;
   background: var(--surface-2);
+  box-shadow: inset 0 -3px 0 var(--edge);
   border: 1px solid var(--border);
   color: var(--text-dim);
   font-size: 12.5px;
@@ -1273,6 +1301,31 @@ p {
   font-size: 11px;
   color: var(--text-dim);
   min-height: 13px;
+}
+
+.history-datebar {
+  margin-bottom: 12px;
+}
+
+.history-group + .history-group {
+  margin-top: 16px;
+}
+
+/* day separator: date on the left, plays that day on the right */
+.history-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin: 0 2px 8px;
+}
+
+.history-day-head span {
+  font-variant-numeric: tabular-nums;
 }
 
 .history-list {
@@ -1672,7 +1725,9 @@ p {
   font-weight: 600;
   color: var(--accent);
   white-space: nowrap;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+  box-shadow: inset 0 -3px 0 var(--edge);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 .pad-tool svg {
@@ -1687,7 +1742,8 @@ p {
 }
 
 .pad-tool:active:not(:disabled) {
-  transform: scale(0.96);
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
 }
 
 /* toggled ON = solid accent fill with contrasting ink — unmistakably
@@ -1696,6 +1752,7 @@ p {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
 }
 
 .pad-tool:disabled {
@@ -1718,10 +1775,14 @@ p {
   background: var(--surface);
   border: 1px solid var(--border);
   min-height: 48px;
+  box-shadow: inset 0 -3px 0 var(--edge);
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .pad-btn:active {
   background: var(--surface-2);
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
 }
 
 .pad-digit {
@@ -1926,11 +1987,13 @@ p {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-s);
-  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  box-shadow: inset 0 -3px 0 var(--edge);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s, box-shadow 0.12s;
 }
 
 .mm-card:active {
-  transform: scale(0.95);
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
 }
 
 .mm-back {
@@ -1995,6 +2058,7 @@ p {
   border-radius: var(--radius-l);
   border: 1px solid var(--border);
   opacity: 0.45;
+  box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.22);
   transition: opacity 0.1s, transform 0.1s, box-shadow 0.1s;
 }
 
@@ -2126,16 +2190,25 @@ p {
 
 /* ===== word wheel ===== */
 
+/* sections stretch to the full game width; the grid and wheel center
+   INSIDE their cards (never by shrinking the cards themselves) */
 .wordwheel {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 12px;
+}
+
+.ww-board-card {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 16px;
+  border-radius: var(--radius-l);
 }
 
 .ww-board {
   display: grid;
-  gap: 3px;
+  gap: 4px;
   width: 100%;
   justify-content: center;
 }
@@ -2150,9 +2223,10 @@ p {
   place-items: center;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: 8px;
   font-weight: 750;
   font-size: clamp(14px, 4vw, 20px);
+  box-shadow: inset 0 -3px 0 var(--edge);
 }
 
 .ww-cell.filled {
@@ -2161,12 +2235,28 @@ p {
   color: var(--accent);
 }
 
+/* the fixed input-style box the word is spelled into — extruded, no border */
 .ww-current {
-  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 6px 14px;
+  background: var(--surface-2);
+  border-radius: 12px;
   font-size: 24px;
   font-weight: 800;
   letter-spacing: 0.15em;
   text-align: center;
+  color: var(--accent);
+  box-shadow: inset 0 -3px 0 var(--edge);
+}
+
+.ww-current-ph {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+  color: var(--text-dim);
 }
 
 .ww-current.shake {
@@ -2180,34 +2270,174 @@ p {
   75% { transform: translateX(6px); }
 }
 
-.ww-wheel {
-  position: relative;
-  border-radius: 50%;
-  background: var(--surface);
-  border: 1px solid var(--border);
+/* ---- mode menu ---- */
+
+.ww-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.ww-letter {
-  position: absolute;
-  top: calc(50% - 26px);
-  left: calc(50% - 26px);
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+.ww-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  padding: 16px 18px;
+  border-radius: var(--radius-l);
+}
+
+.ww-mode:active {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  font-size: 22px;
-  font-weight: 800;
+  scale: 0.98;
 }
 
-.ww-letter.used {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
+.ww-mode-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.ww-mode-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* ---- the pizza wheel: sliced letters around a mandatory center hub ---- */
+
+.ww-pizza-wrap {
+  width: min(300px, 84vw);
+  margin: 0 auto;
+}
+
+.ww-pizza {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* no outline: the wheel's outer edge is just where the slices end */
+.ww-rim {
+  fill: var(--surface-2);
+}
+
+.ww-wedge {
+  fill: transparent;
+  stroke: var(--bg);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  cursor: pointer;
+  transition: fill 0.12s ease;
+}
+
+@media (hover: hover) {
+  .ww-wedge:hover:not(.on) {
+    fill: var(--accent-soft);
+  }
+}
+
+.ww-wedge.on {
+  fill: var(--accent);
+}
+
+.ww-wedge-letter {
+  font-size: 18px;
+  font-weight: 800;
+  fill: var(--text);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.ww-wedge-letter.on {
+  fill: var(--on-accent);
+}
+
+.ww-hub {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 2;
+  cursor: pointer;
+  transition: fill 0.12s ease;
+}
+
+.ww-hub.on {
+  fill: var(--accent);
+}
+
+.ww-hub-letter {
+  font-size: 23px;
+  font-weight: 800;
+  fill: var(--accent);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.ww-hub-letter.on {
+  fill: var(--on-accent);
+}
+
+/* ---- word-hunt tier progress ---- */
+
+.ww-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 16px;
+  border-radius: var(--radius-l);
+}
+
+.ww-tier {
+  display: grid;
+  grid-template-columns: 106px 1fr 46px;
+  align-items: center;
+  gap: 10px;
+}
+
+.ww-tier-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.ww-tier-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.ww-tier-bar > div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--good);
+  transition: width 0.3s ease;
+}
+
+.ww-tier-count {
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ww-found {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
 }
 
 .board-hidden .ww-board,
-.board-hidden .ww-wheel,
+.board-hidden .ww-pizza-wrap,
+.board-hidden .ww-tiers,
 .board-hidden .ww-current {
   visibility: hidden;
 }
@@ -2226,6 +2456,7 @@ p {
 }
 
 .nm-board {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 6px;
@@ -2233,38 +2464,120 @@ p {
   user-select: none;
 }
 
+/* the soft 2.5D edge every tile carries on its bottom (user-requested
+   game-content depth cue — paint only, geometry stays pinned) */
 .nm-tile {
   aspect-ratio: 1;
   display: grid;
   place-items: center;
+  /* above the chain rope, which runs behind the tiles */
+  position: relative;
+  z-index: 1;
   border-radius: 10px;
   font-weight: 800;
   font-size: clamp(13px, 4.4vw, 20px);
   color: rgba(0, 0, 0, 0.72);
-  transition: transform 0.1s;
+  background: var(--nm-c);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18);
+  transition: transform 0.12s ease, filter 0.15s ease;
 }
 
+@media (hover: hover) {
+  .nm-tile:not(.in-chain):hover {
+    transform: scale(1.05);
+    filter: brightness(1.07);
+  }
+}
+
+/* selected tiles wear ONE border glued to the face: a lightened version
+   of the tile's own color (never black or white) */
 .nm-tile.in-chain {
   transform: scale(0.92);
-  box-shadow: 0 0 0 3px var(--text);
+  box-shadow:
+    0 0 0 4.5px color-mix(in srgb, var(--nm-c) 45%, #fff),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.18);
 }
 
 .nm-tile.hinted {
-  box-shadow: 0 0 0 3px var(--accent);
+  box-shadow:
+    0 0 0 3px var(--accent),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.18);
 }
 
-.nm-tile.v2, .nm-demo.v2 { background: var(--play-2); }
-.nm-tile.v4, .nm-demo.v4 { background: var(--play-5); }
-.nm-tile.v8, .nm-demo.v8 { background: var(--play-3); }
-.nm-tile.v16, .nm-demo.v16 { background: var(--play-1); }
-.nm-tile.v32, .nm-demo.v32 { background: var(--play-6); }
-.nm-tile.v64, .nm-demo.v64 { background: var(--play-7); }
-.nm-tile.v128, .nm-demo.v128 { background: var(--play-4); }
-.nm-tile.v256, .nm-demo.v256 { background: var(--play-8); }
-.nm-tile.v512, .nm-demo.v512 { background: var(--good); }
-.nm-tile.v1024, .nm-tile.v2048, .nm-demo.v1024 { background: var(--play-9); }
+/* tiles drop into place after a merge — distance set per tile via --fd */
+.nm-tile.fall {
+  animation: nm-fall 0.34s cubic-bezier(0.22, 0.9, 0.3, 1.12);
+}
+
+@keyframes nm-fall {
+  from {
+    transform: translateY(calc(var(--fd, 1) * -100% - var(--fd, 1) * 6px));
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* the merge result lands with a pop */
+.nm-tile.merged {
+  animation: nm-pop 0.28s ease;
+}
+
+@keyframes nm-pop {
+  0% {
+    transform: scale(0.55);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* the drag chain rope: runs BEHIND the tiles (thick, tile-colored), so it
+   reads as the tiles physically bridging through the gaps */
+.nm-links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.nm-link {
+  stroke: var(--nm-c, var(--text-dim));
+  stroke-width: 34;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  animation: nm-connect 0.15s ease-out forwards;
+}
+
+@keyframes nm-connect {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* one value → color map for everything numbered: tile fills, tutorial
+   demo tiles AND chain-rope segments all read --nm-c */
+.nm-tile.v2, .nm-demo.v2, .nm-link.v2 { --nm-c: var(--play-2); }
+.nm-tile.v4, .nm-demo.v4, .nm-link.v4 { --nm-c: var(--play-5); }
+.nm-tile.v8, .nm-demo.v8, .nm-link.v8 { --nm-c: var(--play-3); }
+.nm-tile.v16, .nm-demo.v16, .nm-link.v16 { --nm-c: var(--play-1); }
+.nm-tile.v32, .nm-demo.v32, .nm-link.v32 { --nm-c: var(--play-6); }
+.nm-tile.v64, .nm-demo.v64, .nm-link.v64 { --nm-c: var(--play-7); }
+.nm-tile.v128, .nm-demo.v128, .nm-link.v128 { --nm-c: var(--play-4); }
+.nm-tile.v256, .nm-demo.v256, .nm-link.v256 { --nm-c: var(--play-8); }
+.nm-tile.v512, .nm-demo.v512, .nm-link.v512 { --nm-c: var(--good); }
+.nm-tile.v1024, .nm-tile.v2048, .nm-demo.v1024, .nm-link.v1024, .nm-link.v2048 { --nm-c: var(--play-9); }
 
 .nm-demo {
+  background: var(--nm-c);
   border: none;
   color: rgba(0, 0, 0, 0.72);
   font-weight: 800;
@@ -2508,6 +2821,7 @@ p {
   font-weight: 600;
   font-size: 14px;
   color: var(--text-dim);
+  box-shadow: inset 0 -3px 0 var(--edge);
   transition: all 0.15s;
 }
 
@@ -2560,7 +2874,9 @@ p {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
-  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+  box-shadow: inset 0 -4px 0 var(--edge);
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.12s ease;
 }
 
 /* the marks fill half the cell and pop in (transform only — geometry
@@ -2600,17 +2916,21 @@ p {
   color: var(--play-9);
   background: var(--play-1);
   border-color: var(--play-1);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.22);
 }
 
 .ttt-cell.o {
   color: var(--play-9);
   background: var(--play-2);
   border-color: var(--play-2);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.22);
 }
 
 /* marked tiles are solid, so the winning line reads as a white inner ring */
 .ttt-cell.win {
-  box-shadow: inset 0 0 0 3px var(--play-9);
+  box-shadow:
+    inset 0 0 0 3px var(--play-9),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.22);
 }
 
 .ttt-cell.suggest {
@@ -2651,11 +2971,13 @@ p {
   background-color: var(--surface-2);
   border: 1px solid var(--border);
   overflow: hidden;
-  transition: transform 0.1s;
+  box-shadow: inset 0 -3px 0 var(--edge);
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .ip-tile:active {
-  transform: scale(0.96);
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
 }
 
 .ip-tile.placed {
@@ -2848,7 +3170,8 @@ p {
   background: var(--accent-soft);
   color: var(--accent);
   border: none;
-  transition: background 0.15s ease;
+  box-shadow: inset 0 -4px 0 var(--edge);
+  transition: background 0.15s ease, box-shadow 0.12s ease;
 }
 
 .mz-dbtn svg {
@@ -2875,6 +3198,7 @@ p {
 
 .mz-dbtn:active {
   background: color-mix(in srgb, var(--accent) 38%, transparent);
+  box-shadow: inset 0 -1px 0 var(--edge);
 }
 
 .mz-dbtn:active svg {
@@ -2961,6 +3285,7 @@ p {
   font-weight: 600;
   font-size: 14px;
   color: var(--text-dim);
+  box-shadow: inset 0 -3px 0 var(--edge);
   transition: all 0.15s;
 }
 
@@ -3077,8 +3402,8 @@ p {
   user-select: none;
 }
 
-/* covered tiles are flat solid chips; revealed tiles go transparent —
-   the covered/open contrast alone carries the depth cue */
+/* covered tiles are extruded candy blocks; revealed tiles sink flat —
+   the raised/flat contrast carries the depth cue */
 .ms-cell {
   display: grid;
   place-items: center;
@@ -3089,7 +3414,9 @@ p {
   font-weight: 800;
   color: var(--accent);
   padding: 0;
-  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+  box-shadow: inset 0 -3px 0 var(--edge);
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.12s ease;
 }
 
 /* subtle life: covered cells lift on hover, dip on press (transform only —
@@ -3109,6 +3436,7 @@ p {
 .ms-cell.open {
   background: transparent;
   border-color: color-mix(in srgb, var(--border) 45%, transparent);
+  box-shadow: none;
   animation: ms-reveal 0.16s ease;
 }
 
@@ -3126,6 +3454,7 @@ p {
   background: var(--bad);
   border-color: var(--bad);
   color: var(--ink);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
 }
 
 /* the pixel-art mine and flag scale with the cell, like the classic tiles */
@@ -3551,6 +3880,13 @@ p {
   font-weight: 650;
   font-size: 14.5px;
   margin-bottom: 22px;
+  box-shadow: inset 0 -3px 0 var(--edge);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.howto-btn:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
 }
 
 .howto-text {

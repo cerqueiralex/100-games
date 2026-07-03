@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppState } from '../AppState';
 import { GAMES, getGame } from '../registry';
 import { activeCategories, categoryName, gameCategory } from '../categories';
@@ -84,6 +84,51 @@ export function ProfilePage() {
     catCounts.set(c, (catCounts.get(c) ?? 0) + 1);
   }
   const topCat = [...catCounts.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
+
+  // history grouped by day, with a day filter fed by the days actually played
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const dayOf = (ts: number) => new Date(ts).toDateString();
+  const dayLabel = (key: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const d = new Date(key);
+    const diff = Math.round((today.getTime() - d.getTime()) / 86400000);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    return d.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      ...(d.getFullYear() !== today.getFullYear() ? { year: 'numeric' } : {})
+    });
+  };
+  const dateOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of filtered) {
+      const k = dayOf(r.finishedAt);
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+      .map(([key, count]) => ({ key, label: dayLabel(key), count }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered]);
+  // a day emptied by a scope change silently falls back to all dates
+  const effectiveDate = dateOptions.some((d) => d.key === dateFilter) ? dateFilter : 'all';
+  const historyGroups = useMemo(() => {
+    const shown =
+      effectiveDate === 'all'
+        ? filtered.slice(0, 100)
+        : filtered.filter((r) => dayOf(r.finishedAt) === effectiveDate);
+    const groups: [string, GameResult[]][] = [];
+    for (const r of shown) {
+      const k = dayOf(r.finishedAt);
+      const last = groups[groups.length - 1];
+      if (last && last[0] === k) last[1].push(r);
+      else groups.push([k, [r]]);
+    }
+    return groups;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, effectiveDate]);
 
   return (
     <div className="screen">
@@ -214,11 +259,35 @@ export function ProfilePage() {
         {filtered.length === 0 ? (
           <p className="empty-note">No games yet. Play something!</p>
         ) : (
-          <div className="history-list">
-            {filtered.slice(0, 100).map((r) => (
-              <HistoryRow key={r.id} result={r} />
+          <>
+            <div className="history-datebar">
+              <Dropdown
+                value={effectiveDate}
+                onChange={setDateFilter}
+                ariaLabel="Filter history by date"
+                options={[
+                  { value: 'all', label: 'All dates' },
+                  ...dateOptions.map((d) => ({
+                    value: d.key,
+                    label: `${d.label} · ${d.count} game${d.count > 1 ? 's' : ''}`
+                  }))
+                ]}
+              />
+            </div>
+            {historyGroups.map(([key, rows]) => (
+              <div key={key} className="history-group">
+                <h4 className="history-day-head">
+                  {dayLabel(key)}
+                  <span>{rows.length}</span>
+                </h4>
+                <div className="history-list">
+                  {rows.map((r) => (
+                    <HistoryRow key={r.id} result={r} />
+                  ))}
+                </div>
+              </div>
             ))}
-          </div>
+          </>
         )}
       </section>
 

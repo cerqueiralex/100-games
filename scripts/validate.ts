@@ -57,6 +57,44 @@ for (const [difficulty, levels] of Object.entries(LEVELS)) {
   }
 }
 
+console.log('— Word Wheel word bank & hunts —');
+{
+  const { WORD_BANK, validateWordBank, generateHunt, canForm } = await import(
+    '../src/games/word-wheel/logic/wordbank'
+  );
+  const bankErrors = validateWordBank();
+  if (bankErrors.length > 0) {
+    failed = true;
+    bankErrors.forEach((e) => console.error(`✗ bank: ${e}`));
+  } else {
+    console.log(`✓ bank: ${WORD_BANK.length} words, all valid and unique`);
+  }
+  for (const difficulty of ['easy', 'medium', 'hard'] as const) {
+    let ok = 0;
+    let wordSum = 0;
+    const t0 = Date.now();
+    for (let i = 0; i < 25; i++) {
+      const h = generateHunt(difficulty);
+      const sound =
+        h.words.length >= 4 &&
+        h.letters[0] === h.center &&
+        h.words.every((w) => w.includes(h.center) && canForm(w, h.letters));
+      if (sound) {
+        ok++;
+        wordSum += h.words.length;
+      }
+    }
+    if (ok < 25) {
+      failed = true;
+      console.error(`✗ hunt/${difficulty}: only ${ok}/25 generated hunts are sound`);
+    } else {
+      console.log(
+        `✓ hunt/${difficulty}: 25/25 sound, ~${Math.round(wordSum / 25)} words per hunt, ${Date.now() - t0}ms total`
+      );
+    }
+  }
+}
+
 console.log('— Cryptogram phrases —');
 const { PHRASES } = await import('../src/games/cryptogram/logic/phrases');
 for (const [difficulty, phrases] of Object.entries(PHRASES)) {
