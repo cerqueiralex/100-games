@@ -4,6 +4,7 @@ import { minesweeperTutorial } from './tutorial';
 
 export const minesweeperDefinition: GameDefinition = {
   id: 'minesweeper',
+  category: 'logic',
   name: 'Minesweeper',
   tagline: 'Read the numbers, flag the mines, clear the field.',
   icon: '⚑',

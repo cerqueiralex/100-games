@@ -5,6 +5,21 @@ export const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
 
 export type Outcome = 'won' | 'lost' | 'abandoned';
 
+/**
+ * Game categories — a fixed platform vocabulary that games pick from
+ * (see platform/categories.ts). Designed to scale: future games either fit
+ * an existing category or add ONE new entry there, never per-game strings.
+ */
+export type CategoryId =
+  | 'logic'
+  | 'words'
+  | 'memory'
+  | 'focus'
+  | 'numbers'
+  | 'spatial'
+  | 'strategy'
+  | 'reflex';
+
 /** A toggleable assist/help feature declared by a game. */
 export interface AssistFeature {
   id: string;
@@ -100,6 +115,8 @@ export interface GameDefinition {
   tagline: string;
   /** Inline SVG path or emoji used on the home card. */
   icon: string;
+  /** The category this game belongs to (menu filter + profile stats). */
+  category: CategoryId;
   assistFeatures: AssistFeature[];
   component: ComponentType<GameProps>;
   scoringNote: string;

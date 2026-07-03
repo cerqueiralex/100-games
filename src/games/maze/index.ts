@@ -4,6 +4,7 @@ import { mazeTutorial } from './tutorial';
 
 export const mazeDefinition: GameDefinition = {
   id: 'maze',
+  category: 'spatial',
   name: 'Maze',
   tagline: 'Race through a freshly generated labyrinth to the exit.',
   icon: '◱',

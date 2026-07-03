@@ -4,6 +4,7 @@ import { crosswordTutorial } from './tutorial';
 
 export const crosswordDefinition: GameDefinition = {
   id: 'crossword',
+  category: 'words',
   name: 'Crossword',
   tagline: 'Solve the clues and fill the crossing words.',
   icon: 'A–Z',

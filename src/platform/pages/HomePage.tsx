@@ -1,22 +1,27 @@
 import { useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useAppState } from '../AppState';
 import { GAMES } from '../registry';
+import { activeCategories, categoryColor, categoryName } from '../categories';
 import { computeStats, formatDuration } from '../stats';
 import { SearchIcon, StarIcon } from '../design/icons';
 import { sfx } from '../audio';
-import type { GameDefinition } from '../types';
+import type { CategoryId, GameDefinition } from '../types';
 
 export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void }) {
   const { profile, history, settings, updateSettings } = useAppState();
   const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<CategoryId | null>(null);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   const q = query.trim().toLowerCase();
-  const visible = q
-    ? GAMES.filter((g) => `${g.name} ${g.tagline}`.toLowerCase().includes(q))
-    : GAMES;
+  const visible = GAMES.filter(
+    (g) =>
+      (!q || `${g.name} ${g.tagline}`.toLowerCase().includes(q)) &&
+      (!category || g.category === category)
+  );
 
   const favorites = settings.favorites;
   const pinned = visible.filter((g) => favorites.includes(g.id));
@@ -47,16 +52,24 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
               <span className="game-card-tag">{game.tagline}</span>
             </span>
           </span>
-          <span className={`game-card-stats ${stats.played > 0 ? 'has-stats' : ''}`}>
-            {stats.played > 0 ? (
-              <>
-                {stats.played} played · best{' '}
-                {stats.bestTime !== null ? formatDuration(stats.bestTime) : '—'} ·{' '}
-                {Math.round(stats.winRate * 100)}% wins
-              </>
-            ) : (
-              'Not played yet'
-            )}
+          <span className="game-card-meta">
+            <span className={`game-card-stats ${stats.played > 0 ? 'has-stats' : ''}`}>
+              {stats.played > 0 ? (
+                <>
+                  {stats.played} played · best{' '}
+                  {stats.bestTime !== null ? formatDuration(stats.bestTime) : '—'} ·{' '}
+                  {Math.round(stats.winRate * 100)}% wins
+                </>
+              ) : (
+                'Not played yet'
+              )}
+            </span>
+            <span
+              className="game-card-cat"
+              style={{ '--cat': categoryColor(game.category) } as CSSProperties}
+            >
+              {categoryName(game.category)}
+            </span>
           </span>
         </span>
         <span
@@ -112,6 +125,33 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
         )}
       </div>
 
+      {/* category filter — tap a tag to filter, tap again (or All) to clear */}
+      <div className="cat-chips">
+        <button
+          className={`cat-chip ${category === null ? 'active' : ''}`}
+          onClick={() => {
+            sfx.tap();
+            setCategory(null);
+          }}
+        >
+          All
+        </button>
+        {activeCategories().map((c) => (
+          <button
+            key={c.id}
+            className={`cat-chip ${category === c.id ? 'active' : ''}`}
+            onClick={() => {
+              sfx.tap();
+              setCategory(category === c.id ? null : c.id);
+            }}
+            aria-pressed={category === c.id}
+          >
+            <span className="cat-dot" style={{ background: categoryColor(c.id) }} />
+            {c.name}
+          </button>
+        ))}
+      </div>
+
       {pinned.length > 0 && (
         <>
           <h3 className="section-title home-section">
@@ -128,9 +168,13 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
       <div className="game-cards">
         {rest.map(renderCard)}
 
-        {visible.length === 0 && <p className="empty-note">No games match “{query}”.</p>}
+        {visible.length === 0 && (
+          <p className="empty-note">
+            {q ? `No games match “${query}”.` : `No ${categoryName(category!)} games yet.`}
+          </p>
+        )}
 
-        {!q && (
+        {!q && !category && (
           <div className="game-card fx-card coming-soon">
             <span className="game-card-main">
               <span className="game-card-top">

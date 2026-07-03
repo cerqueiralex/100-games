@@ -4,6 +4,7 @@ import { logicGridTutorial } from './tutorial';
 
 export const logicGridDefinition: GameDefinition = {
   id: 'logic-grid',
+  category: 'logic',
   name: 'Logic Puzzles',
   tagline: 'Cross-reference the clues until every match is found.',
   icon: '✓✕',

@@ -4,6 +4,7 @@ import { dualNBackTutorial } from './tutorial';
 
 export const dualNBackDefinition: GameDefinition = {
   id: 'dual-n-back',
+  category: 'focus',
   name: 'Dual N-Back',
   tagline: 'Track positions AND letters at once — the advanced memory workout.',
   icon: 'n×2',

@@ -4,6 +4,7 @@ import { colorConnectTutorial } from './tutorial';
 
 export const colorConnectDefinition: GameDefinition = {
   id: 'color-connect',
+  category: 'spatial',
   name: 'Color Connect',
   tagline: 'Link every pair of dots without crossing the pipes.',
   icon: '●–●',

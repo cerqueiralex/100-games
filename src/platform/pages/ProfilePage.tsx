@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useAppState } from '../AppState';
 import { GAMES, getGame } from '../registry';
+import { activeCategories, categoryName, gameCategory } from '../categories';
 import { computeStats, formatDate, formatDuration } from '../stats';
 import { Chip, Dropdown, Modal, StatCard } from '../components/ui';
-import { ActivityChart, GamesPieChart, TrendChart } from '../components/charts';
-import type { GameResult } from '../types';
+import { ActivityChart, CategoryBarChart, GamesPieChart, TrendChart } from '../components/charts';
+import type { CategoryId, GameResult } from '../types';
 
 const EMOJIS = ['🎮', '🦊', '🐼', '🦉', '🐯', '🚀', '🌙', '⚡', '🎯', '🧩', '👾', '🏆'];
 
@@ -60,9 +61,29 @@ export function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(profile.name);
 
-  const filtered = filter === 'all' ? history : history.filter((r) => r.gameId === filter);
+  // scopes: everything, one category ('cat:<id>'), or a single game
+  const catScope = filter.startsWith('cat:') ? (filter.slice(4) as CategoryId) : null;
+  const filtered =
+    filter === 'all'
+      ? history
+      : catScope
+        ? history.filter((r) => gameCategory(r.gameId) === catScope)
+        : history.filter((r) => r.gameId === filter);
   const stats = computeStats(filtered);
-  const scopeGames = filter === 'all' ? GAMES : GAMES.filter((g) => g.id === filter);
+  const scopeGames =
+    filter === 'all'
+      ? GAMES
+      : catScope
+        ? GAMES.filter((g) => g.category === catScope)
+        : GAMES.filter((g) => g.id === filter);
+
+  // most played category across the current scope
+  const catCounts = new Map<CategoryId, number>();
+  for (const r of filtered) {
+    const c = gameCategory(r.gameId);
+    catCounts.set(c, (catCounts.get(c) ?? 0) + 1);
+  }
+  const topCat = [...catCounts.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
 
   return (
     <div className="screen">
@@ -92,6 +113,7 @@ export function ProfilePage() {
           ariaLabel="Filter statistics by game"
           options={[
             { value: 'all', label: 'All games' },
+            ...activeCategories().map((c) => ({ value: `cat:${c.id}`, label: `Category · ${c.name}` })),
             ...GAMES.map((g) => ({ value: g.id, label: g.name }))
           ]}
         />
@@ -99,6 +121,12 @@ export function ProfilePage() {
 
       {filter === 'all' ? (
         <>
+          <section className="setup-section">
+            <h3 className="section-title">Categories</h3>
+            <div className="chart-card fx-card">
+              <CategoryBarChart history={history} />
+            </div>
+          </section>
           <section className="setup-section">
             <h3 className="section-title">Most played</h3>
             <div className="chart-card fx-card">
@@ -113,18 +141,33 @@ export function ProfilePage() {
           </section>
         </>
       ) : (
-        <section className="setup-section">
-          <h3 className="section-title">Progress — last 30 days</h3>
-          <div className="chart-card fx-card">
-            <TrendChart results={filtered} />
-          </div>
-        </section>
+        <>
+          {catScope && (
+            <section className="setup-section">
+              <h3 className="section-title">Most played — {categoryName(catScope)}</h3>
+              <div className="chart-card fx-card">
+                <GamesPieChart history={filtered} />
+              </div>
+            </section>
+          )}
+          <section className="setup-section">
+            <h3 className="section-title">Progress — last 30 days</h3>
+            <div className="chart-card fx-card">
+              <TrendChart results={filtered} />
+            </div>
+          </section>
+        </>
       )}
 
       <section className="setup-section">
         <h3 className="section-title">Statistics</h3>
         <div className="stat-grid">
           <StatCard label="Games played" value={stats.played} />
+          <StatCard
+            label="Top category"
+            value={topCat ? categoryName(topCat[0]) : '—'}
+            hint={topCat ? `${topCat[1]} plays` : 'no games yet'}
+          />
           <StatCard label="Win rate" value={`${Math.round(stats.winRate * 100)}%`} hint={`${stats.won} won · ${stats.lost} lost`} />
           <StatCard label="Best time" value={stats.bestTime !== null ? formatDuration(stats.bestTime) : '—'} />
           <StatCard label="Avg time" value={stats.avgTime !== null ? formatDuration(stats.avgTime) : '—'} />

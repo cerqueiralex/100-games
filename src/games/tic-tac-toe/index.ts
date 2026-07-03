@@ -4,6 +4,7 @@ import { ticTacToeTutorial } from './tutorial';
 
 export const ticTacToeDefinition: GameDefinition = {
   id: 'tic-tac-toe',
+  category: 'strategy',
   name: 'Tic-Tac-Toe',
   tagline: 'Beat the robot or a friend — best of N rounds.',
   icon: 'X·O',

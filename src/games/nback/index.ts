@@ -4,6 +4,7 @@ import { nBackTutorial } from './tutorial';
 
 export const nBackDefinition: GameDefinition = {
   id: 'n-back',
+  category: 'focus',
   name: 'N-Back',
   tagline: 'Press Match when the position repeats from N steps back.',
   icon: 'n−1',

@@ -4,6 +4,7 @@ import { numberMergeTutorial } from './tutorial';
 
 export const numberMergeDefinition: GameDefinition = {
   id: 'number-merge',
+  category: 'numbers',
   name: 'Number Merge',
   tagline: 'Drag chains of numbers and merge your way to the goal tile.',
   icon: '248',

@@ -4,6 +4,7 @@ import { memoryMatchTutorial } from './tutorial';
 
 export const memoryMatchDefinition: GameDefinition = {
   id: 'memory-match',
+  category: 'memory',
   name: 'Memory Match',
   tagline: 'Flip the cards and find every matching pair.',
   icon: '◆◆',

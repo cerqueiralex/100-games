@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import type { GameResult } from '../types';
+import type { CategoryId, GameResult } from '../types';
 import { GAMES } from '../registry';
+import { categoryColor, categoryName, gameCategory } from '../categories';
 import { formatDuration } from '../stats';
 import { sfx } from '../audio';
 
@@ -102,6 +103,62 @@ export function GamesPieChart({ history }: { history: GameResult[] }) {
       </svg>
       <Legend ids={slices.map((s) => s.id)} counts={counts} />
     </div>
+  );
+}
+
+/* ---------- horizontal bars: plays per category ---------- */
+
+export function CategoryBarChart({ history }: { history: GameResult[] }) {
+  const rows = useMemo(() => {
+    const counts = new Map<CategoryId, number>();
+    for (const r of history) {
+      const cat = gameCategory(r.gameId);
+      counts.set(cat, (counts.get(cat) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [history]);
+
+  if (rows.length === 0) {
+    return <p className="empty-note">Play some games to see your category split.</p>;
+  }
+
+  const W = 600;
+  const ROW = 40;
+  const H = rows.length * ROW;
+  const labelW = 130;
+  const countW = 64;
+  const max = rows[0][1];
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="chart-svg"
+      role="img"
+      aria-label="Plays per category"
+    >
+      {rows.map(([cat, count], i) => {
+        const y = i * ROW;
+        const w = Math.max(8, (count / max) * (W - labelW - countW));
+        return (
+          <g key={cat}>
+            <text x={labelW - 14} y={y + ROW / 2 + 5} textAnchor="end" className="catbar-name">
+              {categoryName(cat)}
+            </text>
+            <rect
+              x={labelW}
+              y={y + 9}
+              width={w}
+              height={ROW - 18}
+              rx={(ROW - 18) / 2}
+              fill={categoryColor(cat)}
+            />
+            <text x={labelW + w + 12} y={y + ROW / 2 + 5} className="catbar-count">
+              {count}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 

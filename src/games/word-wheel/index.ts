@@ -4,6 +4,7 @@ import { wordWheelTutorial } from './tutorial';
 
 export const wordWheelDefinition: GameDefinition = {
   id: 'word-wheel',
+  category: 'words',
   name: 'Word Wheel',
   tagline: 'Spell words from the letter wheel to fill the crossword.',
   icon: 'A◯',

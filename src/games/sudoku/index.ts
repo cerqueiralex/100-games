@@ -4,6 +4,7 @@ import { sudokuTutorial } from './tutorial';
 
 export const sudokuDefinition: GameDefinition = {
   id: 'sudoku',
+  category: 'logic',
   name: 'Sudoku',
   tagline: 'Fill the grid so every row, column and box has 1–9.',
   icon: '9×9',

@@ -233,6 +233,43 @@ p {
   line-height: 1;
 }
 
+/* category filter — toggle tags under the search bar; wraps so every
+   category is always visible (no hidden horizontal scroll) */
+.cat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.cat-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.cat-chip.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.cat-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 .game-cards {
   display: flex;
   flex-direction: column;
@@ -304,8 +341,28 @@ p {
   color: var(--text-dim);
 }
 
+/* bottom row of the card: stats pill + category tag side by side */
+.game-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* the category tag, colored from the category's content-palette slot */
+.game-card-cat {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--cat, var(--text-dim));
+  background: color-mix(in srgb, var(--cat, var(--text-dim)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cat, var(--text-dim)) 45%, transparent);
+  border-radius: 999px;
+  padding: 4px 11px;
+  white-space: nowrap;
+}
+
 .game-card-stats {
-  align-self: flex-start;
+  align-self: center;
   font-size: 12px;
   color: var(--text-dim);
 }
@@ -1107,6 +1164,20 @@ p {
 .axis-label {
   fill: var(--text-dim);
   font-size: 11px;
+}
+
+/* category bar chart labels (600-unit viewBox, so sizes are chart units) */
+.catbar-name {
+  fill: var(--text);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.catbar-count {
+  fill: var(--text-dim);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .grid-line {

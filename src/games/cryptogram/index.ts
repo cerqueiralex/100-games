@@ -4,6 +4,7 @@ import { cryptogramTutorial } from './tutorial';
 
 export const cryptogramDefinition: GameDefinition = {
   id: 'cryptogram',
+  category: 'words',
   name: 'Cryptogram',
   tagline: 'Crack the substitution cipher to reveal the hidden phrase.',
   icon: 'X→A',

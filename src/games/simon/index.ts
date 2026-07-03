@@ -4,6 +4,7 @@ import { simonTutorial } from './tutorial';
 
 export const simonDefinition: GameDefinition = {
   id: 'simon',
+  category: 'memory',
   name: 'Simon',
   tagline: 'Repeat ever-longer color and sound sequences.',
   icon: '◉◉',

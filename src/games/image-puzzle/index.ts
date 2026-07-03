@@ -4,6 +4,7 @@ import { imagePuzzleTutorial } from './tutorial';
 
 export const imagePuzzleDefinition: GameDefinition = {
   id: 'image-puzzle',
+  category: 'spatial',
   name: 'Image Puzzle',
   tagline: 'Slide the tiles to restore the photo.',
   icon: '▦',
