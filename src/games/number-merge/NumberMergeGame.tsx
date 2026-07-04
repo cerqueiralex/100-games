@@ -61,6 +61,8 @@ interface MergeSave {
   undosLeft: number;
   hintsUsed: number;
   assistsUsed: string[];
+  /** pre-merge state the Undo tool restores (absent in older saves) */
+  undoState?: { board: number[]; score: number; best: number } | null;
 }
 
 export function NumberMergeGame({
@@ -72,11 +74,16 @@ export function NumberMergeGame({
   registerSnapshot
 }: GameProps) {
   const target = TARGET[difficulty];
-  const saved = savedState as MergeSave | undefined;
+  // ignore old-format saves that lack the expected shape
+  const saved =
+    savedState && Array.isArray((savedState as MergeSave).board)
+      ? (savedState as MergeSave)
+      : undefined;
   const [board, setBoard] = useState<number[]>(() =>
     saved ? [...saved.board] : Array.from({ length: N }, () => spawnValue(16))
   );
   const [chain, setChain] = useState<number[]>([]);
+  const [undoState, setUndoState] = useState<MergeSave['undoState']>(saved?.undoState ?? null);
   const [score, setScore] = useState(saved?.score ?? 0);
   const [errors] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
@@ -95,10 +102,21 @@ export function NumberMergeGame({
   const done = useRef(false);
   const dragging = useRef(false);
   const boardRef = useRef<HTMLDivElement>(null);
-  const undoState = useRef<{ board: number[]; score: number; best: number } | null>(null);
+  // synchronous mirror so pointer handlers compute OUTSIDE setState updaters
+  // (side effects in updaters run during render) without racing batched moves
+  const chainRef = useRef<number[]>([]);
+  const commitChain = (ch: number[]) => {
+    chainRef.current = ch;
+    setChain(ch);
+  };
   const assistsUsed = useRef<Set<string>>(
     new Set([...(saved?.assistsUsed ?? []), ...(assists.chainPreview ? ['chainPreview'] : [])])
   );
+
+  // passive assist: counts as help whenever enabled, including mid-game
+  useEffect(() => {
+    if (assists.chainPreview) assistsUsed.current.add('chainPreview');
+  }, [assists.chainPreview]);
 
   useEffect(() => {
     events.onStats({
@@ -148,7 +166,7 @@ export function NumberMergeGame({
     dragging.current = true;
     boardRef.current?.setPointerCapture(e.pointerId);
     setHintCells(new Set());
-    setChain([cell]);
+    commitChain([cell]);
     sfx.tap();
   };
 
@@ -156,81 +174,83 @@ export function NumberMergeGame({
     if (!dragging.current || paused || done.current) return;
     const cell = cellFromPoint(e.clientX, e.clientY);
     if (cell === null) return;
-    setChain((ch) => {
-      if (ch.length === 0 || cell === ch[ch.length - 1]) return ch;
-      if (ch.length >= 2 && cell === ch[ch.length - 2]) return ch.slice(0, -1); // backtrack
-      if (ch.includes(cell) || !adjacent(ch[ch.length - 1], cell)) return ch;
-      const prevVal = board[ch[ch.length - 1]];
-      const ok = ch.length === 1 ? board[cell] === prevVal : canExtend(prevVal, board[cell]);
-      if (!ok) return ch;
-      sfx.tap();
-      return [...ch, cell];
-    });
+    const ch = chainRef.current;
+    if (ch.length === 0 || cell === ch[ch.length - 1]) return;
+    if (ch.length >= 2 && cell === ch[ch.length - 2]) {
+      commitChain(ch.slice(0, -1)); // backtrack
+      return;
+    }
+    if (ch.includes(cell) || !adjacent(ch[ch.length - 1], cell)) return;
+    const prevVal = board[ch[ch.length - 1]];
+    const ok = ch.length === 1 ? board[cell] === prevVal : canExtend(prevVal, board[cell]);
+    if (!ok) return;
+    sfx.tap();
+    commitChain([...ch, cell]);
   };
 
   const resolveChain = () => {
     dragging.current = false;
-    setChain((ch) => {
-      if (ch.length < 2 || done.current) return [];
-      const values = ch.map((i) => board[i]);
-      const result = chainResult(values);
-      undoState.current = { board: [...board], score, best };
+    const ch = chainRef.current;
+    commitChain([]);
+    // a pointerup delivered after pausing (captured pointer) must not commit
+    if (ch.length < 2 || done.current || paused) return;
+    const values = ch.map((i) => board[i]);
+    const result = chainResult(values);
+    setUndoState({ board: [...board], score, best });
 
-      const next = [...board];
-      const last = ch[ch.length - 1];
-      for (const i of ch) next[i] = 0;
-      next[last] = result;
-      // gravity per column, then refill from the top — tracking how far
-      // every tile falls so the board can animate the drops
-      const maxTile = Math.max(result, best);
-      const fall = new Array<number>(N).fill(0);
-      let mergedAt: number | null = null;
-      for (let c = 0; c < COLS; c++) {
-        const stack: { v: number; oldR: number }[] = [];
-        for (let r = ROWS - 1; r >= 0; r--) {
-          const v = next[r * COLS + c];
-          if (v !== 0) stack.push({ v, oldR: r });
-        }
-        for (let r = ROWS - 1; r >= 0; r--) {
-          const k = ROWS - 1 - r;
-          const idx = r * COLS + c;
-          if (k < stack.length) {
-            next[idx] = stack[k].v;
-            fall[idx] = r - stack[k].oldR;
-            if (stack[k].oldR * COLS + c === last) mergedAt = idx;
-          } else {
-            next[idx] = spawnValue(maxTile);
-            // fresh tiles drop in from above the board edge
-            fall[idx] = r + 1;
-          }
+    const next = [...board];
+    const last = ch[ch.length - 1];
+    for (const i of ch) next[i] = 0;
+    next[last] = result;
+    // gravity per column, then refill from the top — tracking how far
+    // every tile falls so the board can animate the drops
+    const maxTile = Math.max(result, best);
+    const fall = new Array<number>(N).fill(0);
+    let mergedAt: number | null = null;
+    for (let c = 0; c < COLS; c++) {
+      const stack: { v: number; oldR: number }[] = [];
+      for (let r = ROWS - 1; r >= 0; r--) {
+        const v = next[r * COLS + c];
+        if (v !== 0) stack.push({ v, oldR: r });
+      }
+      for (let r = ROWS - 1; r >= 0; r--) {
+        const k = ROWS - 1 - r;
+        const idx = r * COLS + c;
+        if (k < stack.length) {
+          next[idx] = stack[k].v;
+          fall[idx] = r - stack[k].oldR;
+          if (stack[k].oldR * COLS + c === last) mergedAt = idx;
+        } else {
+          next[idx] = spawnValue(maxTile);
+          // fresh tiles drop in from above the board edge
+          fall[idx] = r + 1;
         }
       }
-      setFx((f) => ({ fall, mergedAt, wave: f.wave + 1 }));
-      const nextScore = score + result;
-      const nextBest = Math.max(best, result);
-      setBoard(next);
-      setScore(nextScore);
-      setBest(nextBest);
-      sfx.place();
-      if (result >= target) {
-        finish('won', nextScore, hintsUsed, nextBest);
-      } else if (!hasAnyMove(next)) {
-        sfx.lose();
-        finish('lost', nextScore, hintsUsed, nextBest);
-      }
-      return [];
-    });
+    }
+    setFx((f) => ({ fall, mergedAt, wave: f.wave + 1 }));
+    const nextScore = score + result;
+    const nextBest = Math.max(best, result);
+    setBoard(next);
+    setScore(nextScore);
+    setBest(nextBest);
+    sfx.place();
+    if (result >= target) {
+      finish('won', nextScore, hintsUsed, nextBest);
+    } else if (!hasAnyMove(next)) {
+      sfx.lose();
+      finish('lost', nextScore, hintsUsed, nextBest);
+    }
   };
 
   const undo = () => {
-    if (paused || done.current || !assists.undo || undosLeft === 0 || !undoState.current) return;
+    if (paused || done.current || !assists.undo || undosLeft === 0 || !undoState) return;
     assistsUsed.current.add('undo');
     setHintsUsed((h) => h + 1);
     setUndosLeft((u) => u - 1);
-    setBoard(undoState.current.board);
-    setScore(undoState.current.score);
-    setBest(undoState.current.best);
-    undoState.current = null;
+    setBoard(undoState.board);
+    setScore(undoState.score);
+    setBest(undoState.best);
+    setUndoState(null);
     // no fall replay when a board is restored
     setFx((f) => ({ fall: new Array(N).fill(0), mergedAt: null, wave: f.wave + 1 }));
     sfx.hint();
@@ -264,7 +284,8 @@ export function NumberMergeGame({
       best,
       undosLeft,
       hintsUsed,
-      assistsUsed: [...assistsUsed.current]
+      assistsUsed: [...assistsUsed.current],
+      undoState
     }));
   });
 
@@ -337,22 +358,24 @@ export function NumberMergeGame({
         )}
       </div>
 
-      <div className="game-tools fx-card">
-      <div className="sudoku-controls">
-        {assists.undo && (
-          <PadTool silent onClick={undo} disabled={undosLeft === 0}>
-            <RestartIcon />
-            <span>Undo ({undosLeft})</span>
-          </PadTool>
-        )}
-        {assists.showHint && (
-          <PadTool silent onClick={showHint}>
-            <BulbIcon />
-            <span>Hint</span>
-          </PadTool>
-        )}
-      </div>
-      </div>
+      {(assists.undo || assists.showHint) && (
+        <div className="game-tools fx-card">
+          <div className="sudoku-controls">
+            {assists.undo && (
+              <PadTool silent onClick={undo} disabled={undosLeft === 0 || !undoState}>
+                <RestartIcon />
+                <span>Undo ({undosLeft})</span>
+              </PadTool>
+            )}
+            {assists.showHint && (
+              <PadTool silent onClick={showHint}>
+                <BulbIcon />
+                <span>Hint</span>
+              </PadTool>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -26,7 +26,13 @@ export function ColorConnectGame({
   savedState,
   registerSnapshot
 }: GameProps) {
-  const saved = savedState as FlowSave | undefined;
+  // ignore old-format saves that lack the expected shape
+  const saved =
+    savedState &&
+    Array.isArray((savedState as FlowSave).paths) &&
+    Array.isArray((savedState as FlowSave).level?.paths)
+      ? (savedState as FlowSave)
+      : undefined;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const level = useMemo(() => saved?.level ?? generateFlowLevel(difficulty), [difficulty]);
   const size = level.size;
@@ -49,6 +55,15 @@ export function ColorConnectGame({
     saved ? saved.paths.map((p) => [...p]) : level.paths.map(() => [])
   );
   const [moves, setMoves] = useState(saved?.moves ?? 0);
+  // synchronous mirrors so pointer handlers can compute OUTSIDE setState
+  // updaters (side effects in updaters run during render — React warns and
+  // StrictMode would double them) without racing batched events
+  const pathsRef = useRef(paths);
+  const movesRef = useRef(moves);
+  const commitPaths = (next: number[][]) => {
+    pathsRef.current = next;
+    setPaths(next);
+  };
   const [score, setScore] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
 
@@ -60,6 +75,11 @@ export function ColorConnectGame({
   );
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
+
+  // passive assist: counts as help whenever enabled, including mid-game
+  useEffect(() => {
+    if (assists.progress) assistsUsed.current.add('progress');
+  }, [assists.progress]);
 
   const isComplete = useCallback(
     (ps: number[][], color: number) => {
@@ -117,9 +137,16 @@ export function ColorConnectGame({
     const el = boardRef.current;
     if (!el) return null;
     const rect = el.getBoundingClientRect();
-    const cs = rect.width / size;
-    const c = Math.floor((x - rect.left) / cs);
-    const r = Math.floor((y - rect.top) / cs);
+    // measure the content box: the board has a border, padding and a grid
+    // gap, so dividing the raw rect by size drifts the lattice off the cells
+    const style = getComputedStyle(el);
+    const padL = parseFloat(style.paddingLeft);
+    const padT = parseFloat(style.paddingTop);
+    const gap = parseFloat(style.columnGap) || 0;
+    const inner = el.clientWidth - padL - parseFloat(style.paddingRight);
+    const pitch = (inner + gap) / size;
+    const c = Math.floor((x - (rect.left + el.clientLeft + padL)) / pitch);
+    const r = Math.floor((y - (rect.top + el.clientTop + padT)) / pitch);
     if (c < 0 || c >= size || r < 0 || r >= size) return null;
     return r * size + c;
   };
@@ -136,22 +163,22 @@ export function ColorConnectGame({
     if (cell === null) return;
     boardRef.current?.setPointerCapture(e.pointerId);
     const epColor = endpointOwner.get(cell);
-    setPaths((ps) => {
-      const next = ps.map((p) => [...p]);
-      let color: number | null = null;
-      if (epColor !== undefined) {
-        color = epColor;
-        next[color] = [cell]; // restart from this endpoint
-      } else {
-        color = next.findIndex((p) => p.includes(cell));
-        if (color === -1) return ps;
-        next[color] = next[color].slice(0, next[color].indexOf(cell) + 1);
-      }
-      active.current = color;
-      setMoves((m) => m + 1);
-      sfx.tap();
-      return next;
-    });
+    const ps = pathsRef.current;
+    const next = ps.map((p) => [...p]);
+    let color: number;
+    if (epColor !== undefined) {
+      color = epColor;
+      next[color] = [cell]; // restart from this endpoint
+    } else {
+      color = next.findIndex((p) => p.includes(cell));
+      if (color === -1) return;
+      next[color] = next[color].slice(0, next[color].indexOf(cell) + 1);
+    }
+    active.current = color;
+    movesRef.current += 1;
+    setMoves(movesRef.current);
+    sfx.tap();
+    commitPaths(next);
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -159,11 +186,12 @@ export function ColorConnectGame({
     const cell = cellFromPoint(e.clientX, e.clientY);
     if (cell === null) return;
     const color = active.current;
-    setPaths((ps) => {
+    {
+      const ps = pathsRef.current;
       const p0 = ps[color];
-      if (p0.length === 0) return ps;
+      if (p0.length === 0) return;
       const last = p0[p0.length - 1];
-      if (cell === last) return ps;
+      if (cell === last) return;
 
       // interpolate a straight run of cells so fast drags never skip tiles
       const steps: number[] = [];
@@ -180,7 +208,7 @@ export function ColorConnectGame({
       } else if (orthAdjacent(last, cell)) {
         steps.push(cell);
       } else {
-        return ps;
+        return;
       }
 
       let next = ps;
@@ -214,44 +242,40 @@ export function ColorConnectGame({
           break;
         }
       }
-      if (!changed) return ps;
+      if (!changed) return;
       if (connected) sfx.pop();
       else sfx.drag();
-      return next;
-    });
+      commitPaths(next);
+    }
   };
 
   const onPointerUp = () => {
     active.current = null;
-    setPaths((ps) => {
-      maybeFinish(ps, hintsUsed, moves);
-      return ps;
-    });
+    maybeFinish(pathsRef.current, hintsUsed, movesRef.current);
   };
 
   const useHint = () => {
     if (paused || done.current || !assists.solveColor) return;
-    const idx = level.paths.findIndex((_, i) => !isComplete(paths, i));
+    const ps = pathsRef.current;
+    const idx = level.paths.findIndex((_, i) => !isComplete(ps, i));
     if (idx === -1) return;
     assistsUsed.current.add('solveColor');
     const hints = hintsUsed + 1;
     setHintsUsed(hints);
     sfx.hint();
-    setPaths((ps) => {
-      const next = ps.map((q) => [...q]);
-      const solution = level.paths[idx];
-      // clear other paths that overlap the solution
-      for (let i = 0; i < next.length; i++) {
-        if (i === idx) continue;
-        next[i] = next[i].filter((c) => !solution.includes(c) || endpointOwner.get(c) === i);
-        // keep only the contiguous prefix
-        const cut = next[i].findIndex((c, k) => k > 0 && !orthAdjacent(next[i][k - 1], c));
-        if (cut !== -1) next[i] = next[i].slice(0, cut);
-      }
-      next[idx] = [...solution];
-      maybeFinish(next, hints, moves);
-      return next;
-    });
+    const next = ps.map((q) => [...q]);
+    const solution = level.paths[idx];
+    // clear other paths that overlap the solution
+    for (let i = 0; i < next.length; i++) {
+      if (i === idx) continue;
+      next[i] = next[i].filter((c) => !solution.includes(c) || endpointOwner.get(c) === i);
+      // keep only the contiguous prefix
+      const cut = next[i].findIndex((c, k) => k > 0 && !orthAdjacent(next[i][k - 1], c));
+      if (cut !== -1) next[i] = next[i].slice(0, cut);
+    }
+    next[idx] = [...solution];
+    commitPaths(next);
+    maybeFinish(next, hints, movesRef.current);
   };
 
   /** cell -> which color's pipe passes through and towards which edges */

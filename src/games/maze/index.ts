@@ -22,7 +22,8 @@ export const mazeDefinition: GameDefinition = {
     {
       id: 'showPath',
       name: 'Show path',
-      description: 'Flashes the optimal route for 2 seconds. Counts as help when used.',
+      description:
+        'Briefly flashes the optimal route (longer on bigger mazes). Counts as help when used.',
       defaultOn: true
     }
   ]

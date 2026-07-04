@@ -54,7 +54,11 @@ export function MemoryMatchGame({
   registerSnapshot
 }: GameProps) {
   const cfg = CONFIG[difficulty];
-  const saved = savedState as MemorySave | undefined;
+  // old-format saves may lack `matched` — treat them as no save
+  const saved =
+    savedState && Array.isArray((savedState as MemorySave).matched)
+      ? (savedState as MemorySave)
+      : undefined;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const deck = useMemo(() => saved?.deck ?? buildDeck(cfg.pairs), [cfg.pairs]);
 
@@ -72,6 +76,7 @@ export function MemoryMatchGame({
   const matchedCount = useRef(saved ? saved.matched.filter(Boolean).length : 0);
   const done = useRef(false);
   const flipBackTimer = useRef<number | null>(null);
+  const peekTimer = useRef<number | null>(null);
   const assistsUsed = useRef<Set<string>>(new Set(saved?.assistsUsed ?? []));
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
@@ -169,11 +174,15 @@ export function MemoryMatchGame({
     setScore((s) => Math.max(0, s - PEEK_PENALTY));
     sfx.hint();
     setRevealAll(true);
-    window.setTimeout(() => setRevealAll(false), 1000);
+    peekTimer.current = window.setTimeout(() => {
+      setRevealAll(false);
+      peekTimer.current = null;
+    }, 1000);
   };
 
   useEffect(() => () => {
     if (flipBackTimer.current) clearTimeout(flipBackTimer.current);
+    if (peekTimer.current) clearTimeout(peekTimer.current);
   }, []);
 
   useEffect(() => {

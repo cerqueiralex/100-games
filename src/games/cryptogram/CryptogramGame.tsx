@@ -1,32 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
-import { BulbIcon, EraseIcon } from '../../platform/design/icons';
+import { BulbIcon, CheckIcon, CipherGlyph, EraseIcon } from '../../platform/design/icons';
 import { PadTool } from '../../platform/components/ui';
-import { pickPhrase, type CryptoPhrase } from './logic/phrases';
+import { generateCryptoPuzzle, type CryptoPuzzle } from './logic/words';
 
-const LETTER_PTS: Record<Difficulty, number> = { easy: 25, medium: 35, hard: 50 };
-const PAR_SEC: Record<Difficulty, number> = { easy: 4 * 60, medium: 7 * 60, hard: 10 * 60 };
+const ROW_PTS: Record<Difficulty, number> = { easy: 60, medium: 80, hard: 100 };
+const PAR_SEC: Record<Difficulty, number> = { easy: 6 * 60, medium: 9 * 60, hard: 12 * 60 };
 const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
-const ERROR_PENALTY = 10;
-const HINT_PENALTY = 25;
-const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const ERROR_PENALTY = 15;
+const HINT_PENALTY = 30;
 const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
-/** Random substitution cipher with no letter mapping to itself. */
-function makeCipher(): Record<string, string> {
-  let shuffled: string[];
-  do {
-    shuffled = [...ALPHA].sort(() => Math.random() - 0.5);
-  } while (shuffled.some((c, i) => c === ALPHA[i]));
-  return Object.fromEntries(ALPHA.map((p, i) => [p, shuffled[i]]));
-}
+type RowStatus = 'open' | 'good' | 'bad';
 
 interface CryptoSave {
-  phrase: CryptoPhrase;
-  cipher: Record<string, string>;
-  guesses: Record<string, string>;
-  locked: string[];
+  puzzle: CryptoPuzzle;
+  entries: string[][];
+  status: RowStatus[];
+  hinted: string[]; // "row:index" cells revealed by hints (locked)
   errors: number;
   hintsUsed: number;
   assistsUsed: string[];
@@ -41,59 +33,44 @@ export function CryptogramGame({
   savedState,
   registerSnapshot
 }: GameProps) {
-  const saved = savedState as CryptoSave | undefined;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const phrase = useMemo(() => saved?.phrase ?? pickPhrase(difficulty), [difficulty]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const cipher = useMemo(() => saved?.cipher ?? makeCipher(), [phrase]);
-  const inverse = useMemo(() => {
-    const m: Record<string, string> = {};
-    for (const [p, c] of Object.entries(cipher)) m[c] = p;
-    return m;
-  }, [cipher]);
-  const cipherText = useMemo(
-    () => phrase.text.split('').map((ch) => (/[A-Z]/.test(ch) ? cipher[ch] : ch)).join(''),
-    [phrase, cipher]
-  );
-  const usedLetters = useMemo(() => {
-    const seen: string[] = [];
-    for (const ch of cipherText) if (/[A-Z]/.test(ch) && !seen.includes(ch)) seen.push(ch);
-    return seen;
-  }, [cipherText]);
-  const freq = useMemo(() => {
-    const f = new Map<string, number>();
-    for (const ch of cipherText) if (/[A-Z]/.test(ch)) f.set(ch, (f.get(ch) ?? 0) + 1);
-    return f;
-  }, [cipherText]);
+  // Ignore saves from the old phrase-cipher version of this game.
+  const saved =
+    savedState && Array.isArray((savedState as CryptoSave).puzzle?.rows)
+      ? (savedState as CryptoSave)
+      : undefined;
 
-  const [guesses, setGuesses] = useState<Record<string, string>>(() =>
-    saved ? { ...saved.guesses } : {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const puzzle = useMemo(() => saved?.puzzle ?? generateCryptoPuzzle(difficulty), [difficulty]);
+
+  const [entries, setEntries] = useState<string[][]>(() =>
+    saved ? saved.entries.map((r) => [...r]) : puzzle.rows.map((r) => r.word.split('').map(() => ''))
   );
-  const [locked, setLocked] = useState<Set<string>>(() => new Set(saved?.locked ?? []));
-  const [selected, setSelected] = useState<string | null>(usedLetters[0] ?? null);
+  const [status, setStatus] = useState<RowStatus[]>(() =>
+    saved ? [...saved.status] : puzzle.rows.map(() => 'open')
+  );
+  const [hinted, setHinted] = useState<Set<string>>(() => new Set(saved?.hinted ?? []));
   const [errors, setErrors] = useState(saved?.errors ?? 0);
   const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
-  const [toast, setToast] = useState<string | null>(null);
+  const [won, setWon] = useState(false);
+  const [sel, setSel] = useState<{ r: number; i: number } | null>(() => {
+    const r = (saved ? saved.status : []).findIndex((s) => s !== 'good');
+    return { r: r === -1 ? 0 : r, i: 0 };
+  });
 
   const done = useRef(false);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const assistsUsed = useRef<Set<string>>(
-    new Set([
-      ...(saved?.assistsUsed ?? []),
-      ...(assists.autoCheck ? ['autoCheck'] : []),
-      ...(assists.frequency ? ['frequency'] : [])
-    ])
-  );
+  const assistsUsed = useRef<Set<string>>(new Set(saved?.assistsUsed ?? []));
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
 
-  const correctCount = useMemo(
-    () => usedLetters.filter((c) => guesses[c] === inverse[c]).length,
-    [usedLetters, guesses, inverse]
-  );
+  // Passive assist: counts as help whenever it is on, including mid-game.
+  useEffect(() => {
+    if (assists.echo) assistsUsed.current.add('echo');
+  }, [assists.echo]);
+
+  const solvedRows = useMemo(() => status.filter((s) => s === 'good').length, [status]);
   const liveScore = Math.max(
     0,
-    correctCount * LETTER_PTS[difficulty] - errors * ERROR_PENALTY - hintsUsed * HINT_PENALTY
+    solvedRows * ROW_PTS[difficulty] - errors * ERROR_PENALTY - hintsUsed * HINT_PENALTY
   );
 
   useEffect(() => {
@@ -102,209 +79,291 @@ export function CryptogramGame({
       errors,
       hintsUsed,
       assistsUsed: [...assistsUsed.current],
-      extra: { phrase: phrase.id, lettersSolved: `${correctCount}/${usedLetters.length}` }
+      extra: { wordsSolved: `${solvedRows}/${puzzle.rows.length}` }
     });
-  }, [liveScore, errors, hintsUsed, correctCount, usedLetters.length, phrase.id, events]);
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2200);
-  };
-
-  const finish = useCallback(
-    (e: number, h: number) => {
-      if (done.current) return;
-      done.current = true;
-      const bonus = Math.max(0, PAR_SEC[difficulty] - elapsedRef.current) * MULT[difficulty];
-      const score = Math.max(
-        0,
-        usedLetters.length * LETTER_PTS[difficulty] - e * ERROR_PENALTY - h * HINT_PENALTY + bonus
-      );
-      events.onFinish({
-        outcome: 'won',
-        score,
-        errors: e,
-        hintsUsed: h,
-        assistsUsed: [...assistsUsed.current],
-        extra: { phrase: phrase.id, letters: usedLetters.length }
-      });
-    },
-    [difficulty, usedLetters.length, phrase.id, events]
-  );
-
-  const advance = (g: Record<string, string>, from: string | null) => {
-    const start = from ? usedLetters.indexOf(from) : -1;
-    for (let k = 1; k <= usedLetters.length; k++) {
-      const c = usedLetters[(start + k) % usedLetters.length];
-      if (!g[c]) {
-        setSelected(c);
-        return;
-      }
-    }
-  };
-
-  const assign = useCallback(
-    (letter: string) => {
-      if (paused || done.current || !selected || locked.has(selected)) return;
-      const wasEmpty = !guesses[selected];
-      const g = { ...guesses, [selected]: letter };
-      setGuesses(g);
-
-      const allCorrect = usedLetters.every((c) => g[c] === inverse[c]);
-      const wrong = inverse[selected] !== letter;
-
-      if (assists.autoCheck && wrong) {
-        setErrors((e) => e + 1);
-        sfx.error();
-      } else {
-        sfx.tap();
-      }
-
-      if (allCorrect) {
-        finish(errors + (assists.autoCheck && wrong ? 1 : 0), hintsUsed);
-        return;
-      }
-      if (!assists.autoCheck && wasEmpty && usedLetters.every((c) => g[c])) {
-        setErrors((e) => e + 1);
-        sfx.error();
-        showToast("Everything is assigned, but something's off…");
-      }
-      advance(g, selected);
-    },
-    [paused, selected, locked, guesses, usedLetters, inverse, assists.autoCheck, errors, hintsUsed, finish]
-  );
-
-  const erase = useCallback(() => {
-    if (paused || done.current || !selected || locked.has(selected)) return;
-    sfx.tap();
-    setGuesses((g) => {
-      const n = { ...g };
-      delete n[selected];
-      return n;
-    });
-  }, [paused, selected, locked]);
-
-  const reveal = useCallback(() => {
-    if (paused || done.current || !assists.reveal || !selected || locked.has(selected)) return;
-    assistsUsed.current.add('reveal');
-    const h = hintsUsed + 1;
-    setHintsUsed(h);
-    const g = { ...guesses, [selected]: inverse[selected] };
-    setGuesses(g);
-    setLocked((l) => new Set(l).add(selected));
-    sfx.hint();
-    if (usedLetters.every((c) => g[c] === inverse[c])) finish(errors, h);
-    else advance(g, selected);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paused, assists.reveal, selected, locked, guesses, inverse, usedLetters, errors, hintsUsed, finish]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (paused || done.current) return;
-      if (/^[a-zA-Z]$/.test(e.key)) assign(e.key.toUpperCase());
-      else if (e.key === 'Backspace' || e.key === 'Delete') erase();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [assign, erase, paused]);
+  }, [liveScore, errors, hintsUsed, solvedRows, puzzle.rows.length, events]);
 
   useEffect(() => {
     registerSnapshot(() => ({
-      phrase,
-      cipher,
-      guesses,
-      locked: [...locked],
+      puzzle,
+      entries,
+      status,
+      hinted: [...hinted],
       errors,
       hintsUsed,
       assistsUsed: [...assistsUsed.current]
     }));
   });
 
-  const usedPlain = useMemo(() => new Set(Object.values(guesses)), [guesses]);
-  const words = useMemo(() => cipherText.split(' '), [cipherText]);
+  const glyphAt = useCallback(
+    (r: number, i: number) => puzzle.glyphOf[puzzle.rows[r].word[i]],
+    [puzzle]
+  );
+
+  const finish = useCallback(
+    (e: number, h: number) => {
+      if (done.current) return;
+      done.current = true;
+      setWon(true);
+      const bonus = Math.max(0, PAR_SEC[difficulty] - elapsedRef.current) * MULT[difficulty];
+      events.onFinish({
+        outcome: 'won',
+        score: Math.max(
+          0,
+          puzzle.rows.length * ROW_PTS[difficulty] - e * ERROR_PENALTY - h * HINT_PENALTY + bonus
+        ),
+        errors: e,
+        hintsUsed: h,
+        assistsUsed: [...assistsUsed.current],
+        extra: { words: puzzle.rows.length, hidden: puzzle.answer }
+      });
+    },
+    [difficulty, puzzle, events]
+  );
+
+  /** First open cell of the next unsolved row (wrapping), or null. */
+  const nextSpot = useCallback(
+    (fromRow: number, st: RowStatus[], ent: string[][]) => {
+      const n = puzzle.rows.length;
+      for (let k = 0; k < n; k++) {
+        const r = (fromRow + 1 + k) % n;
+        if (st[r] === 'good') continue;
+        const i = ent[r].findIndex((v, idx) => v === '' && !hinted.has(`${r}:${idx}`));
+        return { r, i: i === -1 ? 0 : i };
+      }
+      return null;
+    },
+    [puzzle.rows.length, hinted]
+  );
+
+  const setLetter = useCallback(
+    (letter: string) => {
+      if (paused || done.current || !sel) return;
+      const { r, i } = sel;
+      if (status[r] === 'good' || hinted.has(`${r}:${i}`)) return;
+
+      const ent = entries.map((row) => [...row]);
+      const st = [...status];
+      ent[r][i] = letter;
+      if (st[r] === 'bad') st[r] = 'open';
+
+      if (assists.echo) {
+        const g = glyphAt(r, i);
+        for (let r2 = 0; r2 < puzzle.rows.length; r2++) {
+          if (st[r2] === 'good') continue;
+          for (let i2 = 0; i2 < ent[r2].length; i2++) {
+            if (glyphAt(r2, i2) === g && ent[r2][i2] === '' && !hinted.has(`${r2}:${i2}`)) {
+              ent[r2][i2] = letter;
+            }
+          }
+        }
+      }
+
+      setEntries(ent);
+      setStatus(st);
+      sfx.place();
+
+      // Advance to the next open cell in this row.
+      for (let k = i + 1; k < ent[r].length; k++) {
+        if (ent[r][k] === '' && !hinted.has(`${r}:${k}`)) {
+          setSel({ r, i: k });
+          return;
+        }
+      }
+    },
+    [paused, sel, status, entries, assists.echo, glyphAt, puzzle.rows.length, hinted]
+  );
+
+  const erase = useCallback(() => {
+    if (paused || done.current || !sel) return;
+    const { r, i } = sel;
+    if (status[r] === 'good') return;
+    sfx.tap();
+    if (entries[r][i] !== '' && !hinted.has(`${r}:${i}`)) {
+      const ent = entries.map((row) => [...row]);
+      ent[r][i] = '';
+      setEntries(ent);
+      if (status[r] === 'bad') {
+        const st = [...status];
+        st[r] = 'open';
+        setStatus(st);
+      }
+    } else if (i > 0) {
+      setSel({ r, i: i - 1 });
+    }
+  }, [paused, sel, status, entries, hinted]);
+
+  const rowFull = sel !== null && entries[sel.r].every((v) => v !== '');
+  const canCheck = !done.current && sel !== null && status[sel.r] !== 'good' && rowFull;
+
+  const checkRow = useCallback(() => {
+    if (paused || done.current || !sel || !canCheck) return;
+    const r = sel.r;
+    const st = [...status];
+    if (entries[r].join('') === puzzle.rows[r].word) {
+      st[r] = 'good';
+      setStatus(st);
+      if (st.every((s) => s === 'good')) {
+        finish(errors, hintsUsed); // the shell plays the win jingle
+        return;
+      }
+      sfx.pop();
+      const spot = nextSpot(r, st, entries);
+      if (spot) setSel(spot);
+    } else {
+      st[r] = 'bad';
+      setStatus(st);
+      setErrors((e) => e + 1);
+      sfx.error();
+    }
+  }, [paused, sel, canCheck, status, entries, puzzle.rows, errors, hintsUsed, finish, nextSpot]);
+
+  const hint = useCallback(() => {
+    if (paused || done.current || !assists.reveal || !sel) return;
+    const { r, i } = sel;
+    if (status[r] === 'good' || hinted.has(`${r}:${i}`)) return;
+    assistsUsed.current.add('reveal');
+    setHintsUsed((h) => h + 1);
+    const ent = entries.map((row) => [...row]);
+    ent[r][i] = puzzle.rows[r].word[i];
+    setEntries(ent);
+    setHinted((s) => new Set(s).add(`${r}:${i}`));
+    if (status[r] === 'bad') {
+      const st = [...status];
+      st[r] = 'open';
+      setStatus(st);
+    }
+    sfx.hint();
+    // next open cell in this row, wrapping, so the selection never strands
+    // on the just-locked tile while earlier cells are still empty
+    for (let k = 1; k < ent[r].length; k++) {
+      const idx = (i + k) % ent[r].length;
+      if (ent[r][idx] === '' && !hinted.has(`${r}:${idx}`)) {
+        setSel({ r, i: idx });
+        return;
+      }
+    }
+  }, [paused, assists.reveal, sel, status, entries, puzzle.rows, hinted]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (paused || done.current) return;
+      if (/^[a-zA-Z]$/.test(e.key)) setLetter(e.key.toUpperCase());
+      else if (e.key === 'Backspace' || e.key === 'Delete') erase();
+      else if (e.key === 'Enter') checkRow();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [setLetter, erase, checkRow, paused]);
+
+  const selGlyph = sel && status[sel.r] !== 'good' ? glyphAt(sel.r, sel.i) : null;
 
   return (
-    <div className={`cryptogram ${paused ? 'board-hidden' : ''}`}>
+    <div className={`cryptogram ${paused ? 'board-hidden' : ''} ${won ? 'won' : ''}`}>
+      <div className="cg-mystery fx-card">
+        <b>Hidden word</b>
+        <span>{puzzle.clue}</span>
+      </div>
+
       <div className="sudoku-info">
         <span className="info-item">
           <b>{liveScore.toLocaleString()}</b> pts
         </span>
         <span className="info-item">
-          Letters: <b>{Object.keys(guesses).length} / {usedLetters.length}</b>
+          Words: <b>{solvedRows} / {puzzle.rows.length}</b>
         </span>
         <span className={`info-item ${errors > 0 ? 'bad' : ''}`}>
           Errors: <b>{errors}</b>
         </span>
+        <span className="info-item">
+          Hints: <b>{hintsUsed}</b>
+        </span>
       </div>
 
-      <div className="cg-board">
-        {words.map((word, wi) => (
-          <span key={wi} className="cg-word">
-            {word.split('').map((ch, k) => {
-              const guess = guesses[ch] ?? '';
-              const isWrong = assists.autoCheck && guess !== '' && guess !== inverse[ch];
-              return (
-                <button
-                  key={k}
-                  className={[
-                    'cg-cell',
-                    selected === ch ? 'sel' : '',
-                    locked.has(ch) ? 'locked' : '',
-                    isWrong ? 'wrong' : ''
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  onClick={() => {
-                    sfx.tap();
-                    setSelected(ch);
-                  }}
-                >
-                  <span className="cg-guess">{guess}</span>
-                  <span className="cg-cipher">{ch}</span>
-                </button>
-              );
-            })}
-          </span>
+      <div className="cg-table">
+        {puzzle.rows.map((row, r) => (
+          <div
+            key={r}
+            className={`cg-row ${status[r] === 'good' ? 'good' : ''} ${status[r] === 'bad' ? 'bad' : ''} ${
+              puzzle.groupBreak === r ? 'break' : ''
+            }`}
+          >
+            <button
+              className="cg-rowclue"
+              onClick={() => {
+                if (status[r] === 'good' || done.current) return;
+                sfx.tap();
+                const i = entries[r].findIndex((v, idx) => v === '' && !hinted.has(`${r}:${idx}`));
+                setSel({ r, i: i === -1 ? 0 : i });
+              }}
+            >
+              {row.clue}
+            </button>
+            <div
+              className="cg-tiles"
+              style={{ '--cg-off': puzzle.col - row.hiddenIndex } as React.CSSProperties}
+            >
+              {row.word.split('').map((_, i) => {
+                const g = glyphAt(r, i);
+                const isSel = sel?.r === r && sel?.i === i && status[r] !== 'good';
+                return (
+                  <button
+                    key={i}
+                    disabled={status[r] === 'good' || done.current}
+                    className={[
+                      'cg-tile',
+                      i === row.hiddenIndex ? 'hiddencol' : '',
+                      isSel ? 'sel' : '',
+                      !isSel && selGlyph !== null && g === selGlyph ? 'same' : '',
+                      hinted.has(`${r}:${i}`) ? 'hint' : ''
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    style={
+                      {
+                        '--pop-d': `${i * 45}ms`,
+                        '--rev-d': `${r * 70}ms`
+                      } as React.CSSProperties
+                    }
+                    onClick={() => {
+                      sfx.tap();
+                      setSel({ r, i });
+                    }}
+                  >
+                    <span className="cg-letter">{entries[r][i]}</span>
+                    <span className="cg-glyph">
+                      <CipherGlyph glyph={g} size={13} />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         ))}
       </div>
 
-      {assists.frequency && (
-        <div className="cg-freq">
-          {[...freq.entries()]
-            .sort((a, b) => b[1] - a[1])
-            .map(([c, n]) => (
-              <span key={c} className={`chip ${selected === c ? 'accent' : ''}`}>
-                {c}·{n}
-              </span>
-            ))}
-        </div>
-      )}
-
-      {toast && <div className="cw-toast">{toast}</div>}
-
       <div className="game-tools fx-card">
         <div className="sudoku-controls">
+          <PadTool silent disabled={!canCheck} onClick={checkRow}>
+            <CheckIcon />
+            <span>Check</span>
+          </PadTool>
+          {assists.reveal && (
+            <PadTool silent onClick={hint}>
+              <BulbIcon />
+              <span>Hint</span>
+            </PadTool>
+          )}
           <PadTool silent onClick={erase}>
             <EraseIcon />
             <span>Erase</span>
           </PadTool>
-          {assists.reveal && (
-            <PadTool silent onClick={reveal}>
-              <BulbIcon />
-              <span>Reveal letter</span>
-            </PadTool>
-          )}
         </div>
         <div className="cw-keyboard">
-          {KEY_ROWS.map((row, ri) => (
+          {KEY_ROWS.map((keys, ri) => (
             <div key={ri} className="cw-krow">
-              {row.split('').map((k) => (
-                <button
-                  key={k}
-                  className={`cw-key ${usedPlain.has(k) ? 'dim' : ''}`}
-                  onClick={() => assign(k)}
-                >
+              {keys.split('').map((k) => (
+                <button key={k} className="cw-key" onClick={() => setLetter(k)}>
                   {k}
                 </button>
               ))}

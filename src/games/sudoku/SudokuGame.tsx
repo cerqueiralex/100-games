@@ -46,7 +46,15 @@ export function SudokuGame({
   savedState,
   registerSnapshot
 }: GameProps) {
-  const saved = savedState as SudokuSave | undefined;
+  // old-format saves may lack these arrays — treat them as no save
+  const saved =
+    savedState &&
+    Array.isArray((savedState as SudokuSave).puzzle) &&
+    Array.isArray((savedState as SudokuSave).solution) &&
+    Array.isArray((savedState as SudokuSave).values) &&
+    Array.isArray((savedState as SudokuSave).notes)
+      ? (savedState as SudokuSave)
+      : undefined;
   const { puzzle, solution } = useMemo(
     () => (saved ? { puzzle: saved.puzzle, solution: saved.solution } : generatePuzzle(difficulty)),
     // eslint-disable-next-line react-hooks/exhaustive-deps

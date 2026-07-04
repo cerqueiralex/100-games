@@ -657,6 +657,21 @@ p {
   padding-bottom: 16px;
 }
 
+/* in-game the top inset matches the 10px column rhythm (the roomier
+   .screen padding is for the browsing screens, incl. their 32px desktop
+   bump) so the header hugs the top and the board gets the space */
+.screen.game-screen {
+  padding-top: calc(10px + env(safe-area-inset-top));
+}
+
+/* the game column's vertical rhythm: header → info strip → board → tools
+   sit 10px apart (game roots declare flex column gap; this single rule is
+   the source of truth for the spacing between the stacked cards).
+   :first-child keeps it off the sibling .pause-overlay. */
+.game-body > div:first-child {
+  gap: 10px;
+}
+
 /* segregated glass top bar, full width of the game column.
    Two stacked rows: back + centered title/difficulty/time, then the
    action buttons on their own row. */
@@ -664,9 +679,8 @@ p {
   flex-direction: column;
   gap: 10px;
   width: 100%;
-  /* 12px is THE vertical rhythm of the game column: header → info strip →
-     board → tools all sit exactly 12px apart (wrappers use gap: 12px) */
-  margin: 0 0 12px;
+  /* 10px is THE vertical rhythm of the game column (see .game-body rule) */
+  margin: 0 0 10px;
   padding: 10px;
   border-radius: var(--radius-l);
 }
@@ -698,13 +712,22 @@ p {
   width: 100%;
 }
 
-/* the bottom tools tab — the game wrapper's 12px gap spaces it */
+/* the bottom menu — THE standard for every game: ONE card holding all of
+   the game's bottom controls (tool rows AND keyboard/d-pad/digit pad),
+   never split into sibling panels. It docks to the viewport bottom
+   (sticky) so the controls stay reachable while a tall board scrolls
+   behind it — floating overlay, so it keeps var(--shadow) (DESIGN.md
+   elevation exception). */
 .game-tools {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px;
   border-radius: var(--radius-l);
+  position: sticky;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  z-index: 30;
+  box-shadow: var(--shadow);
 }
 
 /* (pad-tool is NOT in this list — tool buttons carry their own accent
@@ -742,7 +765,8 @@ p {
 .pause-overlay {
   position: absolute;
   inset: 0;
-  z-index: 20;
+  /* above the sticky bottom menu (z 30), below pills/modals (50/100+) */
+  z-index: 40;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1097,8 +1121,7 @@ p {
 }
 
 .stat-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  /* surface comes from .fx-card (effects.css) — layout only here */
   border-radius: 16px;
   padding: 13px 10px;
   text-align: center;
@@ -1254,8 +1277,7 @@ p {
 }
 
 .highscore-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  /* surface comes from .fx-card (effects.css) — layout only here */
   border-radius: 16px;
   padding: 14px 16px;
   margin-bottom: 8px;
@@ -2082,7 +2104,7 @@ p {
 .simon-pad.lit {
   opacity: 1;
   transform: scale(0.97);
-  box-shadow: 0 0 34px color-mix(in srgb, currentColor 0%, rgba(255, 255, 255, 0.25));
+  box-shadow: 0 0 34px rgba(255, 255, 255, 0.25);
 }
 
 .board-hidden .simon-board {
@@ -2181,7 +2203,8 @@ p {
   width: 100%;
 }
 
-.board-hidden .nb-grid {
+.board-hidden .nb-grid,
+.board-hidden .nb-ghost-letter {
   visibility: hidden;
 }
 
@@ -2473,7 +2496,7 @@ p {
   border-radius: 10px;
   font-weight: 800;
   font-size: clamp(13px, 4.4vw, 20px);
-  color: rgba(0, 0, 0, 0.72);
+  color: var(--ink);
   background: var(--nm-c);
   box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18);
   transition: transform 0.12s ease, filter 0.15s ease;
@@ -2576,7 +2599,7 @@ p {
 .nm-demo {
   background: var(--nm-c);
   border: none;
-  color: rgba(0, 0, 0, 0.72);
+  color: var(--ink);
   font-weight: 800;
 }
 
@@ -3139,17 +3162,14 @@ p {
   fill: var(--accent);
 }
 
-/* ---- controls: the D-pad is its own panel, one segmented unit ---- */
-
-.mz-pad-card {
-  align-items: center;
-}
+/* ---- controls: the D-pad, one segmented unit inside the bottom menu ---- */
 
 .mz-dpad {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 3px;
   width: min(100%, 330px);
+  margin: 0 auto;
   border-radius: 20px;
   overflow: hidden;
 }
@@ -3296,90 +3316,268 @@ p {
   visibility: hidden;
 }
 
-/* ===== cryptogram ===== */
+/* ===== cryptogram (picture cipher) ===== */
 
 .cryptogram {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  --cg-tile: 32px;
+  --cg-gap: 4px;
+  --cg-cluew: 116px;
 }
 
-.cg-board {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 16px;
-  justify-content: center;
-  padding: 8px 0;
+@media (max-width: 480px) {
+  .cryptogram {
+    --cg-tile: 27px;
+    --cg-cluew: 98px;
+  }
 }
 
-.cg-word {
-  display: flex;
-  gap: 3px;
-}
-
-.cg-cell {
+/* the hidden word's clue — sits outside (above) the table */
+.cg-mystery {
   display: flex;
   flex-direction: column;
+  gap: 3px;
   align-items: center;
-  gap: 2px;
-  width: 26px;
-  padding: 3px 0 4px;
-  border-radius: 6px;
-  border: 1px solid transparent;
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-m);
 }
 
-.cg-guess {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 24px;
-  border-bottom: 2px solid var(--border);
-  font-size: 16px;
-  font-weight: 750;
-}
-
-.cg-cipher {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-dim);
-}
-
-.cg-cell.sel {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-}
-
-.cg-cell.sel .cg-cipher {
+.cg-mystery b {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--accent);
 }
 
-.cg-cell.locked .cg-guess {
-  color: var(--good);
-  border-bottom-color: var(--good);
+.cg-mystery span {
+  font-size: 14.5px;
+  font-weight: 650;
+  line-height: 1.3;
 }
 
-.cg-cell.wrong .cg-guess {
-  color: var(--bad);
-  border-bottom-color: var(--bad);
-}
-
-.cg-freq {
+.cg-table {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.cg-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  min-width: max-content;
+}
+
+/* visual gap where the hidden answer's second word begins */
+.cg-row.break {
+  margin-top: 14px;
+}
+
+/* clue column stays readable while the tiles scroll under it */
+.cg-rowclue {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  flex: 0 0 var(--cg-cluew);
+  width: var(--cg-cluew);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 2px 4px 2px 0;
+  background: var(--bg);
+  border: none;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-dim);
+}
+
+.cg-row.good .cg-rowclue {
+  color: var(--good);
+}
+
+.cg-tiles {
+  display: flex;
+  gap: var(--cg-gap);
+  /* rows shift right so every hidden letter lands in the same column */
+  padding-left: calc(var(--cg-off, 0) * (var(--cg-tile) + var(--cg-gap)));
+}
+
+/* gap-separated tiles → extruded candy style (DESIGN.md); geometry is
+   pinned and every state below changes paint only */
+.cg-tile {
+  width: var(--cg-tile);
+  height: calc(var(--cg-tile) + 13px);
+  flex: 0 0 var(--cg-tile);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  gap: 1px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--surface-2);
+  box-shadow: inset 0 -3px 0 var(--edge);
+  color: var(--text);
+  transition: background 0.15s ease;
 }
 
-.cw-key.dim {
-  opacity: 0.45;
+.cg-tile:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
 }
 
-.board-hidden .cg-board {
+.cg-letter {
+  height: 15px;
+  font-size: 14.5px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.cg-glyph {
+  display: grid;
+  place-items: center;
+  height: 14px;
+  color: var(--text-dim);
+  opacity: 0.8;
+}
+
+/* the shaded vertical column that spells the hidden answer */
+.cg-tile.hiddencol {
+  background: var(--accent-soft);
+}
+
+.cg-tile.hiddencol .cg-glyph {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.cg-tile.sel {
+  box-shadow:
+    inset 0 -3px 0 var(--edge),
+    inset 0 0 0 2px var(--accent);
+}
+
+/* every tile sharing the selected tile's symbol lights up */
+.cg-tile.same .cg-glyph {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.cg-tile.same {
+  box-shadow:
+    inset 0 -3px 0 var(--edge),
+    inset 0 0 0 1.5px var(--accent-soft);
+}
+
+.cg-tile.hint .cg-letter {
+  color: var(--accent);
+}
+
+.cg-row.good .cg-tile {
+  background: var(--good-soft);
+  animation: cgPop 0.35s both;
+  animation-delay: var(--pop-d, 0ms);
+}
+
+.cg-row.good .cg-letter {
+  color: var(--good);
+}
+
+.cg-row.good .cg-glyph {
+  color: var(--good);
+  opacity: 0.65;
+}
+
+.cg-row.bad .cg-tile {
+  background: var(--bad-soft);
+}
+
+.cg-row.bad .cg-letter {
+  color: var(--bad);
+}
+
+.cg-row.bad .cg-tiles {
+  animation: cgShake 0.32s ease;
+}
+
+/* win: the hidden answer cascades down the shaded column */
+.cryptogram.won .cg-tile.hiddencol {
+  animation: cgReveal 0.55s both;
+  animation-delay: var(--rev-d, 0ms);
+}
+
+@keyframes cgPop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes cgShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+
+@keyframes cgReveal {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.board-hidden .cg-table,
+.board-hidden .cg-mystery {
   visibility: hidden;
 }
 
-.cg-demo .tut-cell {
-  border-bottom-width: 2px;
+/* tutorial mini-tiles: a letter stacked over its pictogram */
+.tut-cell.cg-tut {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  height: 34px;
+  width: 26px;
+}
+
+.tut-cell.cg-tut b {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.tut-cell.cg-tut svg {
+  opacity: 0.7;
 }
 
 /* ===== minesweeper ===== */
@@ -3852,7 +4050,7 @@ p {
   padding: 10px 18px;
   border-radius: 999px;
   box-shadow: var(--shadow);
-  z-index: 30;
+  z-index: 60;
 }
 
 .board-hidden .lg-play,
@@ -4171,7 +4369,7 @@ p {
   display: grid;
   place-items: center;
   font-weight: 800;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--ink);
 }
 
 .tut-pad.lit {
@@ -4305,7 +4503,7 @@ p {
   object-fit: contain;
   border-radius: 20px;
   border: 1px solid var(--border);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow);
 }
 
 .share-loading {

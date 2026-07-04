@@ -300,29 +300,31 @@ export function TicTacToeGame({
     }, 550);
   };
 
-  // resumed mid-robot-turn: let the robot finish its move
+  // pause/resume + resumed-save timer management: pausing cancels every
+  // pending timer (robot think, round transition); this effect re-arms the
+  // one that was in flight. It also covers a save resumed mid-robot-turn on
+  // mount. Empty-board robot openers stay the round-opener effect's job —
+  // handling them here too would double-schedule the robot.
   useEffect(() => {
-    if (
-      saved &&
-      saved.mode === 'bot' &&
-      saved.turn !== saved.myMark &&
-      !winner(saved.board) &&
-      !full(saved.board)
+    if (!config || done.current) return;
+    if (paused) {
+      timers.current.forEach(clearTimeout);
+      timers.current = [];
+      return;
+    }
+    if (roundOver.current) {
+      nextRound(round + 1);
+    } else if (
+      config.mode === 'bot' &&
+      turn !== config.myMark &&
+      !board.every((v) => v === null) &&
+      !winner(board) &&
+      !full(board)
     ) {
-      scheduleRobot(
-        { mode: saved.mode, myMark: saved.myMark, rounds: saved.rounds },
-        [...saved.board],
-        {
-          winsX: saved.winsX,
-          winsO: saved.winsO,
-          draws: saved.draws,
-          round: saved.round,
-          hintsUsed: saved.hintsUsed
-        }
-      );
+      scheduleRobot(config, board, totalsNow());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [paused, config]);
 
   // robot opens whenever a fresh round starts on its mark
   useEffect(() => {
@@ -359,21 +361,24 @@ export function TicTacToeGame({
   };
 
   useEffect(() => {
-    registerSnapshot(() =>
-      config
-        ? ({
-            ...config,
-            board,
-            turn,
-            winsX,
-            winsO,
-            draws,
-            round,
-            hintsUsed,
-            assistsUsed: [...assistsUsed.current]
-          } satisfies TttSave)
-        : null
-    );
+    registerSnapshot(() => {
+      if (!config) return null;
+      // mid-banner the round is already tallied but the board hasn't reset;
+      // snapshot the upcoming round so a resume can't re-count the finished
+      // board or soft-lock on it
+      const settled = roundOver.current && !done.current;
+      return {
+        ...config,
+        board: settled ? new Array(9).fill(null) : board,
+        turn: settled ? roundStarter(round + 1) : turn,
+        winsX,
+        winsO,
+        draws,
+        round: settled ? round + 1 : round,
+        hintsUsed,
+        assistsUsed: [...assistsUsed.current]
+      } satisfies TttSave;
+    });
   });
 
   /* ---------- pre-game menu ---------- */

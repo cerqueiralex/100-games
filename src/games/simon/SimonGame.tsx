@@ -112,6 +112,11 @@ export function SimonGame({
     }
   }, [paused, playSequence]);
 
+  // passive assists toggled on mid-game still count as help for this game
+  useEffect(() => {
+    if (assists.slowPlayback) assistsUsed.current.add('slowPlayback');
+  }, [assists.slowPlayback]);
+
   useEffect(() => {
     events.onStats({
       score,
@@ -126,7 +131,8 @@ export function SimonGame({
     (outcome: 'won' | 'lost', finalScore: number, e: number, h: number) => {
       if (done.current) return;
       done.current = true;
-      clearAll();
+      clearAll(); // cancels the pending un-light from press()…
+      setLit(null); // …so make sure the finished board isn't stuck lit
       events.onFinish({
         outcome,
         score: finalScore,

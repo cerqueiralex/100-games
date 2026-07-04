@@ -193,11 +193,17 @@ export function MazeGame({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragging = useRef(false);
   const lastPt = useRef<{ x: number; y: number } | null>(null);
+  const showPathTimer = useRef<number | null>(null);
   const assistsUsed = useRef<Set<string>>(
     new Set([...(saved?.assistsUsed ?? []), ...(assists.breadcrumbs ? ['breadcrumbs'] : [])])
   );
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
+
+  // passive assists toggled on mid-game still count as help for this game
+  useEffect(() => {
+    if (assists.breadcrumbs) assistsUsed.current.add('breadcrumbs');
+  }, [assists.breadcrumbs]);
 
   useEffect(() => {
     if (!config || !maze) return;
@@ -233,24 +239,29 @@ export function MazeGame({
     [difficulty, maze, config, events]
   );
 
-  /** one cell per tap — no corridor running */
+  /** one cell per tap — no corridor running. Reads posRef/stepsRef (kept in
+      sync by drag mode) so interleaved drag + key input never acts on a
+      stale position. */
   const move = useCallback(
     (bit: number) => {
       if (paused || done.current || !maze) return;
-      if (maze.walls[pos] & bit) return;
+      const cur = posRef.current;
+      if (maze.walls[cur] & bit) return;
       const d = DIRS.find((dd) => dd.bit === bit)!;
-      const next = (Math.floor(pos / maze.cols) + d.dr) * maze.cols + ((pos % maze.cols) + d.dc);
+      const next = (Math.floor(cur / maze.cols) + d.dr) * maze.cols + ((cur % maze.cols) + d.dc);
       sfx.tap();
+      posRef.current = next;
       setPos(next);
       setPath((p) => stepTrail(p, next));
-      const total = steps + 1;
+      const total = stepsRef.current + 1;
+      stepsRef.current = total;
       setSteps(total);
       if (next === maze.exit) {
         sfx.place();
         finish(total, hintsUsed);
       }
     },
-    [paused, pos, maze, steps, hintsUsed, finish]
+    [paused, maze, hintsUsed, finish]
   );
 
   /* ---- drag mode: pull the ball through the maze, Color Connect style.
@@ -353,8 +364,25 @@ export function MazeGame({
     setHintsUsed((h) => h + 1);
     sfx.hint();
     setShowPath(true);
-    window.setTimeout(() => setShowPath(false), Math.min(5000, 1200 + maze.par * 25));
+    showPathTimer.current = window.setTimeout(
+      () => setShowPath(false),
+      Math.min(5000, 1200 + maze.par * 25)
+    );
   };
+
+  // pausing ends the flash immediately so it doesn't burn away off-screen
+  useEffect(() => {
+    if (paused) {
+      if (showPathTimer.current) {
+        clearTimeout(showPathTimer.current);
+        showPathTimer.current = null;
+      }
+      setShowPath(false);
+    }
+    return () => {
+      if (showPathTimer.current) clearTimeout(showPathTimer.current);
+    };
+  }, [paused]);
 
   useEffect(() => {
     registerSnapshot(() =>
@@ -542,9 +570,6 @@ export function MazeGame({
             </PadTool>
           )}
         </div>
-      </div>
-
-      <div className="game-tools fx-card mz-pad-card">
         <div className="mz-dpad">
           <button className="mz-dbtn left" onClick={() => move(W)} aria-label="Move left">
             <DpadArrowIcon />

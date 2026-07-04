@@ -1,24 +1,24 @@
 # 100 Games
 
-A minimalist, flat frosted-glass platform for classic puzzle and brain games. Built as a **PWA** (Progressive Web App): one codebase that runs in any browser on your machine and installs on your iPhone home screen like a native app, with offline support. All data (history, statistics, profile, settings) is stored on-device — no account, no server.
+A minimalist platform for classic puzzle and brain games — flat surfaces with an extruded "candy button" depth style. Built as a **PWA** (Progressive Web App): one codebase that runs in any browser on your machine and installs on your iPhone home screen like a native app, with offline support. All data (history, statistics, profile, settings) is stored on-device — no account, no server.
 
 ## Games
 
 | Game | What it is |
 | --- | --- |
-| **Sudoku** | Runtime-generated puzzles with guaranteed-unique solutions; notes mode plus 7 toggleable assists (smart hints, error limit, color assistance, region highlight, same-number highlight, points, remaining numbers) |
+| **Sudoku** | Runtime-generated puzzles with guaranteed-unique solutions; notes mode plus 6 toggleable assists (smart hints, error limit, rule-out blocks, region highlight, same-number highlight, points) |
 | **Crossword** | Hand-crafted criss-cross puzzles (2 per difficulty) with on-screen keyboard, auto-check, check and reveal assists |
 | **Memory Match** | Flip cards to find pairs (4×4 / 5×6 / 6×6), streak bonuses, peek assists |
 | **Simon** | Repeat growing color+tone sequences; reach round 8/12/16 to win; lives, slow playback and replay assists |
 | **N-Back** | Press Match when the lit position repeats from N steps back (N = 1/2/3); ≥70% accuracy wins |
 | **Dual N-Back** | Positions AND letters tracked at once on independent channels; ≥65% accuracy wins |
-| **Word Wheel** | Spell words from a letter wheel to fill a criss-cross grid (hand-crafted, validated levels) |
+| **Word Wheel** | Spell words from a letter wheel in two modes: fill a hand-crafted criss-cross grid, or hunt every hidden word on a random wheel |
 | **Number Merge** | Drag chains of equal/doubling numbers to merge toward the goal tile (256/512/1024) |
 | **Color Connect** | Flow-style: link every dot pair and cover the board; levels freshly generated every game |
 | **Tic-Tac-Toe** | Race the robot to 3 round wins; AI scales from sloppy to near-perfect minimax |
 | **Image Puzzle** | Sliding photo tiles (3×3/4×4/5×5), always solvable — add your own photos (see below) |
-| **Maze** | Generated labyrinths with corridor-run movement; beat the BFS-optimal path for max score |
-| **Cryptogram** | Crack a random substitution cipher to reveal a hidden phrase; frequency and reveal assists |
+| **Maze** | Generated labyrinths — tap or drag one step at a time, classic sizes or custom boards; beat the shortest path for max score |
+| **Cryptogram** | Picture-code word puzzle: clued rows share a pictogram cipher and a shaded column spells a hidden answer; icon-echo and hint assists |
 | **Minesweeper** | Classic mines with protected first tap, flag mode, long-press flags and chording |
 | **Logic Puzzles** | Logic grid deduction: 25 original presets in 5 tiers plus endless generated puzzles, all guess-free with a unique solution |
 
@@ -46,7 +46,7 @@ npm run dev        # dev server on http://localhost:5173 (also exposed on your L
 npm run build      # typecheck + production build to dist/
 npm run preview    # serve the production build
 npm run check      # typecheck only
-npm run validate   # verify crossword puzzles + sudoku generator integrity
+npm run validate   # verify all hand-authored/generated game content (see below)
 ```
 
 ## Playing on your iPhone
@@ -72,9 +72,8 @@ src/
   platform/              ← everything shared by ALL games
     design/              ← DESIGN SYSTEM — the rules every feature must follow
       tokens.css         ← all colors: surface themes, accent themes, radii
-      effects.css        ← the flat frosted-glass surface (one rule, whole app)
+      effects.css        ← the shared flat card surface (one rule, whole app)
       icons.tsx          ← every icon (monochrome SVG, inherits theme color)
-      Tilt.tsx           ← mouse-reactive card tilt + cursor glow
       DESIGN.md          ← the rulebook (read before any UI work)
     types.ts             ← GameDefinition contract, GameProps, GameResult
     registry.ts          ← the list of games (add new games here)
@@ -123,10 +122,13 @@ permanently distinguishable from assisted ones in history and statistics.
 
 `npm run validate` rebuilds every hand-crafted crossword and Word Wheel
 level (checking all intersections and catching accidental words), generates
-sudokus verifying unique solutions, and stress-tests the Color Connect level
-generator for full-coverage solvability. Run it after editing
-`src/games/crossword/logic/puzzles.ts` or
-`src/games/word-wheel/logic/levels.ts`.
+sudokus verifying unique solutions, checks the Cryptogram word bank and
+test-generates its picture puzzles, re-verifies all 25 Logic Puzzles presets
+plus its endless generator (unique, deduction-only solutions), and
+stress-tests the Color Connect level generator for full-coverage
+solvability. Run it after editing `src/games/crossword/logic/puzzles.ts`,
+`src/games/word-wheel/logic/levels.ts`, or
+`src/games/cryptogram/logic/words.ts`.
 
 ### Custom Image Puzzle photos
 

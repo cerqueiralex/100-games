@@ -123,7 +123,9 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
       difficulty,
       startedAt: startedAt.current,
       finishedAt: Date.now(),
-      durationSec: Math.round((Date.now() - startedAt.current) / 1000),
+      // played time — the ticking clock excludes pauses and held pre-game
+      // menus, which wall-clock (now - startedAt) would wrongly include
+      durationSec: elapsedRef.current,
       outcome,
       score: stats.score,
       errors: stats.errors,
@@ -324,7 +326,8 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
             <HelpIcon />
           </button>
           {phase === 'playing' && (
-            <button className="icon-btn" onClick={saveGame} aria-label="Save game">
+            // pre-game menus (held clock) have no snapshot to save
+            <button className="icon-btn" onClick={saveGame} aria-label="Save game" disabled={clockHeld}>
               <SaveIcon />
             </button>
           )}

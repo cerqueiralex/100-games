@@ -1,22 +1,15 @@
 /** Per-preset completion tracking, persisted like all platform data. */
 
-const KEY = '100games.v1.logicgrid.solved';
+import { readGameData, writeGameData } from '../../../platform/storage';
+
+const SUB_KEY = 'logicgrid.solved';
 
 export function loadSolvedPresets(): Set<string> {
-  try {
-    const raw = localStorage.getItem(KEY);
-    return new Set(raw ? (JSON.parse(raw) as string[]) : []);
-  } catch {
-    return new Set();
-  }
+  return new Set(readGameData<string[]>(SUB_KEY) ?? []);
 }
 
 export function markPresetSolved(id: string): void {
-  try {
-    const solved = loadSolvedPresets();
-    solved.add(id);
-    localStorage.setItem(KEY, JSON.stringify([...solved]));
-  } catch {
-    // persistence degrades gracefully
-  }
+  const solved = loadSolvedPresets();
+  solved.add(id);
+  writeGameData(SUB_KEY, [...solved]);
 }

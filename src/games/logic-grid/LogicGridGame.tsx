@@ -71,7 +71,18 @@ export function LogicGridGame({
     []
   );
 
-  const [marks, setMarks] = useState<number[][]>(() => (saved?.marks && def ? saved.marks : def ? blankMarks(def) : []));
+  const [marks, setMarks] = useState<number[][]>(() => {
+    if (!def) return [];
+    const fresh = blankMarks(def);
+    // a save whose marks don't fit the rebuilt puzzle (e.g. its preset no
+    // longer resolves and the fallback differs) must not crash the grid
+    const sm = saved?.marks;
+    const fits =
+      Array.isArray(sm) &&
+      sm.length === fresh.length &&
+      sm.every((b, i) => Array.isArray(b) && b.length === fresh[i].length);
+    return fits && sm ? sm : fresh;
+  });
   const [struck, setStruck] = useState<Set<number>>(() => new Set(saved?.struck ?? []));
   const [wrong, setWrong] = useState<Set<string>>(new Set());
   const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
@@ -103,6 +114,12 @@ export function LogicGridGame({
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 2400);
   };
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    []
+  );
 
   /** user mark at (row-cat r, item i) × (col-cat c, item j) */
   const cellAt = useCallback(
@@ -294,7 +311,6 @@ export function LogicGridGame({
 
   const hint = () => {
     if (paused || done.current || !def || !pi || !assists.hint) return;
-    pushUndo();
     const next = marks.map((m) => [...m]);
     let fixed = false;
     // fix an existing mistake first
@@ -323,7 +339,7 @@ export function LogicGridGame({
           if (next[p][i * n + j] !== 2) options.push([p, i, j, a === 0 ? 0 : 1]);
         }
       }
-      if (options.length === 0) return;
+      if (options.length === 0) return; // nothing to reveal — no undo entry
       options.sort((x, y) => x[3] - y[3]);
       const primaries = options.filter((o) => o[3] === 0);
       const list = primaries.length > 0 ? primaries : options;
@@ -336,6 +352,7 @@ export function LogicGridGame({
         }
       }
     }
+    pushUndo();
     assistsUsed.current.add('hint');
     setHintsUsed((h) => h + 1);
     setWrong(new Set());

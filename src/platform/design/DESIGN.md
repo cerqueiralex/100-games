@@ -154,6 +154,12 @@ standard for free:
   double-fires.
 - Toolbars remain rows of equal-width tools
   (`grid-auto-flow: column; grid-auto-columns: 1fr`).
+- **The bottom menu is ONE card**: every game puts ALL of its bottom
+  controls — tool rows and any input surface (keyboard, digit pad,
+  d-pad) — inside a single `.game-tools fx-card`, never sibling panels.
+  The card docks to the viewport bottom (`position: sticky`) so controls
+  stay reachable while a tall board scrolls behind it; as a floating
+  overlay it carries `var(--shadow)` (see Depth & motion).
 
 ## Tutorials (required for every game)
 

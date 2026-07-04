@@ -95,17 +95,48 @@ console.log('— Word Wheel word bank & hunts —');
   }
 }
 
-console.log('— Cryptogram phrases —');
-const { PHRASES } = await import('../src/games/cryptogram/logic/phrases');
-for (const [difficulty, phrases] of Object.entries(PHRASES)) {
-  for (const phrase of phrases) {
-    const bad = /[^A-Z ]/.test(phrase.text);
-    const unique = new Set(phrase.text.replace(/ /g, '')).size;
-    if (bad || unique < 6) {
+console.log('— Cryptogram picture puzzles —');
+{
+  const { WORD_BANK, HIDDEN_ANSWERS, validateCryptoContent, generateCryptoPuzzle } = await import(
+    '../src/games/cryptogram/logic/words'
+  );
+  const contentErrors = validateCryptoContent();
+  if (contentErrors.length > 0) {
+    failed = true;
+    contentErrors.forEach((e) => console.error(`✗ content: ${e}`));
+  } else {
+    const answers = Object.values(HIDDEN_ANSWERS).flat().length;
+    console.log(`✓ content: ${WORD_BANK.length} bank words, ${answers} hidden answers, all covered`);
+  }
+  for (const difficulty of ['easy', 'medium', 'hard'] as const) {
+    let ok = 0;
+    let colSum = 0;
+    const t0 = Date.now();
+    for (let i = 0; i < 25; i++) {
+      const p = generateCryptoPuzzle(difficulty);
+      const letters = p.answer.replace(/ /g, '').split('');
+      const words = new Set(p.rows.map((r) => r.word));
+      const glyphs = new Set(Object.values(p.glyphOf));
+      const sound =
+        p.rows.length === letters.length &&
+        p.rows.every((r, k) => r.word[r.hiddenIndex] === letters[k]) &&
+        words.size === p.rows.length &&
+        glyphs.size === Object.keys(p.glyphOf).length &&
+        p.rows.every((r) => Object.prototype.hasOwnProperty.call(p.glyphOf, r.word[0])) &&
+        p.cols <= 16 &&
+        p.col === Math.max(...p.rows.map((r) => r.hiddenIndex));
+      if (sound) {
+        ok++;
+        colSum += p.cols;
+      }
+    }
+    if (ok < 25) {
       failed = true;
-      console.error(`✗ ${difficulty}/${phrase.id}: ${bad ? 'invalid characters' : 'too few unique letters'}`);
+      console.error(`✗ ${difficulty}: only ${ok}/25 generated puzzles are sound`);
     } else {
-      console.log(`✓ ${difficulty}/${phrase.id} — ${phrase.text.length} chars, ${unique} unique letters`);
+      console.log(
+        `✓ ${difficulty}: 25/25 sound, ~${Math.round(colSum / 25)} tile columns, ${Date.now() - t0}ms total`
+      );
     }
   }
 }

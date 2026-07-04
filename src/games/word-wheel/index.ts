@@ -16,13 +16,15 @@ export const wordWheelDefinition: GameDefinition = {
     {
       id: 'revealLetter',
       name: 'Hint button',
-      description: 'Reveals one letter in the grid (−15 points). Counts as help when used.',
+      description:
+        'Crossword: reveals one letter in the grid. Word hunt: reveals a whole word as a first-letter chip (−15 points). Counts as help when used.',
       defaultOn: true
     },
     {
       id: 'firstLetters',
       name: 'First letters',
-      description: 'Shows the first letter of every word from the start. Counts as help.',
+      description:
+        'Crossword mode: shows the first letter of every word from the start (no effect in word hunt). Counts as help.',
       defaultOn: false
     }
   ]

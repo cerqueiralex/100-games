@@ -12,14 +12,14 @@ const PAR_SEC: Record<Difficulty, number> = { easy: 2 * 60, medium: 5 * 60, hard
 /**
  * Images live in /public/puzzles/. To add your own: drop a square-ish
  * image into that folder and list its filename in manifest.json.
+ * Returns full URLs, or null when the manifest can't be loaded.
  */
-async function pickImage(): Promise<string | null> {
+async function listImages(): Promise<string[] | null> {
   try {
     const base = import.meta.env.BASE_URL;
     const res = await fetch(`${base}puzzles/manifest.json`);
     const data = (await res.json()) as { images: string[] };
-    if (!data.images?.length) return null;
-    return `${base}puzzles/${data.images[Math.floor(Math.random() * data.images.length)]}`;
+    return (data.images ?? []).map((f) => `${base}puzzles/${f}`);
   } catch {
     return null;
   }
@@ -80,19 +80,31 @@ export function ImagePuzzleGame({
   const [previewing, setPreviewing] = useState(false);
 
   const done = useRef(false);
+  const previewTimer = useRef<number | null>(null);
   const assistsUsed = useRef<Set<string>>(
     new Set([...(saved?.assistsUsed ?? []), ...(assists.showNumbers ? ['showNumbers'] : [])])
   );
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
 
+  // passive assists toggled on mid-game still count as help for this game
   useEffect(() => {
-    if (saved) return; // resumed games keep their saved image
+    if (assists.showNumbers) assistsUsed.current.add('showNumbers');
+  }, [assists.showNumbers]);
+
+  useEffect(() => {
+    if (saved && !saved.img) return; // resumed pattern games need no manifest
     let alive = true;
-    void pickImage().then((url) => {
+    void listImages().then((urls) => {
       if (!alive) return;
-      setImg(url);
-      setImgReady(true);
+      if (saved?.img) {
+        // saved photo no longer in the manifest → fall back to numbers mode
+        // (a failed fetch keeps the saved image rather than dropping it)
+        if (urls && !urls.includes(saved.img)) setImg(null);
+      } else {
+        setImg(urls?.length ? urls[Math.floor(Math.random() * urls.length)] : null);
+        setImgReady(true);
+      }
     });
     return () => {
       alive = false;
@@ -179,8 +191,15 @@ export function ImagePuzzleGame({
     setHintsUsed((h) => h + 1);
     sfx.hint();
     setPreviewing(true);
-    window.setTimeout(() => setPreviewing(false), 2000);
+    previewTimer.current = window.setTimeout(() => {
+      setPreviewing(false);
+      previewTimer.current = null;
+    }, 2000);
   };
+
+  useEffect(() => () => {
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+  }, []);
 
   const tileStyle = (tile: number): React.CSSProperties => {
     if (!img) {

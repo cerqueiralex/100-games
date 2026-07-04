@@ -97,8 +97,29 @@ export function deleteSave(gameId: string): void {
   write(KEYS.saves, saves);
 }
 
+/**
+ * Namespaced persistence for game-specific extras (e.g. Logic Puzzles preset
+ * progress) — the ONLY sanctioned way for game code to persist outside the
+ * shell's save/history flow, so resetAll can find everything.
+ */
+export function readGameData<T>(subKey: string): T | null {
+  return read<T>(`100games.v1.${subKey}`);
+}
+
+export function writeGameData(subKey: string, value: unknown): void {
+  write(`100games.v1.${subKey}`, value);
+}
+
 export function resetAll(): void {
-  Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
+  try {
+    // sweep the whole version prefix so per-game extras are wiped too
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('100games.v1.')) localStorage.removeItem(k);
+    }
+  } catch {
+    Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
+  }
 }
 
 export function exportData(): string {

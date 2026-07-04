@@ -83,6 +83,13 @@ export function DualNBackGame({
     ])
   );
 
+  // passive assists toggled on mid-game still count as help for this game
+  useEffect(() => {
+    for (const a of ['feedback', 'showHistory', 'slowMode']) {
+      if (assists[a]) assistsUsed.current.add(a);
+    }
+  }, [assists]);
+
   useEffect(() => {
     events.onStats({
       score,

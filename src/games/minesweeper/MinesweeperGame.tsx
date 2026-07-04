@@ -54,6 +54,13 @@ export function MinesweeperGame({
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
 
+  // passive assist: counts as help whenever enabled while it can still act
+  // (protection only applies before the first reveal places the mines)
+  useEffect(() => {
+    if (assists.safeFirst && !mines) assistsUsed.current.add('safeFirst');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assists.safeFirst]);
+
   const neighbors = useCallback(
     (i: number): number[] => {
       const r = Math.floor(i / size);
@@ -112,8 +119,12 @@ export function MinesweeperGame({
   );
 
   const placeMines = useCallback(
-    (firstIdx: number): Set<number> => {
-      const excluded = new Set(assists.safeFirst ? [firstIdx, ...neighbors(firstIdx)] : []);
+    (firstIdx: number, guaranteeSafe = false): Set<number> => {
+      // `guaranteeSafe` keeps the target itself mine-free even with the
+      // safe-first-tap assist off (the hint promises a safe cell)
+      const excluded = new Set(
+        assists.safeFirst ? [firstIdx, ...neighbors(firstIdx)] : guaranteeSafe ? [firstIdx] : []
+      );
       const pool: number[] = [];
       for (let i = 0; i < n; i++) if (!excluded.has(i)) pool.push(i);
       for (let i = pool.length - 1; i > 0; i--) {
@@ -154,8 +165,10 @@ export function MinesweeperGame({
   );
 
   const winCheck = useCallback(
-    (rev: Set<number>) => {
-      if (rev.size === n - mineCount) finish('won', rev, hintsUsed);
+    // `h` lets callers that just spent a hint pass the fresh count — the
+    // closed-over state still holds the pre-increment value
+    (rev: Set<number>, h = hintsUsed) => {
+      if (rev.size === n - mineCount) finish('won', rev, h);
     },
     [n, mineCount, finish, hintsUsed]
   );
@@ -242,7 +255,7 @@ export function MinesweeperGame({
     let target: number | null = null;
     if (!ms) {
       target = Math.floor(Math.random() * n);
-      ms = placeMines(target);
+      ms = placeMines(target, true);
     } else {
       const candidates: number[] = [];
       for (let i = 0; i < n; i++) {
@@ -252,12 +265,13 @@ export function MinesweeperGame({
       target = candidates[Math.floor(Math.random() * candidates.length)];
     }
     assistsUsed.current.add('hintSafe');
-    setHintsUsed((h) => h + 1);
+    const h = hintsUsed + 1;
+    setHintsUsed(h);
     sfx.hint();
     const rev = flood(target, ms, revealed);
     setRevealed(rev);
-    winCheck(rev);
-  }, [paused, assists.hintSafe, mines, n, placeMines, revealed, flagged, flood, winCheck]);
+    winCheck(rev, h);
+  }, [paused, assists.hintSafe, mines, n, placeMines, revealed, flagged, flood, winCheck, hintsUsed]);
 
   useEffect(() => {
     registerSnapshot(() => ({

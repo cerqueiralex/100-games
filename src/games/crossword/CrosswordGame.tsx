@@ -33,7 +33,11 @@ export function CrosswordGame({
   savedState,
   registerSnapshot
 }: GameProps) {
-  const saved = savedState as CrosswordSave | undefined;
+  // old-format saves may lack `letters` — treat them as no save
+  const saved =
+    savedState && Array.isArray((savedState as CrosswordSave).letters)
+      ? (savedState as CrosswordSave)
+      : undefined;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const def = useMemo(() => saved?.def ?? pickPuzzle(difficulty), [difficulty]);
   const built = useMemo(() => buildPuzzle(def), [def]);
@@ -100,8 +104,14 @@ export function CrosswordGame({
     [events, computeScore, built.title]
   );
 
+  useEffect(() => {
+    // passive assists toggled on mid-game still count as help for this game
+    if (assists.autoCheck) assistsUsed.current.add('autoCheck');
+    report(letters, revealed, errors, hintsUsed);
+  }, [letters, revealed, errors, hintsUsed, assists.autoCheck, report]);
+
   const maybeFinish = useCallback(
-    (ls: string[], rev: Set<number>, errs: number, hints: number) => {
+    (ls: string[], rev: Set<number>, errs: number, hints: number, alreadyPenalized = false) => {
       if (done.current) return;
       const full = built.grid.every((c) => c === null || ls[c.idx] !== '');
       if (!full) return;
@@ -117,10 +127,13 @@ export function CrosswordGame({
           extra: { puzzle: built.title }
         });
       } else {
-        const nextErrs = errs + 1;
-        setErrors(nextErrs);
+        // autoCheck already charged this keystroke — don't double-count it here
+        const nextErrs = alreadyPenalized ? errs : errs + 1;
+        if (!alreadyPenalized) {
+          setErrors(nextErrs);
+          sfx.error();
+        }
         report(ls, rev, nextErrs, hints);
-        sfx.error();
         showToast("The grid is full, but something's not right…");
       }
     },
@@ -163,9 +176,11 @@ export function CrosswordGame({
       const w = new Set(wrong);
       w.delete(sel);
       let errs = errors;
+      let penalized = false;
       if (assists.autoCheck && ch !== cell.letter) {
         w.add(sel);
         errs = errors + 1;
+        penalized = true;
         setErrors(errs);
         sfx.error();
       } else {
@@ -173,7 +188,7 @@ export function CrosswordGame({
       }
       setWrong(w);
       report(ls, revealed, errs, hintsUsed);
-      maybeFinish(ls, revealed, errs, hintsUsed);
+      maybeFinish(ls, revealed, errs, hintsUsed, penalized);
       advance(sel, currentSlot, ls);
     },
     [paused, revealed, sel, built.grid, letters, wrong, errors, assists.autoCheck, report, hintsUsed, maybeFinish, advance, currentSlot]

@@ -11,7 +11,7 @@ export const minesweeperDefinition: GameDefinition = {
   component: MinesweeperGame,
   tutorial: minesweeperTutorial,
   scoringNote:
-    'Clear all safe cells on an 8×8/10×10/12×12 board with 8/16/26 mines. +5 per cleared cell × difficulty, +20 per mine on a win, time bonus under par (2/4/7 min). One mine ends the game.',
+    'Clear all safe cells on an 8×8/10×10/12×12 board with 8/16/26 mines. +5 per cleared cell × difficulty, +20 per mine × difficulty on a win, time bonus under par (2/4/7 min). One mine ends the game.',
   assistFeatures: [
     {
       id: 'safeFirst',

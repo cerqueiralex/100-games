@@ -300,3 +300,153 @@ export function ShareIcon({ size = 16 }: IconProps) {
     </Svg>
   );
 }
+
+/* ---------- cryptogram cipher glyphs ----------
+   26 mini pictograms — the Cryptogram picture cipher assigns one to each
+   letter of a puzzle. Same rules as every icon (monochrome, currentColor,
+   24×24); solid fills where a stroke would vanish at ~13px. Array order is
+   meaningless: puzzles shuffle the letter→glyph mapping every game. */
+
+const CIPHER_GLYPHS: React.ReactNode[] = [
+  /* heart */
+  <path
+    key="heart"
+    fill="currentColor"
+    stroke="none"
+    d="M12 21s-7.5-4.9-9.7-9.4C.9 8.7 2.9 5 6.4 5c2.2 0 3.9 1.2 5.6 3.2C13.7 6.2 15.4 5 17.6 5c3.5 0 5.5 3.7 4.1 6.6C19.5 16.1 12 21 12 21z"
+  />,
+  /* star */
+  <path
+    key="star"
+    fill="currentColor"
+    stroke="none"
+    d="M12 2.8l2.9 5.85 6.46.94-4.68 4.56 1.11 6.44L12 17.55l-5.79 3.04 1.11-6.44-4.68-4.56 6.46-.94L12 2.8z"
+  />,
+  /* moon */
+  <path
+    key="moon"
+    fill="currentColor"
+    stroke="none"
+    d="M20.4 14.7A8.8 8.8 0 1 1 9.3 3.6a7.2 7.2 0 1 0 11.1 11.1z"
+  />,
+  /* sun */
+  <g key="sun">
+    <circle cx="12" cy="12" r="3.6" />
+    <path d="M12 2.5v2.8M12 18.7v2.8M2.5 12h2.8M18.7 12h2.8M5.2 5.2l2 2M16.8 16.8l2 2M18.8 5.2l-2 2M7.2 16.8l-2 2" />
+  </g>,
+  /* cloud */
+  <path key="cloud" d="M6.3 17.5a3.8 3.8 0 0 1-.4-7.6 5.4 5.4 0 0 1 10.5-1.4 4 4 0 0 1 .8 9H6.3z" />,
+  /* umbrella */
+  <g key="umbrella">
+    <path d="M12 2.8a9.2 9.2 0 0 1 9.2 9.2H2.8A9.2 9.2 0 0 1 12 2.8z" />
+    <path d="M12 12v6.6a2.1 2.1 0 0 1-4.2 0" />
+  </g>,
+  /* key */
+  <g key="key">
+    <circle cx="7.3" cy="15.7" r="3.6" />
+    <path d="M9.9 13.1L19.5 3.5M15.2 7.8l3.3 3.3" />
+  </g>,
+  /* bell */
+  <g key="bell">
+    <path d="M12 3.5a5.3 5.3 0 0 1 5.3 5.3c0 3.9 1.3 5.4 2.2 6.7H4.5c.9-1.3 2.2-2.8 2.2-6.7A5.3 5.3 0 0 1 12 3.5z" />
+    <path d="M10 19.5a2.1 2.1 0 0 0 4 0" />
+  </g>,
+  /* leaf */
+  <g key="leaf">
+    <path d="M4.5 19.5c0-9 6-15 15-15 0 9-6 15-15 15z" />
+    <path d="M4.5 19.5C8 14.5 11.5 11 16.5 7.5" />
+  </g>,
+  /* drop */
+  <path
+    key="drop"
+    fill="currentColor"
+    stroke="none"
+    d="M12 2.7l5.66 5.66a8 8 0 1 1-11.32 0L12 2.7z"
+  />,
+  /* bolt */
+  <path key="bolt" fill="currentColor" stroke="none" d="M13 2L3.8 13.5h6.3L9 22l9.2-11.5h-6.3z" />,
+  /* anchor */
+  <g key="anchor">
+    <circle cx="12" cy="5" r="2.2" />
+    <path d="M12 7.2V21M4 13a8 8 0 0 0 16 0M8.7 10.5h6.6" />
+  </g>,
+  /* note */
+  <g key="note">
+    <path d="M9.3 18V5.5L19 3.6v12" />
+    <circle cx="6.9" cy="18" r="2.4" fill="currentColor" stroke="none" />
+    <circle cx="16.6" cy="15.6" r="2.4" fill="currentColor" stroke="none" />
+  </g>,
+  /* eye */
+  <g key="eye">
+    <path d="M1.8 12S5.5 4.9 12 4.9 22.2 12 22.2 12 18.5 19.1 12 19.1 1.8 12 1.8 12z" />
+    <circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none" />
+  </g>,
+  /* house */
+  <g key="house">
+    <path d="M3.5 11.5L12 4l8.5 7.5" />
+    <path d="M6 10.2V20h12v-9.8" />
+    <path d="M10 20v-5.4h4V20" />
+  </g>,
+  /* pine tree */
+  <path
+    key="tree"
+    fill="currentColor"
+    stroke="none"
+    d="M12 2.5L17 10h-2.8l4.3 7h-5V21.5h-3V17h-5L9.8 10H7z"
+  />,
+  /* sailboat */
+  <g key="boat">
+    <path d="M12 3v13" />
+    <path fill="currentColor" stroke="none" d="M12 4l7 9.2h-7z" />
+    <path fill="currentColor" stroke="none" d="M4 17.5h16l-2.6 4H6.6z" />
+  </g>,
+  /* mug */
+  <g key="mug">
+    <path d="M4.5 7H16v8.5a4 4 0 0 1-4 4H8.5a4 4 0 0 1-4-4z" />
+    <path d="M16 9.5h2.2a2.6 2.6 0 0 1 0 5.2H16" />
+  </g>,
+  /* flag */
+  <g key="flag">
+    <path d="M5.5 21V3.5" />
+    <path fill="currentColor" stroke="none" d="M7 4h11.5l-3.4 4.25L18.5 12.5H7z" />
+  </g>,
+  /* clock */
+  <g key="clock">
+    <circle cx="12" cy="12" r="8.7" />
+    <path d="M12 7.2V12l3.4 2" />
+  </g>,
+  /* snowflake */
+  <path key="flake" d="M12 2.8v18.4M4 7.4l16 9.2M20 7.4L4 16.6" />,
+  /* crown */
+  <path
+    key="crown"
+    fill="currentColor"
+    stroke="none"
+    d="M3.7 18.5h16.6L22 8.6l-5.2 3.5L12 5.3 7.2 12.1 2 8.6z"
+  />,
+  /* gem */
+  <g key="gem">
+    <path d="M7.2 4h9.6L21 9.2 12 20.8 3 9.2z" />
+    <path d="M3 9.2h18M8.8 9.2L12 4.6l3.2 4.6" />
+  </g>,
+  /* arrow */
+  <path key="arrow" fill="currentColor" stroke="none" d="M12 2.8l6.8 7.4h-4.3V21h-5V10.2H5.2z" />,
+  /* target */
+  <g key="target">
+    <circle cx="12" cy="12" r="8.7" />
+    <circle cx="12" cy="12" r="4.4" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+  </g>,
+  /* book */
+  <g key="book">
+    <path d="M12 6.7C10 4.9 7.4 4.2 4 4.2v15.1c3.4 0 6 .7 8 2.5 2-1.8 4.6-2.5 8-2.5V4.2c-3.4 0-6 .7-8 2.5z" />
+    <path d="M12 6.7v15.1" />
+  </g>
+];
+
+export const CIPHER_GLYPH_COUNT = CIPHER_GLYPHS.length;
+
+/** One cipher pictogram by index (0–25) — used by the Cryptogram tiles. */
+export function CipherGlyph({ glyph, size = 14 }: { glyph: number; size?: number }) {
+  return <Svg size={size}>{CIPHER_GLYPHS[((glyph % CIPHER_GLYPHS.length) + CIPHER_GLYPHS.length) % CIPHER_GLYPHS.length]}</Svg>;
+}
