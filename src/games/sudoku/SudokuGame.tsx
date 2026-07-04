@@ -3,7 +3,7 @@ import type { GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import {
   BulbIcon,
-  DropletIcon,
+  GridIcon,
   EraseIcon,
   PencilIcon,
   SameIcon,
@@ -23,7 +23,7 @@ import { ERROR_PENALTY, HINT_PENALTY, PLACEMENT_POINTS, timeBonus } from './logi
 const ERROR_LIMIT = 3;
 
 /** Passive assists count as "help used" for the whole game when enabled. */
-const PASSIVE_ASSISTS = ['colorAssist', 'regionHighlight', 'highlightSame', 'remainingNumbers'];
+const PASSIVE_ASSISTS = ['colorAssist', 'regionHighlight', 'highlightSame'];
 
 interface SudokuSave {
   puzzle: number[];
@@ -276,6 +276,7 @@ export function SudokuGame({
   for (let i = 0; i < 81; i++) {
     const v = values[i];
     const wrong = v !== 0 && v !== solution[i];
+    const holdsActive = activeDigit !== 0 && v === activeDigit && !wrong;
     const classes = ['cell'];
     if (given[i]) classes.push('given');
     else if (v !== 0) classes.push(wrong ? 'wrong' : 'user');
@@ -285,11 +286,13 @@ export function SudokuGame({
           (rowOf(i) === selRow || colOf(i) === selCol || boxOf(i) === selBox)) {
         classes.push('peer');
       }
-      if (assists.highlightSame && activeDigit !== 0 && v === activeDigit && !wrong) {
+      if (assists.highlightSame && holdsActive) {
         classes.push('same');
       }
     }
-    if (dimmedBoxes.has(boxOf(i))) classes.push('dimmed');
+    // never fade the digits that CAUSE a block to be ruled out — they (and
+    // the same-number highlight) must stay the loudest thing on the board
+    if (dimmedBoxes.has(boxOf(i)) && selected !== i && !holdsActive) classes.push('dimmed');
     if (flash === i) classes.push('flash');
     if (colOf(i) % 3 === 2 && colOf(i) !== 8) classes.push('box-right');
     if (rowOf(i) % 3 === 2 && rowOf(i) !== 8) classes.push('box-bottom');
@@ -375,7 +378,7 @@ export function SudokuGame({
       <div className="sudoku-controls">
         {(
           [
-            ['colorAssist', 'Colors', DropletIcon],
+            ['colorAssist', 'Rule out', GridIcon],
             ['regionHighlight', 'Region', TargetIcon],
             ['highlightSame', 'Same', SameIcon]
           ] as const
@@ -396,7 +399,6 @@ export function SudokuGame({
             disabled={remaining[d] === 0 && !notesMode}
           >
             <span className="pad-digit">{d}</span>
-            {assists.remainingNumbers && <span className="pad-count">{remaining[d]}</span>}
           </button>
         ))}
       </div>

@@ -1196,13 +1196,13 @@ p {
 /* category bar chart labels (600-unit viewBox, so sizes are chart units) */
 .catbar-name {
   fill: var(--text);
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
 }
 
 .catbar-count {
   fill: var(--text-dim);
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -1655,8 +1655,11 @@ p {
   font-weight: 750;
 }
 
+/* ruled-out blocks fade back (cells holding the active digit are exempt,
+   so the reason a block is ruled out always stays visible) */
 .cell.dimmed {
   background: color-mix(in srgb, var(--bg) 72%, var(--surface));
+  color: var(--text-dim);
 }
 
 .cell.dimmed.peer {
@@ -1788,12 +1791,6 @@ p {
 .pad-digit {
   font-size: 19px;
   font-weight: 650;
-}
-
-.pad-count {
-  font-size: 10px;
-  color: var(--text-dim);
-  font-variant-numeric: tabular-nums;
 }
 
 .pad-btn.exhausted .pad-digit {

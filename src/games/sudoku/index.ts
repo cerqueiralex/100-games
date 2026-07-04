@@ -27,8 +27,9 @@ export const sudokuDefinition: GameDefinition = {
     },
     {
       id: 'colorAssist',
-      name: 'Color assistance',
-      description: 'Darkens the 3×3 blocks that already contain the selected digit. Counts as help.',
+      name: 'Rule out blocks',
+      description:
+        'Fades every 3×3 block that already contains the selected digit — no second copy fits there. The digits themselves stay bright. Counts as help.',
       defaultOn: true
     },
     {
@@ -47,12 +48,6 @@ export const sudokuDefinition: GameDefinition = {
       id: 'showPoints',
       name: 'Points',
       description: 'Shows your live score while playing.',
-      defaultOn: true
-    },
-    {
-      id: 'remainingNumbers',
-      name: 'Remaining numbers',
-      description: 'Shows how many of each digit are left to place. Counts as help.',
       defaultOn: true
     }
   ]

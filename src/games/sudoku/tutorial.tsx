@@ -59,7 +59,7 @@ export const sudokuTutorial: TutorialStep[] = [
   },
   {
     title: 'Assists light the way',
-    text: 'Region highlight marks your row, column and box; same-number highlight paints matching digits; color assistance dims blocks that already have your digit. All toggleable in-game — and all recorded as help.',
+    text: 'Region highlight marks your row, column and box; same-number highlight paints matching digits; Rule out fades blocks that already hold your digit (the digits stay bright). All toggleable in-game — and all recorded as help.',
     art: (
       <div className="tut-grid" style={{ gridTemplateColumns: 'repeat(3, auto)' }}>
         <Cell v="7" c="same" />

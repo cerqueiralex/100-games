@@ -85,8 +85,10 @@ export function ProfilePage() {
   }
   const topCat = [...catCounts.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
 
-  // history grouped by day, with a day filter fed by the days actually played
-  const [dateFilter, setDateFilter] = useState<string>('all');
+  // history grouped by day, with a day filter fed by the days actually
+  // played. Defaults to TODAY so opening the profile isn't a wall of games
+  // (falls back to all dates automatically when today has none).
+  const [dateFilter, setDateFilter] = useState<string>(() => new Date().toDateString());
   const dayOf = (ts: number) => new Date(ts).toDateString();
   const dayLabel = (key: string) => {
     const today = new Date();

@@ -123,10 +123,10 @@ export function CategoryBarChart({ history }: { history: GameResult[] }) {
   }
 
   const W = 600;
-  const ROW = 40;
+  const ROW = 32;
   const H = rows.length * ROW;
-  const labelW = 130;
-  const countW = 64;
+  const labelW = 116;
+  const countW = 56;
   const max = rows[0][1];
 
   return (
@@ -141,18 +141,18 @@ export function CategoryBarChart({ history }: { history: GameResult[] }) {
         const w = Math.max(8, (count / max) * (W - labelW - countW));
         return (
           <g key={cat}>
-            <text x={labelW - 14} y={y + ROW / 2 + 5} textAnchor="end" className="catbar-name">
+            <text x={labelW - 12} y={y + ROW / 2 + 4} textAnchor="end" className="catbar-name">
               {categoryName(cat)}
             </text>
             <rect
               x={labelW}
-              y={y + 9}
+              y={y + 7.5}
               width={w}
-              height={ROW - 18}
-              rx={(ROW - 18) / 2}
+              height={ROW - 15}
+              rx={(ROW - 15) / 2}
               fill={categoryColor(cat)}
             />
-            <text x={labelW + w + 12} y={y + ROW / 2 + 5} className="catbar-count">
+            <text x={labelW + w + 10} y={y + ROW / 2 + 4} className="catbar-count">
               {count}
             </text>
           </g>
