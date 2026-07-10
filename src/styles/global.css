@@ -2331,6 +2331,26 @@ p {
   margin: 0 auto;
 }
 
+/* phones: the docked bottom card (spell box + wheel + tools) must leave
+   most of the viewport to the board — compact everything so the whole
+   card stays around a third of the screen */
+@media (max-width: 700px) {
+  .wordwheel .game-tools {
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .ww-pizza-wrap {
+    width: min(180px, 50vw, 30vh);
+  }
+
+  .ww-current {
+    min-height: 36px;
+    padding: 4px 12px;
+    font-size: 18px;
+  }
+}
+
 .ww-pizza {
   display: block;
   width: 100%;
@@ -3977,6 +3997,19 @@ p {
   gap: 2px;
   max-height: 240px;
   overflow-y: auto;
+}
+
+/* phones: the clue list scrolls inside the docked card instead of
+   growing it — the grid must stay visible above */
+@media (max-width: 700px) {
+  .lg-play .game-tools {
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .lg-clues {
+    max-height: 18vh;
+  }
 }
 
 .lg-clue {

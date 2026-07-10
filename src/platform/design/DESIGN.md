@@ -160,6 +160,12 @@ standard for free:
   The card docks to the viewport bottom (`position: sticky`) so controls
   stay reachable while a tall board scrolls behind it; as a floating
   overlay it carries `var(--shadow)` (see Depth & motion).
+- **The bottom menu must not swallow the screen on phones**: at phone
+  widths (`max-width: 700px`) the whole docked card stays around a third
+  of the viewport or less, so the board keeps the majority of the screen.
+  Big content inside it compacts (Word Wheel's wheel shrinks to
+  `min(180px, 50vw, 30vh)`) or scrolls internally (Logic Puzzles' clue
+  list caps at `18vh`) — the card never grows at the board's expense.
 
 ## Tutorials (required for every game)
 
