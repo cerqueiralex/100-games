@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { DualNBackGame } from './DualNBackGame';
 import { dualNBackTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const dualNBackDefinition: GameDefinition = {
   category: 'focus',
   name: 'Dual N-Back',
   tagline: 'Track positions AND letters at once — the advanced memory workout.',
-  icon: 'n×2',
+  icon: gameIcons['dual-n-back'],
   component: DualNBackGame,
   tutorial: dualNBackTutorial,
   scoringNote:

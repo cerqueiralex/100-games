@@ -113,8 +113,8 @@ export interface GameDefinition {
   id: string;
   name: string;
   tagline: string;
-  /** Inline SVG path or emoji used on the home card. */
-  icon: string;
+  /** Sticker-style SVG from design/gameIcons.tsx shown on the home card. */
+  icon: ReactNode;
   /** The category this game belongs to (menu filter + profile stats). */
   category: CategoryId;
   assistFeatures: AssistFeature[];

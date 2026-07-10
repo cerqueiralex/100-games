@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { SudokuGame } from './SudokuGame';
 import { sudokuTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const sudokuDefinition: GameDefinition = {
   category: 'logic',
   name: 'Sudoku',
   tagline: 'Fill the grid so every row, column and box has 1–9.',
-  icon: '9×9',
+  icon: gameIcons['sudoku'],
   component: SudokuGame,
   tutorial: sudokuTutorial,
   scoringNote:

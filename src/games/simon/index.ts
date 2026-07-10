@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { SimonGame } from './SimonGame';
 import { simonTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const simonDefinition: GameDefinition = {
   category: 'memory',
   name: 'Simon',
   tagline: 'Repeat ever-longer color and sound sequences.',
-  icon: '◉◉',
+  icon: gameIcons['simon'],
   component: SimonGame,
   tutorial: simonTutorial,
   scoringNote:

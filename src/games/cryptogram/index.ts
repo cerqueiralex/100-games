@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { CryptogramGame } from './CryptogramGame';
 import { cryptogramTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const cryptogramDefinition: GameDefinition = {
   category: 'words',
   name: 'Cryptogram',
   tagline: 'Fill the clued words hidden behind a picture code — and reveal the secret vertical answer.',
-  icon: 'X→A',
+  icon: gameIcons['cryptogram'],
   component: CryptogramGame,
   tutorial: cryptogramTutorial,
   scoringNote:

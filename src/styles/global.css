@@ -313,19 +313,26 @@ p {
   gap: 16px;
 }
 
+/* neutral plate under the colorful sticker icons (gameIcons.tsx) —
+   accent tint would clash with their own palette. The typography
+   styles remain for string placeholders ("…" on the coming-soon card). */
 .game-card-icon {
   display: grid;
   place-items: center;
   width: 56px;
   height: 56px;
   border-radius: 16px;
-  background: var(--accent-soft);
+  background: var(--surface-2);
   border: 1px solid transparent;
   color: var(--accent);
   font-weight: 800;
   font-size: 15px;
   letter-spacing: 0.02em;
   flex-shrink: 0;
+}
+
+.game-card-icon svg {
+  display: block;
 }
 
 .game-card-body {

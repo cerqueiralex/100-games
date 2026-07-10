@@ -31,16 +31,18 @@
   --edge: rgba(0, 0, 0, 0.42);
 }
 
+/* light = warm paper, not white-and-black: beige background, warm
+   off-white cards, dark-GREY (never black) text */
 :root[data-theme='light'] {
-  --bg: #f4f4f6;
-  --surface: #ffffff;
-  --surface-2: #ececf0;
-  --border: #d9d9e0;
-  --text: #121216;
-  --text-dim: #6a6a72;
-  --cell-peer: #eaeef5;
-  --shadow: 0 8px 24px rgba(20, 20, 40, 0.06);
-  --edge: rgba(20, 20, 40, 0.11);
+  --bg: #ebe9e1;
+  --surface: #faf8f3;
+  --surface-2: #e3e0d5;
+  --border: #d8d3c6;
+  --text: #3b3833;
+  --text-dim: #7d776b;
+  --cell-peer: #e8e4d9;
+  --shadow: 0 8px 24px rgba(62, 52, 34, 0.08);
+  --edge: rgba(62, 52, 34, 0.13);
 }
 
 /* ---------- accent themes (Settings → Theme color) ----------
@@ -78,8 +80,8 @@
 }
 
 :root[data-theme='light'][data-accent='white'] {
-  --accent: #1c1c1e;
-  --on-accent: #ffffff;
+  --accent: #33302a;
+  --on-accent: #faf8f3;
 }
 
 /* ---------- semantic + derived tokens ---------- */

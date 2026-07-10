@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { ImagePuzzleGame } from './ImagePuzzleGame';
 import { imagePuzzleTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const imagePuzzleDefinition: GameDefinition = {
   category: 'spatial',
   name: 'Image Puzzle',
   tagline: 'Slide the tiles to restore the photo.',
-  icon: '▦',
+  icon: gameIcons['image-puzzle'],
   component: ImagePuzzleGame,
   tutorial: imagePuzzleTutorial,
   scoringNote:

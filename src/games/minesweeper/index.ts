@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { MinesweeperGame } from './MinesweeperGame';
 import { minesweeperTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const minesweeperDefinition: GameDefinition = {
   category: 'logic',
   name: 'Minesweeper',
   tagline: 'Read the numbers, flag the mines, clear the field.',
-  icon: '⚑',
+  icon: gameIcons['minesweeper'],
   component: MinesweeperGame,
   tutorial: minesweeperTutorial,
   scoringNote:

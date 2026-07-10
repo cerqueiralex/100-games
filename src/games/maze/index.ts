@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { MazeGame } from './MazeGame';
 import { mazeTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const mazeDefinition: GameDefinition = {
   category: 'spatial',
   name: 'Maze',
   tagline: 'Race through a freshly generated labyrinth to the exit.',
-  icon: '◱',
+  icon: gameIcons['maze'],
   component: MazeGame,
   tutorial: mazeTutorial,
   scoringNote:

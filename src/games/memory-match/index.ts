@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { MemoryMatchGame } from './MemoryMatchGame';
 import { memoryMatchTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const memoryMatchDefinition: GameDefinition = {
   category: 'memory',
   name: 'Memory Match',
   tagline: 'Flip the cards and find every matching pair.',
-  icon: '◆◆',
+  icon: gameIcons['memory-match'],
   component: MemoryMatchGame,
   tutorial: memoryMatchTutorial,
   scoringNote:

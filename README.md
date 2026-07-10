@@ -31,7 +31,7 @@ A minimalist platform for classic puzzle and brain games — flat surfaces with 
 - **Statistics & history**: win rate, best/avg time, best/avg score, streaks, errors, hints, time played, high scores per difficulty, filterable per game (Profile tab)
 - **Profile**: name + avatar, totals across games
 - **Share cards**: on any win, generate a 1080×1350 PNG win card — native share sheet on iPhone (WhatsApp etc.), download or long-press-copy anywhere
-- **Themes**: 3 surface themes (pure black / dim / light) × 6 accent colors (orange default, blue, green, red, purple, and a black & white monochrome) that recolor every tool in every game
+- **Themes**: 3 surface themes (pure black / dim / warm-paper light) × 6 accent colors (orange default, blue, green, red, purple, and a black & white monochrome) that recolor every tool in every game
 - **Progress charts** on the profile: a most-played donut, a 30-day stacked activity timeline colored per game, and a per-game improvement trend (score / win time / win % / errors)
 - **Pinned favorites**: star any game to move it into a Pinned section at the top of the menu
 - **Search** on the home page to find games as the catalog grows
@@ -73,7 +73,8 @@ src/
     design/              ← DESIGN SYSTEM — the rules every feature must follow
       tokens.css         ← all colors: surface themes, accent themes, radii
       effects.css        ← the shared flat card surface (one rule, whole app)
-      icons.tsx          ← every icon (monochrome SVG, inherits theme color)
+      icons.tsx          ← every UI icon (monochrome SVG, inherits theme color)
+      gameIcons.tsx      ← game identity icons (colorful sticker SVGs, home cards)
       DESIGN.md          ← the rulebook (read before any UI work)
     types.ts             ← GameDefinition contract, GameProps, GameResult
     registry.ts          ← the list of games (add new games here)

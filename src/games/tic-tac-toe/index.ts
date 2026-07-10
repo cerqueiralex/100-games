@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { TicTacToeGame } from './TicTacToeGame';
 import { ticTacToeTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const ticTacToeDefinition: GameDefinition = {
   category: 'strategy',
   name: 'Tic-Tac-Toe',
   tagline: 'Beat the robot or a friend — best of N rounds.',
-  icon: 'X·O',
+  icon: gameIcons['tic-tac-toe'],
   component: TicTacToeGame,
   tutorial: ticTacToeTutorial,
   scoringNote:

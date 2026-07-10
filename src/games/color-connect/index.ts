@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { ColorConnectGame } from './ColorConnectGame';
 import { colorConnectTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const colorConnectDefinition: GameDefinition = {
   category: 'spatial',
   name: 'Color Connect',
   tagline: 'Link every pair of dots without crossing the pipes.',
-  icon: '●–●',
+  icon: gameIcons['color-connect'],
   component: ColorConnectGame,
   tutorial: colorConnectTutorial,
   scoringNote:

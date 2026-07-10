@@ -35,6 +35,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     configureAudio(settings.soundEnabled, settings.volume);
     document.documentElement.dataset.theme = settings.theme;
     document.documentElement.dataset.accent = settings.accent;
+    // browser/PWA chrome follows the active surface theme
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg);
   }, [settings.soundEnabled, settings.volume, settings.theme, settings.accent]);
 
   const value = useMemo<AppState>(

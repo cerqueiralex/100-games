@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { LogicGridGame } from './LogicGridGame';
 import { logicGridTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const logicGridDefinition: GameDefinition = {
   category: 'logic',
   name: 'Logic Puzzles',
   tagline: 'Cross-reference the clues until every match is found.',
-  icon: '✓✕',
+  icon: gameIcons['logic-grid'],
   component: LogicGridGame,
   tutorial: logicGridTutorial,
   scoringNote:

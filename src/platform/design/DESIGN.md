@@ -7,7 +7,8 @@ This folder is the single source of truth for the platform's look and feel.
 | --- | --- |
 | `tokens.css` | All colors, themes, radii, touch-target sizes |
 | `effects.css` | Depth: the flat frosted-glass surface standard |
-| `icons.tsx` | Every icon in the platform (monochrome SVG) |
+| `icons.tsx` | Every UI-control icon in the platform (monochrome SVG) |
+| `gameIcons.tsx` | Game identity icons — colorful sticker SVGs for home cards |
 | `DESIGN.md` | The rules (this file) |
 | `/public/icons/icon.svg` | App logo — source for all PWA/app icons |
 
@@ -22,7 +23,11 @@ interactive state and game assists so it always means something.
 1. **Never hardcode a color** in components or CSS — reference a token from
    `tokens.css` (`var(--accent)`, `var(--surface)`, …).
 2. **Surface themes** (`data-theme`: `black` | `dim` | `light`) control
-   backgrounds, text and borders only.
+   backgrounds, text and borders only. The light theme is deliberately
+   **warm paper, never white-and-black**: beige background (`#ebe9e1`),
+   warm off-white cards, dark-grey text — keep any new light-theme value
+   in that warm family. `AppState` mirrors the active theme's `--bg` into
+   `<meta name="theme-color">` so browser/PWA chrome follows along.
 3. **Accent themes** (`data-accent`: `orange` (default) | `blue` | `green` |
    `red` | `purple` | `white` for monochrome black & white) control every
    tool color across all games: toggle
@@ -43,13 +48,30 @@ type. Nothing else — every component already inherits.
 
 ## Icons
 
-- All icons live in `icons.tsx`. Monochrome, single color, `24×24` viewBox,
-  stroke width 2, round caps/joins, `currentColor` — they inherit the text
-  color of their parent, which is how they pick up theme colors.
+- All UI-control icons live in `icons.tsx`. Monochrome, single color,
+  `24×24` viewBox, stroke width 2, round caps/joins, `currentColor` — they
+  inherit the text color of their parent, which is how they pick up theme
+  colors.
 - **No emojis in UI controls** (buttons, toolbars, tabs, badges). Emojis are
   allowed only as user avatars and celebratory content (win screen, share
   card artwork).
 - Default sizes: chrome icons 18–22px, in-button tool icons 16px.
+
+### Game icons (home cards)
+
+Game identity icons are a separate species from UI-control icons: colorful
+"sticker"-style SVGs in `gameIcons.tsx`, keyed by `GameDefinition.id` and
+rendered on a neutral `--surface-2` plate on the home cards.
+
+- Formula: `64×64` viewBox drawn at 42px, thick warm ink outline (`INK`,
+  stroke ~3, round joins), flat saturated fills from the file's shared `C`
+  palette, at most one soft highlight — chunky and readable at small size.
+- They are game CONTENT (like memory-card faces), so they deliberately use
+  their own fixed palette instead of theme tokens and look identical on
+  every theme. This is a documented opt-out of the token rule — it applies
+  to this file only.
+- A new game adds one sticker here (reuse `C` colors so the set stays one
+  family) and references it via `icon: gameIcons['<id>']`.
 
 ## Components
 

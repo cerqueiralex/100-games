@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { CrosswordGame } from './CrosswordGame';
 import { crosswordTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const crosswordDefinition: GameDefinition = {
   category: 'words',
   name: 'Crossword',
   tagline: 'Solve the clues and fill the crossing words.',
-  icon: 'A–Z',
+  icon: gameIcons['crossword'],
   component: CrosswordGame,
   tutorial: crosswordTutorial,
   scoringNote:

@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { NumberMergeGame } from './NumberMergeGame';
 import { numberMergeTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const numberMergeDefinition: GameDefinition = {
   category: 'numbers',
   name: 'Number Merge',
   tagline: 'Drag chains of numbers and merge your way to the goal tile.',
-  icon: '248',
+  icon: gameIcons['number-merge'],
   component: NumberMergeGame,
   tutorial: numberMergeTutorial,
   scoringNote:

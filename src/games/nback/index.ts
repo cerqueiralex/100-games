@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { NBackGame } from './NBackGame';
 import { nBackTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const nBackDefinition: GameDefinition = {
   category: 'focus',
   name: 'N-Back',
   tagline: 'Press Match when the position repeats from N steps back.',
-  icon: 'n−1',
+  icon: gameIcons['n-back'],
   component: NBackGame,
   tutorial: nBackTutorial,
   scoringNote:

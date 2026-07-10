@@ -1,4 +1,5 @@
 import type { GameDefinition } from '../../platform/types';
+import { gameIcons } from '../../platform/design/gameIcons';
 import { WordWheelGame } from './WordWheelGame';
 import { wordWheelTutorial } from './tutorial';
 
@@ -7,7 +8,7 @@ export const wordWheelDefinition: GameDefinition = {
   category: 'words',
   name: 'Word Wheel',
   tagline: 'Spell words from the letter wheel — crossword or word hunt.',
-  icon: 'A◯',
+  icon: gameIcons['word-wheel'],
   component: WordWheelGame,
   tutorial: wordWheelTutorial,
   scoringNote:
