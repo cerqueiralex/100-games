@@ -22,6 +22,7 @@ A minimalist platform for classic puzzle and brain games — flat surfaces with 
 | **Minesweeper** | Classic mines with protected first tap, flag mode, long-press flags and chording |
 | **Logic Puzzles** | Logic grid deduction: 25 original presets in 5 tiers plus endless generated puzzles, all guess-free with a unique solution |
 | **Battleship** | Place your fleet, then trade salvos with an AI that scales from scattershot to probability-density hunting; hits earn another shot, fleet panel tracks damage and sinkings |
+| **House Puzzles** | Einstein-style deduction: match colors, hobbies and more to a row of houses from positional clues — always one unique, guess-free solution |
 
 ## Platform features (shared by every game)
 
@@ -94,7 +95,7 @@ src/
   games/                 ← one isolated folder per game, all its logic inside
     sudoku/  crossword/  word-wheel/  memory-match/  simon/  nback/
     dual-nback/  number-merge/  color-connect/  tic-tac-toe/  image-puzzle/
-    maze/  cryptogram/  minesweeper/  logic-grid/  battleship/
+    maze/  cryptogram/  minesweeper/  logic-grid/  battleship/  house-puzzles/
 ```
 
 ### Adding a new game

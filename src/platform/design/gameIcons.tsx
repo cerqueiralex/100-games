@@ -225,6 +225,23 @@ const battleship = (
   </svg>
 );
 
+const housePuzzles = (
+  <svg {...base}>
+    <path d="M8 52 h48" stroke={INK} strokeWidth="3" />
+    <rect x="9" y="34" width="14" height="18" fill={C.red} stroke={INK} strokeWidth="2.5" />
+    <path d="M7 35 L16 26.5 L25 35 Z" fill={C.red} stroke={INK} strokeWidth="2.5" strokeLinejoin="round" />
+    <rect x="13.5" y="42" width="5" height="10" rx="1" fill={INK} opacity="0.55" />
+    <rect x="25" y="30" width="15" height="22" fill={C.yellow} stroke={INK} strokeWidth="2.5" />
+    <path d="M23 31 L32.5 22 L42 31 Z" fill={C.yellow} stroke={INK} strokeWidth="2.5" strokeLinejoin="round" />
+    <rect x="29.5" y="36" width="6" height="5" rx="1" fill={C.white} stroke={INK} strokeWidth="1.6" />
+    <rect x="41.5" y="34" width="14" height="18" fill={C.blue} stroke={INK} strokeWidth="2.5" />
+    <path d="M39.5 35 L48.5 26.5 L57.5 35 Z" fill={C.blue} stroke={INK} strokeWidth="2.5" strokeLinejoin="round" />
+    <rect x="45.5" y="39" width="5.5" height="5" rx="1" fill={C.white} stroke={INK} strokeWidth="1.6" />
+    <path d="M13 14 l1.5 3.7 3.7 1.5 -3.7 1.5 -1.5 3.7 -1.5 -3.7 -3.7 -1.5 3.7 -1.5 Z" fill={C.yellow} stroke={INK} strokeWidth="1.7" />
+    <text x="48" y="15" fontSize="12" fontWeight="800" fill={INK} textAnchor="middle" dominantBaseline="central">?</text>
+  </svg>
+);
+
 const logicGrid = (
   <svg {...base}>
     <path d="M40 40 L51 51" stroke={INK} strokeWidth="10" />
@@ -253,5 +270,6 @@ export const gameIcons: Record<string, ReactNode> = {
   cryptogram,
   minesweeper,
   'logic-grid': logicGrid,
-  battleship
+  battleship,
+  'house-puzzles': housePuzzles
 };

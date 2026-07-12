@@ -204,6 +204,44 @@ console.log('— Logic grid generator —');
   }
 }
 
+console.log('— House Puzzles generator —');
+{
+  const { generateHousePuzzle } = await import('../src/games/house-puzzles/logic/generator');
+  const hpSolver = await import('../src/games/house-puzzles/logic/solver');
+  const sizes = [
+    { n: 4, k: 3, flavor: 'gentle' as const },
+    { n: 4, k: 4, flavor: 'gentle' as const },
+    { n: 5, k: 4, flavor: 'tricky' as const },
+    { n: 5, k: 5, flavor: 'tricky' as const },
+    { n: 6, k: 5, flavor: 'tricky' as const }
+  ];
+  for (const size of sizes) {
+    let ok = 0;
+    let clueSum = 0;
+    const t0 = Date.now();
+    for (let seed = 3000; seed < 3025; seed++) {
+      try {
+        const p = generateHousePuzzle({ seed, ...size });
+        const s = hpSolver.solveByPropagation(p);
+        if (hpSolver.isFullyDecided(s, p.n) && hpSolver.stateMatchesSolution(p, s)) {
+          ok++;
+          clueSum += p.clues.length;
+        }
+      } catch {
+        // counted as a failure below
+      }
+    }
+    if (ok < 25) {
+      failed = true;
+      console.error(`✗ ${size.n} houses × ${size.k} cats: only ${ok}/25 seeds produced guess-free puzzles`);
+    } else {
+      console.log(
+        `✓ ${size.n} houses × ${size.k} cats (${size.flavor}): 25/25 unique & guess-free, ~${Math.round(clueSum / 25)} clues, ${Date.now() - t0}ms total`
+      );
+    }
+  }
+}
+
 console.log('— Color Connect generator —');
 for (const difficulty of ['easy', 'medium', 'hard', 'pro', 'extreme'] as const) {
   let ok = 0;
