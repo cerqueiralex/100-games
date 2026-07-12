@@ -5,9 +5,9 @@ import { BulbIcon, CheckIcon, CipherGlyph, EraseIcon } from '../../platform/desi
 import { PadTool } from '../../platform/components/ui';
 import { generateCryptoPuzzle, type CryptoPuzzle } from './logic/words';
 
-const ROW_PTS: Record<Difficulty, number> = { easy: 60, medium: 80, hard: 100 };
-const PAR_SEC: Record<Difficulty, number> = { easy: 6 * 60, medium: 9 * 60, hard: 12 * 60 };
-const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
+const ROW_PTS: Record<Difficulty, number> = { easy: 60, medium: 80, hard: 100, pro: 120, extreme: 140 };
+const PAR_SEC: Record<Difficulty, number> = { easy: 6 * 60, medium: 9 * 60, hard: 12 * 60, pro: 15 * 60, extreme: 18 * 60 };
+const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
 const ERROR_PENALTY = 15;
 const HINT_PENALTY = 30;
 const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];

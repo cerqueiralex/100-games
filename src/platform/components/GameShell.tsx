@@ -14,7 +14,9 @@ type Phase = 'setup' | 'playing' | 'finished';
 const DIFFICULTY_LABEL: Record<Difficulty, string> = {
   easy: 'Easy',
   medium: 'Medium',
-  hard: 'Hard'
+  hard: 'Hard',
+  pro: 'Pro',
+  extreme: 'Extreme'
 };
 
 const emptyStats: LiveStats = { score: 0, errors: 0, hintsUsed: 0, assistsUsed: [] };

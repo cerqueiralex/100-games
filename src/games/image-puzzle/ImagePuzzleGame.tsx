@@ -4,10 +4,10 @@ import { sfx } from '../../platform/audio';
 import { EyeIcon } from '../../platform/design/icons';
 import { PadTool } from '../../platform/components/ui';
 
-const SIZE: Record<Difficulty, number> = { easy: 3, medium: 4, hard: 5 };
-const SHUFFLE_MOVES: Record<Difficulty, number> = { easy: 50, medium: 140, hard: 280 };
-const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
-const PAR_SEC: Record<Difficulty, number> = { easy: 2 * 60, medium: 5 * 60, hard: 10 * 60 };
+const SIZE: Record<Difficulty, number> = { easy: 3, medium: 4, hard: 5, pro: 6, extreme: 7 };
+const SHUFFLE_MOVES: Record<Difficulty, number> = { easy: 50, medium: 140, hard: 280, pro: 460, extreme: 700 };
+const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
+const PAR_SEC: Record<Difficulty, number> = { easy: 2 * 60, medium: 5 * 60, hard: 10 * 60, pro: 16 * 60, extreme: 24 * 60 };
 
 /**
  * Images live in /public/puzzles/. To add your own: drop a square-ish

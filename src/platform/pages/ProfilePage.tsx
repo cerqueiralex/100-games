@@ -237,7 +237,7 @@ export function ProfilePage() {
             <div key={g.id} className="highscore-card fx-card">
               <span className="highscore-game">{g.name}</span>
               <div className="highscore-cols">
-                {(['easy', 'medium', 'hard'] as const).map((d) => (
+                {(['easy', 'medium', 'hard', 'pro', 'extreme'] as const).map((d) => (
                   <div key={d} className="highscore-col">
                     <span className="highscore-diff">{d}</span>
                     <span className="highscore-val">

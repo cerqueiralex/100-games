@@ -12,7 +12,7 @@ export const nBackDefinition: GameDefinition = {
   component: NBackGame,
   tutorial: nBackTutorial,
   scoringNote:
-    'Squares light up one by one. Press Match when the position equals the one N steps back (N = 1/2/3 by difficulty). +20/30/40 per hit, +5 per correct pass, −10 per mistake. Reach 70% accuracy to win.',
+    'Squares light up one by one. Press Match when the position equals the one N steps back (N = 1/2/3/4/5 by difficulty). +20/30/40/50/60 per hit, +5 per correct pass, −10 per mistake. Reach 70% accuracy to win.',
   assistFeatures: [
     {
       id: 'feedback',

@@ -85,6 +85,56 @@ export const LEVELS: Record<Difficulty, WheelLevel[]> = {
         { answer: 'NAG', row: 0, col: 5, dir: 'down' }
       ]
     }
+  ],
+  pro: [
+    {
+      id: 'ww-pro-1',
+      letters: ['N', 'A', 'S', 'T', 'I', 'E', 'R'],
+      entries: [
+        { answer: 'NASTIER', row: 5, col: 4, dir: 'down' },
+        { answer: 'RINSE', row: 7, col: 1, dir: 'across' },
+        { answer: 'SAINT', row: 9, col: 2, dir: 'across' },
+        { answer: 'TRAINS', row: 5, col: 0, dir: 'across' },
+        { answer: 'RETINA', row: 0, col: 2, dir: 'down' }
+      ]
+    },
+    {
+      id: 'ww-pro-2',
+      letters: ['P', 'A', 'I', 'N', 'T', 'E', 'R'],
+      entries: [
+        { answer: 'PAINTER', row: 1, col: 1, dir: 'down' },
+        { answer: 'INERT', row: 4, col: 0, dir: 'across' },
+        { answer: 'PAINT', row: 0, col: 4, dir: 'down' },
+        { answer: 'RETAIN', row: 7, col: 1, dir: 'across' },
+        { answer: 'PIRATE', row: 2, col: 3, dir: 'across' }
+      ]
+    }
+  ],
+  extreme: [
+    {
+      id: 'ww-extreme-1',
+      letters: ['T', 'R', 'I', 'A', 'N', 'G', 'L', 'E'],
+      entries: [
+        { answer: 'TRIANGLE', row: 3, col: 0, dir: 'across' },
+        { answer: 'GELATIN', row: 3, col: 5, dir: 'down' },
+        { answer: 'ANGLER', row: 5, col: 2, dir: 'across' },
+        { answer: 'LEARNT', row: 2, col: 7, dir: 'down' },
+        { answer: 'GIANT', row: 9, col: 2, dir: 'across' },
+        { answer: 'RETINAL', row: 0, col: 2, dir: 'down' }
+      ]
+    },
+    {
+      id: 'ww-extreme-2',
+      letters: ['C', 'R', 'E', 'A', 'T', 'I', 'O', 'N'],
+      entries: [
+        { answer: 'CREATION', row: 3, col: 5, dir: 'down' },
+        { answer: 'RATION', row: 10, col: 0, dir: 'across' },
+        { answer: 'CANTER', row: 4, col: 0, dir: 'across' },
+        { answer: 'CERTAIN', row: 6, col: 1, dir: 'down' },
+        { answer: 'TRACE', row: 6, col: 3, dir: 'across' },
+        { answer: 'NOTICE', row: 0, col: 0, dir: 'down' }
+      ]
+    }
   ]
 };
 

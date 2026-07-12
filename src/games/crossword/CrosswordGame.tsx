@@ -6,11 +6,11 @@ import { PadTool } from '../../platform/components/ui';
 import { buildPuzzle, type CrosswordDef, type Dir, type Slot } from './logic/engine';
 import { pickPuzzle } from './logic/puzzles';
 
-const LETTER_POINTS: Record<Difficulty, number> = { easy: 15, medium: 20, hard: 30 };
+const LETTER_POINTS: Record<Difficulty, number> = { easy: 15, medium: 20, hard: 30, pro: 40, extreme: 50 };
 const ERROR_PENALTY = 10;
 const HINT_PENALTY = 25;
-const PAR_SEC: Record<Difficulty, number> = { easy: 6 * 60, medium: 12 * 60, hard: 20 * 60 };
-const BONUS_PER_SEC: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
+const PAR_SEC: Record<Difficulty, number> = { easy: 6 * 60, medium: 12 * 60, hard: 20 * 60, pro: 28 * 60, extreme: 36 * 60 };
+const BONUS_PER_SEC: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
 
 const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 

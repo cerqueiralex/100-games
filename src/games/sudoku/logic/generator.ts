@@ -11,7 +11,9 @@ export interface SudokuPuzzle {
 const CLUES: Record<Difficulty, number> = {
   easy: 40,
   medium: 32,
-  hard: 27
+  hard: 27,
+  pro: 25,
+  extreme: 23
 };
 
 export const rowOf = (i: number) => Math.floor(i / 9);
@@ -84,15 +86,12 @@ function countSolutions(grid: Grid, limit = 2): number {
   return count;
 }
 
-export function generatePuzzle(difficulty: Difficulty): SudokuPuzzle {
-  const solution: Grid = new Array(81).fill(0);
-  fillGrid(solution);
-
+/** Dig clues out of a copy of `solution` while keeping the solution unique. */
+function dig(solution: Grid, targetClues: number): Grid {
   const puzzle = [...solution];
-  const targetClues = CLUES[difficulty];
   let clues = 81;
 
-  // Remove symmetric pairs while the puzzle keeps a unique solution.
+  // Pass 1: remove symmetric pairs while the puzzle keeps a unique solution.
   const order = shuffled(Array.from({ length: 81 }, (_, i) => i));
   for (const idx of order) {
     if (clues <= targetClues) break;
@@ -112,7 +111,40 @@ export function generatePuzzle(difficulty: Difficulty): SudokuPuzzle {
     }
   }
 
-  return { puzzle, solution };
+  // Pass 2: symmetric digging plateaus around 28 clues — the pro/extreme
+  // targets need a single-cell sweep to squeeze the last few out.
+  for (const idx of shuffled(order)) {
+    if (clues <= targetClues) break;
+    if (puzzle[idx] === 0) continue;
+    const v = puzzle[idx];
+    puzzle[idx] = 0;
+    if (countSolutions([...puzzle]) !== 1) puzzle[idx] = v;
+    else clues--;
+  }
+
+  return puzzle;
+}
+
+export function generatePuzzle(difficulty: Difficulty): SudokuPuzzle {
+  const targetClues = CLUES[difficulty];
+  let best: SudokuPuzzle | null = null;
+  let bestClues = 82;
+
+  // a few fresh grids + digs, keeping the leanest — low targets aren't
+  // reachable from every filled grid
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const solution: Grid = new Array(81).fill(0);
+    fillGrid(solution);
+    const puzzle = dig(solution, targetClues);
+    const clues = puzzle.filter((v) => v !== 0).length;
+    if (clues < bestClues) {
+      bestClues = clues;
+      best = { puzzle, solution };
+    }
+    if (bestClues <= targetClues) break;
+  }
+
+  return best!;
 }
 
 /** Finds a cell that currently has exactly one valid candidate ("naked single"). */

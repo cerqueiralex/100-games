@@ -9,7 +9,11 @@ export interface FlowLevel {
 const CONFIG: Record<Difficulty, { size: number; minPaths: number; maxPaths: number }> = {
   easy: { size: 5, minPaths: 4, maxPaths: 5 },
   medium: { size: 6, minPaths: 5, maxPaths: 7 },
-  hard: { size: 7, minPaths: 6, maxPaths: 9 }
+  hard: { size: 7, minPaths: 6, maxPaths: 9 },
+  // the board paints at most 9 distinct pipe colors, so bigger tiers grow
+  // the grid (longer, twistier paths) rather than the path count
+  pro: { size: 8, minPaths: 7, maxPaths: 9 },
+  extreme: { size: 9, minPaths: 8, maxPaths: 9 }
 };
 
 const MIN_LEN = 3;

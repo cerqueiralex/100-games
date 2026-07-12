@@ -13,7 +13,9 @@ interface Config {
 const CONFIG: Record<Difficulty, Config> = {
   easy: { target: 8, stepMs: 620, mult: 1 },
   medium: { target: 12, stepMs: 480, mult: 2 },
-  hard: { target: 16, stepMs: 370, mult: 3 }
+  hard: { target: 16, stepMs: 370, mult: 3 },
+  pro: { target: 20, stepMs: 300, mult: 4 },
+  extreme: { target: 24, stepMs: 250, mult: 5 }
 };
 
 /* one tone per pad: C4 E4 G4 C5 */

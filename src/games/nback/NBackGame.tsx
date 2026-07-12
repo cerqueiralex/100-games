@@ -12,7 +12,9 @@ interface Config {
 const CONFIG: Record<Difficulty, Config> = {
   easy: { n: 1, trials: 20, trialMs: 2600, hitPts: 20 },
   medium: { n: 2, trials: 24, trialMs: 2300, hitPts: 30 },
-  hard: { n: 3, trials: 28, trialMs: 2100, hitPts: 40 }
+  hard: { n: 3, trials: 28, trialMs: 2100, hitPts: 40 },
+  pro: { n: 4, trials: 32, trialMs: 2000, hitPts: 50 },
+  extreme: { n: 5, trials: 36, trialMs: 1900, hitPts: 60 }
 };
 
 const WIN_ACCURACY = 0.7;

@@ -15,9 +15,17 @@ const WINS = [
 ];
 
 const ROUND_OPTIONS = [1, 3, 5, 10];
-const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
-/** chance the robot plays a perfect (minimax) move instead of a simple one */
-const AI_STRENGTH: Record<Difficulty, number> = { easy: 0.25, medium: 0.7, hard: 0.92 };
+const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
+/** chance the robot plays a perfect (minimax) move instead of a simple one.
+    extreme stays a hair below 1 — a literally perfect robot could never lose
+    a round, which would make sudden death unresolvable */
+const AI_STRENGTH: Record<Difficulty, number> = {
+  easy: 0.25,
+  medium: 0.7,
+  hard: 0.92,
+  pro: 0.97,
+  extreme: 0.995
+};
 
 const MARK_NAME: Record<Mark, string> = { X: 'Cross', O: 'Circle' };
 const other = (m: Mark): Mark => (m === 'X' ? 'O' : 'X');
@@ -215,6 +223,11 @@ export function TicTacToeGame({
     }
   };
 
+  // on extreme the robot seizes the opening of EVERY round — the second
+  // layer of difficulty on top of its near-perfect play
+  const starterFor = (r: number): Mark =>
+    config?.mode === 'bot' && difficulty === 'extreme' ? other(config.myMark) : roundStarter(r);
+
   const nextRound = (r: number) => {
     schedule(() => {
       roundOver.current = false;
@@ -222,7 +235,7 @@ export function TicTacToeGame({
       setWinLine(null);
       setSuggest(null);
       setRound(r);
-      setTurn(roundStarter(r));
+      setTurn(starterFor(r));
       setBanner(null);
     }, 1300);
   };
@@ -370,7 +383,7 @@ export function TicTacToeGame({
       return {
         ...config,
         board: settled ? new Array(9).fill(null) : board,
-        turn: settled ? roundStarter(round + 1) : turn,
+        turn: settled ? starterFor(round + 1) : turn,
         winsX,
         winsO,
         draws,
@@ -458,6 +471,8 @@ export function TicTacToeGame({
             onClick={() => {
               sfx.place();
               setConfig({ mode: pickMode, myMark: pickMark, rounds: pickRounds });
+              // extreme vs the robot: it opens round 1 too
+              setTurn(pickMode === 'bot' && difficulty === 'extreme' ? other(pickMark) : 'X');
             }}
           >
             Start match

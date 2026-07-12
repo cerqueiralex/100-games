@@ -40,7 +40,9 @@ export function computeStats(results: GameResult[]): GameStats {
   const perDifficulty = {
     easy: emptyDifficulty(),
     medium: emptyDifficulty(),
-    hard: emptyDifficulty()
+    hard: emptyDifficulty(),
+    pro: emptyDifficulty(),
+    extreme: emptyDifficulty()
   } as Record<Difficulty, DifficultyStats>;
 
   let won = 0;

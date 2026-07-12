@@ -7,10 +7,12 @@ import { PadTool } from '../../platform/components/ui';
 const CONFIG: Record<Difficulty, { size: number; mines: number }> = {
   easy: { size: 8, mines: 8 },
   medium: { size: 10, mines: 16 },
-  hard: { size: 12, mines: 26 }
+  hard: { size: 12, mines: 26 },
+  pro: { size: 14, mines: 40 },
+  extreme: { size: 16, mines: 58 }
 };
-const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
-const PAR_SEC: Record<Difficulty, number> = { easy: 2 * 60, medium: 4 * 60, hard: 7 * 60 };
+const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
+const PAR_SEC: Record<Difficulty, number> = { easy: 2 * 60, medium: 4 * 60, hard: 7 * 60, pro: 10 * 60, extreme: 14 * 60 };
 const CELL_PTS = 5;
 const WIN_PTS_PER_MINE = 20;
 const HINT_PENALTY = 25;

@@ -284,7 +284,9 @@ export interface HuntPuzzle {
 const HUNT_TUNING: Record<Difficulty, { baseLen: number[]; min: number; max: number }> = {
   easy: { baseLen: [6], min: 5, max: 12 },
   medium: { baseLen: [7], min: 8, max: 18 },
-  hard: { baseLen: [8, 9], min: 11, max: 26 }
+  hard: { baseLen: [8, 9], min: 11, max: 26 },
+  pro: { baseLen: [9], min: 14, max: 32 },
+  extreme: { baseLen: [9], min: 18, max: 40 }
 };
 
 function solutionsFor(letters: string[], center: string): string[] {

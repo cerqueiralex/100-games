@@ -12,7 +12,7 @@ export const numberMergeDefinition: GameDefinition = {
   component: NumberMergeGame,
   tutorial: numberMergeTutorial,
   scoringNote:
-    'Every merge scores its resulting tile. Chains start with two equal tiles and may continue onto equal-or-double values. Reach 256/512/1024 (easy/medium/hard) to win; run out of moves and it is game over.',
+    'Every merge scores its resulting tile. Chains start with two equal tiles and may continue onto equal-or-double values. Reach 256/512/1024/2048/4096 (easy → extreme) to win; run out of moves and it is game over.',
   assistFeatures: [
     {
       id: 'undo',

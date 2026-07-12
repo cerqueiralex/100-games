@@ -12,7 +12,7 @@ export const wordWheelDefinition: GameDefinition = {
   component: WordWheelGame,
   tutorial: wordWheelTutorial,
   scoringNote:
-    'Two modes: fill the criss-cross grid, or hunt every hidden word on a random wheel (each uses the center letter; bigger wheels on higher difficulty). +20/30/40 points per letter of every word (easy/medium/hard), −5 per wrong guess, −15 per hint. Finish under par time (3/5/8 min) for a bonus.',
+    'Two modes: fill the criss-cross grid, or hunt every hidden word on a random wheel (each uses the center letter; bigger wheels on higher difficulty). +20/30/40/50/60 points per letter of every word (easy → extreme), −5 per wrong guess, −15 per hint. Finish under par time (3/5/8/11/14 min) for a bonus.',
   assistFeatures: [
     {
       id: 'revealLetter',

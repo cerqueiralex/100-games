@@ -12,7 +12,7 @@ export const sudokuDefinition: GameDefinition = {
   component: SudokuGame,
   tutorial: sudokuTutorial,
   scoringNote:
-    'Scoring: +50/75/100 points per correct cell (easy/medium/hard), −50 per error, −25 per hint. Finish under par time (8/15/25 min) for a time bonus.',
+    'Scoring: +50/75/100/125/150 points per correct cell (easy → extreme), −50 per error, −25 per hint. Finish under par time (8/15/25/35/45 min) for a time bonus. Pro and extreme boards start with fewer clues.',
   assistFeatures: [
     {
       id: 'smartHints',

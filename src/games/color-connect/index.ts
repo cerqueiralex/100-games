@@ -12,7 +12,7 @@ export const colorConnectDefinition: GameDefinition = {
   component: ColorConnectGame,
   tutorial: colorConnectTutorial,
   scoringNote:
-    'Connect every color pair and cover the whole board to win. Boards are freshly generated every game (5×5/6×6/7×7). Score starts at 500× difficulty, −2 per move, −50 per Solve-a-color assist used, plus a time bonus under par (2/4/6 min).',
+    'Connect every color pair and cover the whole board to win. Boards are freshly generated every game (5×5 up to 9×9 on extreme). Score starts at 500× difficulty, −2 per move, −50 per Solve-a-color assist used, plus a time bonus under par (2/4/6/8/10 min).',
   assistFeatures: [
     {
       id: 'solveColor',

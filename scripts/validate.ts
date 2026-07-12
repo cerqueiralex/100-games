@@ -29,7 +29,7 @@ for (const [difficulty, defs] of Object.entries(PUZZLES)) {
 }
 
 console.log('— Sudoku generator —');
-for (const difficulty of ['easy', 'medium', 'hard'] as const) {
+for (const difficulty of ['easy', 'medium', 'hard', 'pro', 'extreme'] as const) {
   const t0 = Date.now();
   const { puzzle, solution } = generatePuzzle(difficulty);
   const clues = puzzle.filter((v) => v !== 0).length;
@@ -69,7 +69,7 @@ console.log('— Word Wheel word bank & hunts —');
   } else {
     console.log(`✓ bank: ${WORD_BANK.length} words, all valid and unique`);
   }
-  for (const difficulty of ['easy', 'medium', 'hard'] as const) {
+  for (const difficulty of ['easy', 'medium', 'hard', 'pro', 'extreme'] as const) {
     let ok = 0;
     let wordSum = 0;
     const t0 = Date.now();
@@ -108,7 +108,7 @@ console.log('— Cryptogram picture puzzles —');
     const answers = Object.values(HIDDEN_ANSWERS).flat().length;
     console.log(`✓ content: ${WORD_BANK.length} bank words, ${answers} hidden answers, all covered`);
   }
-  for (const difficulty of ['easy', 'medium', 'hard'] as const) {
+  for (const difficulty of ['easy', 'medium', 'hard', 'pro', 'extreme'] as const) {
     let ok = 0;
     let colSum = 0;
     const t0 = Date.now();
@@ -173,7 +173,9 @@ console.log('— Logic grid generator —');
   const sizes = [
     { k: 3, n: 3, flavor: 'gentle' as const },
     { k: 4, n: 4, flavor: 'balanced' as const },
-    { k: 4, n: 5, flavor: 'tricky' as const }
+    { k: 4, n: 5, flavor: 'tricky' as const },
+    { k: 5, n: 5, flavor: 'tricky' as const },
+    { k: 5, n: 6, flavor: 'tricky' as const }
   ];
   for (const size of sizes) {
     let ok = 0;
@@ -203,7 +205,7 @@ console.log('— Logic grid generator —');
 }
 
 console.log('— Color Connect generator —');
-for (const difficulty of ['easy', 'medium', 'hard'] as const) {
+for (const difficulty of ['easy', 'medium', 'hard', 'pro', 'extreme'] as const) {
   let ok = 0;
   for (let i = 0; i < 25; i++) {
     const level = generateFlowLevel(difficulty);

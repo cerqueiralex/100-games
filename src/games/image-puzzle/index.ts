@@ -12,7 +12,7 @@ export const imagePuzzleDefinition: GameDefinition = {
   component: ImagePuzzleGame,
   tutorial: imagePuzzleTutorial,
   scoringNote:
-    'A random photo is scrambled into 3×3/4×4/5×5 sliding tiles (always solvable). Score = 800 × difficulty − 2 per move, plus a time bonus under par (2/5/10 min). Add your own photos via public/puzzles/manifest.json.',
+    'A random photo is scrambled into sliding tiles from 3×3 up to 7×7 on extreme (always solvable). Score = 800 × difficulty − 2 per move, plus a time bonus under par (2/5/10/16/24 min). Add your own photos via public/puzzles/manifest.json.',
   assistFeatures: [
     {
       id: 'showNumbers',

@@ -81,6 +81,16 @@ export const sfx = {
     tone(660, 90, 'sine');
     tone(880, 120, 'sine', 0.8, 90);
   },
+  /** deep explosion for battle hits */
+  boom: () => {
+    sweep(180, 36, 300, 'sawtooth', 1.2);
+    tone(58, 220, 'square', 0.8, 20);
+  },
+  /** watery bloop for shots that miss */
+  splash: () => {
+    sweep(760, 220, 170, 'sine', 0.8);
+    tone(300, 90, 'sine', 0.45, 110);
+  },
   win: () => {
     tone(523, 120, 'triangle');
     tone(659, 120, 'triangle', 1, 110);

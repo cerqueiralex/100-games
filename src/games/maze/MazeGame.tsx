@@ -4,14 +4,16 @@ import { sfx } from '../../platform/audio';
 import { BulbIcon, DpadArrowIcon, MoveIcon } from '../../platform/design/icons';
 import { PadTool } from '../../platform/components/ui';
 
-const SIZE: Record<Difficulty, number> = { easy: 9, medium: 13, hard: 17 };
-const PAR_SEC: Record<Difficulty, number> = { easy: 60, medium: 180, hard: 360 };
+const SIZE: Record<Difficulty, number> = { easy: 9, medium: 13, hard: 17, pro: 21, extreme: 25 };
+const PAR_SEC: Record<Difficulty, number> = { easy: 60, medium: 180, hard: 360, pro: 540, extreme: 720 };
 
 /** generation tuning: twistier corridors + best-of-N boards = harder mazes */
 const GEN: Record<Difficulty, { turnBias: number; attempts: number }> = {
   easy: { turnBias: 0.2, attempts: 1 },
   medium: { turnBias: 0.55, attempts: 6 },
-  hard: { turnBias: 0.75, attempts: 12 }
+  hard: { turnBias: 0.75, attempts: 12 },
+  pro: { turnBias: 0.85, attempts: 16 },
+  extreme: { turnBias: 0.95, attempts: 20 }
 };
 
 const CUSTOM_COLS = [9, 11, 13, 15];
@@ -222,7 +224,7 @@ export function MazeGame({
       done.current = true;
       const mult =
         config.kind === 'classic'
-          ? { easy: 1, medium: 2, hard: 3 }[difficulty]
+          ? { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 }[difficulty]
           : Math.max(2, Math.round((config.cols * config.rows) / 90));
       const parSec = config.kind === 'classic' ? PAR_SEC[difficulty] : Math.round(maze.par * 1.5);
       const bonus = Math.max(0, parSec - elapsedRef.current) * mult;

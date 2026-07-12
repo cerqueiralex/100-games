@@ -12,7 +12,7 @@ export const mazeDefinition: GameDefinition = {
   component: MazeGame,
   tutorial: mazeTutorial,
   scoringNote:
-    'Reach the target one step at a time — classic 9×9/13×13/17×17 mazes, or a custom size that scales as tall as you like. Score = 600 × difficulty, −5 per step beyond the shortest path, plus a time bonus for finishing fast.',
+    'Reach the target one step at a time — classic mazes from 9×9 up to 25×25 on extreme, or a custom size that scales as tall as you like. Score = 600 × difficulty, −5 per step beyond the shortest path, plus a time bonus for finishing fast.',
   assistFeatures: [
     {
       id: 'breadcrumbs',

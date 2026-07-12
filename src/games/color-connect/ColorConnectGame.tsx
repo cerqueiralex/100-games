@@ -5,8 +5,8 @@ import { BulbIcon } from '../../platform/design/icons';
 import { PadTool } from '../../platform/components/ui';
 import { generateFlowLevel, type FlowLevel } from './logic/generator';
 
-const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
-const PAR_SEC: Record<Difficulty, number> = { easy: 2 * 60, medium: 4 * 60, hard: 6 * 60 };
+const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
+const PAR_SEC: Record<Difficulty, number> = { easy: 2 * 60, medium: 4 * 60, hard: 6 * 60, pro: 8 * 60, extreme: 10 * 60 };
 const HINT_PENALTY = 50;
 
 interface FlowSave {

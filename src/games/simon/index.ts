@@ -12,7 +12,7 @@ export const simonDefinition: GameDefinition = {
   component: SimonGame,
   tutorial: simonTutorial,
   scoringNote:
-    'Scoring: round length × 10 × difficulty multiplier for every sequence you repeat. Reach round 8/12/16 (easy/medium/hard) to win. One wrong pad ends the game — unless Second chances is on.',
+    'Scoring: round length × 10 × difficulty multiplier for every sequence you repeat. Reach round 8/12/16/20/24 (easy → extreme) to win — playback gets faster every tier. One wrong pad ends the game — unless Second chances is on.',
   assistFeatures: [
     {
       id: 'secondChance',

@@ -12,7 +12,7 @@ export const dualNBackDefinition: GameDefinition = {
   component: DualNBackGame,
   tutorial: dualNBackTutorial,
   scoringNote:
-    'Two channels at once: press Position when the square repeats from N steps back, Letter when the letter does (N = 1/2/3 by difficulty). +25/35/45 per hit, +3 per correct pass, −10 per mistake. Reach 65% accuracy to win.',
+    'Two channels at once: press Position when the square repeats from N steps back, Letter when the letter does (N = 1/2/3/4/5 by difficulty). +25/35/45/55/65 per hit, +3 per correct pass, −10 per mistake. Reach 65% accuracy to win.',
   assistFeatures: [
     {
       id: 'feedback',

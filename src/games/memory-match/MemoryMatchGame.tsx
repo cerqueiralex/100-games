@@ -7,7 +7,9 @@ import { PadTool } from '../../platform/components/ui';
 /* Card faces are game content (like avatars), not UI chrome — emojis allowed. */
 const FACES = [
   '🐶', '🦊', '🐼', '🐸', '🦉', '🐙', '🦋', '🌵', '🍕',
-  '🍩', '🚀', '⚽', '🎲', '🎧', '🌙', '⭐', '🔑', '🎈'
+  '🍩', '🚀', '⚽', '🎲', '🎧', '🌙', '⭐', '🔑', '🎈',
+  '🍄', '🐝', '🦀', '🐬', '🍓', '🥑', '🌈', '🔥', '🎁',
+  '🛸', '🧲', '🎹', '⚓', '🧊'
 ];
 
 interface Config {
@@ -21,7 +23,9 @@ interface Config {
 const CONFIG: Record<Difficulty, Config> = {
   easy: { cols: 4, pairs: 8, matchPts: 50, parSec: 90, bonusPerSec: 1 },
   medium: { cols: 5, pairs: 15, matchPts: 75, parSec: 210, bonusPerSec: 2 },
-  hard: { cols: 6, pairs: 18, matchPts: 100, parSec: 300, bonusPerSec: 3 }
+  hard: { cols: 6, pairs: 18, matchPts: 100, parSec: 300, bonusPerSec: 3 },
+  pro: { cols: 6, pairs: 21, matchPts: 125, parSec: 390, bonusPerSec: 4 },
+  extreme: { cols: 7, pairs: 28, matchPts: 150, parSec: 510, bonusPerSec: 5 }
 };
 
 const MISMATCH_PENALTY = 10;

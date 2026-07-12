@@ -457,19 +457,20 @@ p {
   line-height: 1.45;
 }
 
+/* five tiers wrap 3+2 on phones and sit in one row on desktop */
 .difficulty-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
   gap: 10px;
 }
 
 .difficulty-btn {
-  padding: 14px 0;
+  padding: 13px 0;
   border-radius: 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   color: var(--text-dim);
   box-shadow: inset 0 -3px 0 var(--edge);
   transition: all 0.15s;
@@ -1299,7 +1300,7 @@ p {
 
 .highscore-cols {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
   gap: 8px;
 }
 
@@ -1887,9 +1888,8 @@ p {
   text-decoration: line-through;
 }
 
-.cw-cell.revealed .cw-letter {
-  color: var(--good);
-}
+/* hint-revealed letters read like typed ones (--text follows the theme);
+   the .revealed class stays on the cell only to block re-typing */
 
 .cw-num {
   position: absolute;
@@ -4568,6 +4568,362 @@ p {
   width: auto;
   padding: 12px 26px;
   font-size: 14px;
+}
+
+/* ===== battleship ===== */
+
+.battleship {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bs-board-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-l);
+}
+
+.bs-board-caption {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* 11×11 grid: a slim label column/row wraps the 10×10 sea */
+.bs-board {
+  display: grid;
+  grid-template-columns: 14px repeat(10, 1fr);
+  gap: 2px;
+}
+
+.bs-label {
+  display: grid;
+  place-items: center;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+/* the sea — every untouched cell is water-blue (content color, so it
+   deliberately keeps its hue on every theme, mixed against the surface) */
+.bs-cell {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--play-4) 16%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--play-4) 30%, var(--border));
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+@media (hover: hover) {
+  .bs-cell:not(.miss):not(.hit):not(.sunk):hover {
+    border-color: var(--accent);
+  }
+}
+
+/* ships ride ABOVE the water: opaque deck fill + the standard extruded
+   2.5D bottom edge (paint only — geometry stays pinned) */
+.bs-cell.ship {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  border-color: var(--accent);
+  box-shadow: inset 0 -3px 0 var(--edge);
+}
+
+/* a miss churns the water: bold center drop + two looping ripple rings */
+.bs-cell.miss {
+  background-image: radial-gradient(
+    circle,
+    var(--play-4) 0 2.2px,
+    transparent 3px
+  );
+}
+
+.bs-cell.miss::before,
+.bs-cell.miss::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 72%;
+  height: 72%;
+  border-radius: 50%;
+  border: 2px solid var(--play-4);
+  opacity: 0;
+  animation: bs-wave 2.4s ease-out infinite;
+}
+
+.bs-cell.miss::after {
+  animation-delay: 1.2s;
+}
+
+.bs-cell.hit {
+  background: color-mix(in srgb, var(--bad) 20%, var(--surface));
+  border-color: var(--bad);
+}
+
+.bs-cell.hit::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--bad);
+}
+
+/* a sunk wreck: solid block with the dark extruded edge of colored fills */
+.bs-cell.sunk {
+  background: var(--bad);
+  border-color: var(--bad);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.28);
+}
+
+.bs-cell.sunk::after {
+  content: '✕';
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink);
+  opacity: 0.8;
+}
+
+.bs-cell.hit.last,
+.bs-cell.sunk.last {
+  animation: bs-boom 0.45s ease;
+}
+
+/* radar contact — a green sonar sweep circling inside the cell plus an
+   expanding pulse ring, until the cell is fired upon */
+.bs-cell.ping {
+  border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 14%, var(--surface));
+  background-image: radial-gradient(circle, var(--good) 0 2px, transparent 2.6px);
+  overflow: hidden;
+}
+
+.bs-cell.ping::before {
+  content: '';
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--good) 65%, transparent),
+    transparent 80deg 360deg
+  );
+  animation: bs-radar-sweep 1.7s linear infinite;
+}
+
+.bs-cell.ping::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 74%;
+  height: 74%;
+  border-radius: 50%;
+  border: 1.5px solid var(--good);
+  opacity: 0;
+  animation: bs-wave 1.7s ease-out infinite;
+}
+
+.bs-cell.bad-flash {
+  background: color-mix(in srgb, var(--bad) 20%, var(--surface));
+  border-color: var(--bad);
+  animation: bs-shake 0.3s;
+}
+
+/* placement ghost: the ship being positioned, previewed under the
+   pointer — dashed because it isn't committed yet (style is paint-only) */
+.bs-cell.ghost {
+  background: color-mix(in srgb, var(--good) 26%, var(--surface));
+  border-color: var(--good);
+  border-style: dashed;
+  box-shadow: inset 0 -3px 0 var(--edge);
+}
+
+.bs-cell.ghost-bad {
+  background: color-mix(in srgb, var(--bad) 26%, var(--surface));
+  border-color: var(--bad);
+  border-style: dashed;
+}
+
+@keyframes bs-boom {
+  0% { transform: scale(0.5); }
+  45% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
+@keyframes bs-wave {
+  0% { transform: scale(0.3); opacity: 0.9; }
+  70% { opacity: 0.3; }
+  100% { transform: scale(1.05); opacity: 0; }
+}
+
+@keyframes bs-radar-sweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bs-shake {
+  0%, 100% { transform: translateX(0); }
+  30% { transform: translateX(-3px); }
+  70% { transform: translateX(3px); }
+}
+
+/* radar contact readout in the bottom menu */
+.bs-radar-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--good);
+}
+
+.bs-radar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--good);
+  animation: bs-blip 1.7s ease infinite;
+}
+
+@keyframes bs-blip {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+/* ---- fleet panel: your ships (with damage) vs the enemy's (sunk) ---- */
+
+.bs-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-l);
+}
+
+.bs-fleet-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bs-fleet-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.bs-ship-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* placement dock: the same rows become pressable pickers */
+button.bs-ship-row.dock {
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  box-shadow: inset 0 -2px 0 var(--edge);
+}
+
+button.bs-ship-row.dock:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 -1px 0 var(--edge);
+}
+
+button.bs-ship-row.dock.sel {
+  box-shadow: inset 0 0 0 2px var(--accent), inset 0 -2px 0 var(--edge);
+}
+
+button.bs-ship-row.dock.placed {
+  opacity: 0.5;
+}
+
+.bs-ship-name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bs-ship-row.sunkrow .bs-ship-name {
+  text-decoration: line-through;
+  color: var(--text-dim);
+}
+
+.bs-pips {
+  display: flex;
+  gap: 3px;
+}
+
+.bs-pip {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+
+.bs-pip.mine {
+  background: var(--good);
+}
+
+.bs-pip.mine.dmg {
+  background: var(--bad);
+}
+
+.bs-pip.enemy {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.bs-pip.enemy.dmg {
+  background: var(--bad);
+  border-color: var(--bad);
+}
+
+.bs-place-help {
+  flex-basis: 100%;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.bs-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 30%;
+  transform: translateX(-50%);
+  z-index: 60;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+.board-hidden .bs-board,
+.board-hidden .bs-panel {
+  visibility: hidden;
 }
 
 /* desktop niceties */

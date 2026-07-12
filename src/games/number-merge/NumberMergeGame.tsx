@@ -9,7 +9,7 @@ const COLS = 5;
 const ROWS = 7;
 const N = COLS * ROWS;
 
-const TARGET: Record<Difficulty, number> = { easy: 256, medium: 512, hard: 1024 };
+const TARGET: Record<Difficulty, number> = { easy: 256, medium: 512, hard: 1024, pro: 2048, extreme: 4096 };
 const MAX_UNDOS = 3;
 
 const rowOf = (i: number) => Math.floor(i / COLS);

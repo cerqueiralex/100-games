@@ -6,9 +6,9 @@ import { PadTool } from '../../platform/components/ui';
 import { buildWheelLevel, pickLevel, type WheelLevel } from './logic/levels';
 import { generateHunt, type HuntPuzzle } from './logic/wordbank';
 
-const WORD_PTS: Record<Difficulty, number> = { easy: 20, medium: 30, hard: 40 };
-const PAR_SEC: Record<Difficulty, number> = { easy: 3 * 60, medium: 5 * 60, hard: 8 * 60 };
-const BONUS: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
+const WORD_PTS: Record<Difficulty, number> = { easy: 20, medium: 30, hard: 40, pro: 50, extreme: 60 };
+const PAR_SEC: Record<Difficulty, number> = { easy: 3 * 60, medium: 5 * 60, hard: 8 * 60, pro: 11 * 60, extreme: 14 * 60 };
+const BONUS: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
 const WRONG_PENALTY = 5;
 const HINT_PENALTY = 15;
 

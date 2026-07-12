@@ -12,7 +12,7 @@ export const memoryMatchDefinition: GameDefinition = {
   component: MemoryMatchGame,
   tutorial: memoryMatchTutorial,
   scoringNote:
-    'Scoring: +50/75/100 per pair (easy/medium/hard) plus streak bonuses for consecutive matches, −10 per miss, −25 per peek. Finish under par time (1.5/3.5/5 min) for a time bonus.',
+    'Scoring: +50/75/100/125/150 per pair (easy → extreme) plus streak bonuses for consecutive matches, −10 per miss, −25 per peek. Finish under par time for a bonus. Boards grow to 6×7 on pro and 7×8 on extreme.',
   assistFeatures: [
     {
       id: 'previewStart',

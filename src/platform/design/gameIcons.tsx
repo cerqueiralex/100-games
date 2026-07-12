@@ -22,6 +22,7 @@ const C = {
   pink: '#ff5d8f',
   paper: '#f2e3c4',
   wood: '#a9764b',
+  steel: '#9aa4af',
   white: '#ffffff'
 };
 
@@ -212,6 +213,18 @@ const minesweeper = (
   </svg>
 );
 
+const battleship = (
+  <svg {...base}>
+    <rect x="10" y="10" width="44" height="44" rx="10" fill={C.blue} stroke={INK} strokeWidth="3" />
+    <path d="M15.5 38 h33 l-5 8.5 h-23 Z" fill={C.steel} stroke={INK} strokeWidth="2.5" />
+    <rect x="27" y="29" width="11" height="9" rx="1.5" fill={C.steel} stroke={INK} strokeWidth="2.5" />
+    <path d="M20 34.5 h5.5 M23 34.5 v3.5" stroke={INK} strokeWidth="2.5" />
+    <circle cx="32.5" cy="26" r="2.4" fill={C.yellow} stroke={INK} strokeWidth="1.8" />
+    <path d="M15 50.5 c3 -2.5 6 -2.5 9 0 M27 50.5 c3 -2.5 6 -2.5 9 0" stroke={C.white} strokeWidth="2.5" opacity="0.8" fill="none" />
+    <path d="M45 16.5 l1.4 3.4 3.4 1.4 -3.4 1.4 -1.4 3.4 -1.4 -3.4 -3.4 -1.4 3.4 -1.4 Z" fill={C.red} stroke={INK} strokeWidth="1.7" />
+  </svg>
+);
+
 const logicGrid = (
   <svg {...base}>
     <path d="M40 40 L51 51" stroke={INK} strokeWidth="10" />
@@ -239,5 +252,6 @@ export const gameIcons: Record<string, ReactNode> = {
   maze,
   cryptogram,
   minesweeper,
-  'logic-grid': logicGrid
+  'logic-grid': logicGrid,
+  battleship
 };

@@ -419,6 +419,22 @@ export const HIDDEN_ANSWERS: Record<Difficulty, HiddenAnswer[]> = {
     { answer: 'IMAGINARY CREATURES', clue: 'Beasts that exist only in the mind.' },
     { answer: 'PROFESSIONAL ATHLETES', clue: 'People paid to play their sport.' },
     { answer: 'PHILOSOPHICAL DEBATES', clue: 'Long arguments about truth and meaning.' }
+  ],
+  pro: [
+    { answer: 'SPECTACULAR PERFORMANCES', clue: 'Shows that leave the audience breathless.' },
+    { answer: 'UNFORGETTABLE ADVENTURES', clue: 'Journeys you will retell for a lifetime.' },
+    { answer: 'INCREDIBLE DISCOVERIES', clue: 'Findings that rewrite the textbooks.' },
+    { answer: 'MAGNIFICENT CATHEDRALS', clue: 'Towering stone churches centuries in the making.' },
+    { answer: 'MYSTERIOUS LIGHTHOUSES', clue: 'Lonely towers blinking over midnight seas.' },
+    { answer: 'REMARKABLE CELEBRATIONS', clue: 'Parties that make history books.' }
+  ],
+  extreme: [
+    { answer: 'SPECTACULAR THUNDERSTORMS', clue: 'Sky-splitting light shows with a booming soundtrack.' },
+    { answer: 'UNFORGETTABLE CELEBRATIONS', clue: 'Festivities nobody present will ever forget.' },
+    { answer: 'INTERNATIONAL CHAMPIONSHIPS', clue: 'Tournaments where whole nations compete.' },
+    { answer: 'REMARKABLE TRANSFORMATIONS', clue: 'Before-and-after changes hard to believe.' },
+    { answer: 'BREATHTAKING CONSTELLATIONS', clue: 'Star patterns that stop stargazers cold.' },
+    { answer: 'UNDERGROUND CIVILIZATIONS', clue: 'Whole societies imagined beneath our feet.' }
   ]
 };
 
@@ -426,11 +442,14 @@ export const HIDDEN_ANSWERS: Record<Difficulty, HiddenAnswer[]> = {
 export const LEN_BAND: Record<Difficulty, [number, number]> = {
   easy: [4, 6],
   medium: [5, 8],
-  hard: [6, 10]
+  hard: [6, 10],
+  pro: [6, 10],
+  extreme: [6, 10]
 };
 
-/** Preferred cap on where the hidden letter may sit inside a row word. */
-export const IDX_CAP: Record<Difficulty, number> = { easy: 2, medium: 3, hard: 3 };
+/** Preferred cap on where the hidden letter may sit inside a row word —
+    higher tiers let the shaded column wander deeper into the rows. */
+export const IDX_CAP: Record<Difficulty, number> = { easy: 2, medium: 3, hard: 3, pro: 4, extreme: 5 };
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -502,7 +521,9 @@ export function validateCryptoContent(): string[] {
   const ANSWER_LEN: Record<Difficulty, [number, number]> = {
     easy: [15, 15],
     medium: [16, 17],
-    hard: [18, 20]
+    hard: [18, 20],
+    pro: [21, 23],
+    extreme: [24, 26]
   };
   for (const difficulty of Object.keys(HIDDEN_ANSWERS) as Difficulty[]) {
     const [lo, hi] = LEN_BAND[difficulty];

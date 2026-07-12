@@ -12,7 +12,7 @@ export const crosswordDefinition: GameDefinition = {
   component: CrosswordGame,
   tutorial: crosswordTutorial,
   scoringNote:
-    'Scoring: +15/20/30 points per correct letter (easy/medium/hard), −10 per error, −25 per reveal. Finish under par time (6/12/20 min) for a time bonus.',
+    'Scoring: +15/20/30/40/50 points per correct letter (easy → extreme), −10 per error, −25 per reveal. Finish under par time (6/12/20/28/36 min) for a time bonus. Grids grow up to 15×15 on extreme.',
   assistFeatures: [
     {
       id: 'autoCheck',

@@ -23,10 +23,12 @@ interface LgSave {
 const RANDOM_SIZE: Record<Difficulty, { k: number; n: number; flavor: 'gentle' | 'balanced' | 'tricky' }> = {
   easy: { k: 3, n: 3, flavor: 'gentle' },
   medium: { k: 4, n: 4, flavor: 'balanced' },
-  hard: { k: 4, n: 5, flavor: 'tricky' }
+  hard: { k: 4, n: 5, flavor: 'tricky' },
+  pro: { k: 5, n: 5, flavor: 'tricky' },
+  extreme: { k: 5, n: 6, flavor: 'tricky' }
 };
 
-const PAR_SEC: Record<number, number> = { 3: 4 * 60, 4: 8 * 60, 5: 13 * 60 };
+const PAR_SEC: Record<number, number> = { 3: 4 * 60, 4: 8 * 60, 5: 13 * 60, 6: 20 * 60 };
 const CELL_PTS = 8;
 const HINT_PENALTY = 30;
 const ERROR_PENALTY = 10;

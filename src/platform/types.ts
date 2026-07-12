@@ -1,7 +1,7 @@
 import type { ComponentType, ReactNode } from 'react';
 
-export type Difficulty = 'easy' | 'medium' | 'hard';
-export const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'pro' | 'extreme';
+export const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard', 'pro', 'extreme'];
 
 export type Outcome = 'won' | 'lost' | 'abandoned';
 

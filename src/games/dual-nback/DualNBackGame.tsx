@@ -12,7 +12,9 @@ interface Config {
 const CONFIG: Record<Difficulty, Config> = {
   easy: { n: 1, trials: 20, trialMs: 2800, hitPts: 25 },
   medium: { n: 2, trials: 24, trialMs: 2500, hitPts: 35 },
-  hard: { n: 3, trials: 28, trialMs: 2300, hitPts: 45 }
+  hard: { n: 3, trials: 28, trialMs: 2300, hitPts: 45 },
+  pro: { n: 4, trials: 32, trialMs: 2200, hitPts: 55 },
+  extreme: { n: 5, trials: 36, trialMs: 2100, hitPts: 65 }
 };
 
 const LETTERS = ['C', 'H', 'K', 'L', 'Q', 'R', 'S'];
