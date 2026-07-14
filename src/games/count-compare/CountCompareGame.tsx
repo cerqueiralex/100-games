@@ -329,7 +329,7 @@ export function CountCompareGame({
       <div className="cc-stage-wrap">
         <div className={`cc-stage ${phase === 'reveal' && result === 'bad' ? 'shake' : ''}`}>
           <svg
-            key={flashKey}
+            key={`canvas-${flashKey}`}
             className={`cc-canvas ${shapesVisible ? 'show' : 'hide'}`}
             viewBox="0 0 100 100"
             preserveAspectRatio="xMidYMid meet"
@@ -347,11 +347,11 @@ export function CountCompareGame({
           </svg>
 
           {phase === 'ready' && (
-            <div className="cc-countdown" key={count}>
+            <div className="cc-countdown" key={`count-${count}`}>
               {count}
             </div>
           )}
-          {phase === 'flash' && <TimerRing key={flashKey} durationMs={current.flashMs} />}
+          {phase === 'flash' && <TimerRing key={`ring-${flashKey}`} durationMs={current.flashMs} />}
           {phase === 'reveal' && <div className={`cc-flash-overlay ${result}`} />}
         </div>
       </div>

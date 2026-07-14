@@ -173,7 +173,6 @@ export function NonogramGame({
           0,
           n * CELL_PTS * MULT[difficulty] - finalErrors * ERR_PENALTY - finalHints * HINT_PENALTY + bonus
         );
-        sfx.win();
         events.onFinish({
           outcome: 'won',
           score,
