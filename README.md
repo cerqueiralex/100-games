@@ -1,6 +1,6 @@
 # 100 Games
 
-A minimalist platform for classic puzzle and brain games — flat surfaces with an extruded "candy button" depth style. Built as a **PWA** (Progressive Web App): one codebase that runs in any browser on your machine and installs on your iPhone home screen like a native app, with offline support. All data (history, statistics, profile, settings) is stored on-device — no account, no server.
+A minimalist platform of sixty-seven classic puzzle and brain games — flat surfaces with an extruded "candy button" depth style. Built as a **PWA** (Progressive Web App): one codebase that runs in any browser on your machine and installs on your iPhone home screen like a native app, with offline support. All data (history, statistics, profile, settings) is stored on-device — no account, no server.
 
 ## Games
 
@@ -23,6 +23,56 @@ A minimalist platform for classic puzzle and brain games — flat surfaces with 
 | **Logic Puzzles** | Logic grid deduction: 25 original presets in 5 tiers plus endless generated puzzles, all guess-free with a unique solution |
 | **Battleship** | Place your fleet, then trade salvos with an AI that scales from scattershot to probability-density hunting; hits earn another shot, fleet panel tracks damage and sinkings |
 | **House Puzzles** | Einstein-style deduction: match colors, hobbies and more to a row of houses from positional clues — always one unique, guess-free solution |
+| **Nonograms** | Shade cells from the row/column number clues to reveal a hidden picture; guess-free boards with a unique solution |
+| **Killer Sudoku** | Sudoku laced with dotted sum cages and barely any givens; unique, deduction-only solutions |
+| **Kakuro** | A crossword of sums: fill each run with 1–9, no repeats, hitting its clue total; unique solutions |
+| **Skyscrapers** | Place towers 1–N so every edge clue sees the right number of rising skyscrapers; guess-free |
+| **Futoshiki** | A Latin-square number grid ruled by greater-than signs between cells; unique, deduction-only |
+| **Binary Grid** | Fill with suns and moons — never three in a row, balanced lines, no repeated row or column; guess-free |
+| **Aquarium** | Flood connected tanks so each level matches the edge counts — water always finds its level; unique solutions |
+| **Tents & Trees** | Pitch one tent beside every tree to the row/column counts, no two tents touching; guess-free |
+| **Bridges** | Link every numbered island with the right count of non-crossing bridges into one network (Hashi); unique solution |
+| **Slitherlink** | Draw a single closed loop whose edges match the numbered clues; guess-free unique solutions |
+| **Nurikabe** | Grow each numbered island to its size in one connected sea with no 2×2 pools; unique solutions |
+| **Lights Out** | Every tap flips a plus of lights — clear them all in as few presses as possible; exact minimal-press par |
+| **Fleet Finder** | Battleship solitaire — deduce a hidden, non-touching fleet from the row/column counts and a few reveals |
+| **Code Breaker** | Crack the hidden colour code from black/white peg feedback (Mastermind), with deduction assists |
+| **2048** | Swipe to slide and merge matching tiles, doubling your way up to the target |
+| **Make 24** | Combine four numbers with + − × ÷ to make exactly 24 |
+| **Target Number** | Reach the target from six numbers and the four operations (Countdown-style) |
+| **Math Sprint** | Solve as many quick arithmetic problems as you can before the clock runs out |
+| **Magic Square** | Place the numbers so every row, column and diagonal sums to the same total |
+| **Sequence Cracker** | Work out the rule behind a number sequence and predict the next term |
+| **MathDoku** | A Latin-square grid carved into arithmetic cages (KenKen-style); unique solutions |
+| **Word Guess** | Six tries to find the hidden word, tile colours grading each guess (Wordle-style) |
+| **Word Search** | Sweep the grid in any direction to find every hidden word on the list |
+| **Word Ladder** | Turn one word into another one letter at a time, every rung a real word |
+| **Anagram Sprint** | Unscramble as many jumbled words as you can before time runs out |
+| **Missing Vowels** | The vowels vanished — restore the hidden word or phrase |
+| **Hangman** | Guess the word letter by letter before the balloon pops |
+| **Letter Hunt** | Swipe chains of neighbouring letters into as many words as you can (Boggle-style) |
+| **Backwards Span** | Watch a growing sequence, then key it back in reverse |
+| **Number Trail** | Memorise where the numbers sat, then tap them in order once they hide |
+| **Pattern Recall** | A pattern of cells flashes — light the same cells back from memory |
+| **Moving Cups** | Keep your eye on the ball as the cups shuffle, then pick the right cup |
+| **Schulte Table** | Find the numbers in order as fast as your eyes can move — a peripheral-vision drill |
+| **Stroop Match** | Tap the ink colour, not the word it spells |
+| **Odd One Out** | Spot the one tile that doesn't match the rest, against the clock |
+| **Count & Compare** | A flash of shapes — count or compare them before it fades |
+| **Sokoban** | Push every crate onto a target, never pulling; always-solvable levels with an optimal-push par |
+| **Pipes** | Rotate the pipe tiles to connect the source and make the water flow to every end |
+| **Gridlock** | Slide the blocking cars and trucks aside to drive the red car out (Rush Hour) |
+| **Tower of Hanoi** | Move the graduated disc stack to the far peg, never a big disc on a small one; optimal-move par |
+| **Tangram** | Fit the seven geometric pieces into the target silhouette |
+| **Untangle** | Drag the nodes until no two lines cross |
+| **Laser Mirrors** | Aim the mirrors so the beam lights every target |
+| **Jigsaw** | Reassemble a photo from interlocking pieces (higher tiers add rotation); uses your own Image Puzzle photos |
+| **Peg Solitaire** | Jump pegs over their neighbours to remove them until one remains; solver-verified boards |
+| **Connect Four** | Drop discs to line up four in a row against a minimax robot or a friend (pass-and-play) |
+| **Reversi** | Bracket and flip discs to own the most of the board; scaling minimax AI (Othello) |
+| **Checkers** | Jump, chain captures, crown kings and clear the board vs a minimax robot or a friend |
+| **Dots & Boxes** | Draw lines to close the most boxes — mind the chains — versus the AI or a friend |
+| **Klondike Solitaire** | Build the four suits up from Ace; the easier draws use winnable-verified deals |
 
 ## Platform features (shared by every game)
 
@@ -96,6 +146,16 @@ src/
     sudoku/  crossword/  word-wheel/  memory-match/  simon/  nback/
     dual-nback/  number-merge/  color-connect/  tic-tac-toe/  image-puzzle/
     maze/  cryptogram/  minesweeper/  logic-grid/  battleship/  house-puzzles/
+    killer-sudoku/  kakuro/  skyscrapers/  futoshiki/  binary-grid/  aquarium/
+    tents/  hashi/  slitherlink/  nurikabe/  nonogram/  lights-out/
+    fleet-solitaire/  code-breaker/  game2048/  make-24/  target-number/
+    math-sprint/  magic-square/  sequence-cracker/  mathdoku/  word-guess/
+    word-search/  word-ladder/  anagram-sprint/  missing-vowels/  hangman/
+    letter-hunt/  backwards-span/  number-trail/  pattern-recall/  moving-cups/
+    schulte-table/  stroop-match/  odd-one-out/  count-compare/  sokoban/
+    pipes/  gridlock/  tower-of-hanoi/  tangram/  untangle/  laser-mirrors/
+    jigsaw/  peg-solitaire/  connect-four/  reversi/  checkers/  dots-boxes/
+    klondike/
 ```
 
 ### Adding a new game
@@ -129,6 +189,11 @@ sudokus verifying unique solutions, checks the Cryptogram word bank and
 test-generates its picture puzzles, re-verifies all 25 Logic Puzzles presets
 plus its endless generator (unique, deduction-only solutions), and
 stress-tests the Color Connect level generator for full-coverage
+solvability. It also re-verifies the newer games' generators and content
+banks — every deduction puzzle (Nonograms, Killer Sudoku, Kakuro,
+Skyscrapers, Futoshiki, Binary Grid, Aquarium, Tents & Trees, Bridges,
+Slitherlink, Nurikabe, Fleet Finder…) for a unique, guess-free solution,
+and the baked puzzle banks (Gridlock, Klondike, Peg Solitaire) for
 solvability. Run it after editing `src/games/crossword/logic/puzzles.ts`,
 `src/games/word-wheel/logic/levels.ts`, or
 `src/games/cryptogram/logic/words.ts`.
