@@ -35,25 +35,12 @@ interface HpSave {
   assistsUsed?: string[];
 }
 
-/** every house is painted its own color (content palette) */
-const HOUSE_COLORS = [
-  'var(--play-2)', // red
-  'var(--play-4)', // blue
-  'var(--play-1)', // green
-  'var(--play-7)', // orange
-  'var(--play-5)', // purple
-  'var(--play-6)' // sky
-];
-
+/* houses are deliberately NEUTRAL (no per-house paint): many puzzles have a
+   color category ("The Orange house…"), so a painted house #4 would clash
+   with — and mislead about — the color items the clues refer to */
 function HouseGlyph({ num }: { num: number }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width="31"
-      height="31"
-      aria-hidden="true"
-      style={{ color: HOUSE_COLORS[(num - 1) % HOUSE_COLORS.length] }}
-    >
+    <svg viewBox="0 0 24 24" width="31" height="31" aria-hidden="true">
       <path
         d="M3.5 11 L12 3.8 L20.5 11"
         fill="none"
@@ -343,7 +330,10 @@ export function HousePuzzlesGame({
       </p>
 
       <div className="hp-board-wrap">
-        <div className="hp-board" style={{ gridTemplateColumns: `20px auto repeat(${n}, 1fr)` }}>
+        <div
+          className="hp-board"
+          style={{ gridTemplateColumns: `20px auto repeat(${n}, var(--hp-cell))` }}
+        >
           <div className="hp-corner" style={{ gridColumn: '1 / 3' }} />
           {Array.from({ length: n }, (_, h) => (
             <div key={h} className="hp-house">

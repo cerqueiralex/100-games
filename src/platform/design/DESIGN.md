@@ -181,7 +181,11 @@ standard for free:
   d-pad) — inside a single `.game-tools fx-card`, never sibling panels.
   The card docks to the viewport bottom (`position: sticky`) so controls
   stay reachable while a tall board scrolls behind it; as a floating
-  overlay it carries `var(--shadow)` (see Depth & motion).
+  overlay it carries `var(--shadow)` (see Depth & motion). Because the
+  docked card floats above the viewport bottom, `.game-screen`'s
+  `padding-bottom` must stay ≥ that sticky lift plus
+  `env(safe-area-inset-bottom)` — otherwise the card permanently covers
+  the board's last rows on the installed PWA.
 - **The bottom menu must not swallow the screen on phones**: at phone
   widths (`max-width: 700px`) the whole docked card stays around a third
   of the viewport or less, so the board keeps the majority of the screen.

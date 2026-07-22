@@ -74,6 +74,22 @@ function buildSteps(cups: number, swaps: RoundData['swaps']): Step[] {
 
 const identity = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
 
+/** an upside-down party cup: tapered body with rounded base up top, moulded
+    ridges near the mouth, a rolled lip resting on the table, and a soft gloss.
+    Drawn once per cup; CSS recolors the outline for hover/result/hint states. */
+const CupArt = (
+  <svg className="cup-art" viewBox="0 0 96 128" aria-hidden>
+    <path className="cup-body" d="M10 116 L24 12 Q25 3 34 3 L62 3 Q71 3 72 12 L86 116 Z" />
+    <path className="cup-shade" d="M12 104 L84 104 L86 116 L10 116 Z" />
+    <path className="cup-ridge" d="M15.7 88 H80.3" />
+    <path className="cup-ridge" d="M14.5 97 H81.5" />
+    <rect className="cup-base-hl" x="27" y="7" width="42" height="7" rx="3.5" />
+    <path className="cup-gloss" d="M30 16 L22 90" />
+    <rect className="cup-lip" x="3" y="113" width="90" height="13" rx="6.5" />
+    <rect className="cup-lip-shade" x="5" y="120" width="86" height="5" rx="2.5" />
+  </svg>
+);
+
 interface CupsSave {
   round: number;
   roundData: RoundData;
@@ -425,7 +441,7 @@ export function MovingCupsGame({
                 onClick={() => pick(slotOf[cup])}
                 aria-label={`Cup ${slotOf[cup] + 1}`}
               >
-                <span className="cup-shine" />
+                {CupArt}
               </button>
             );
           })}

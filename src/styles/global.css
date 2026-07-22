@@ -662,7 +662,11 @@ p {
 /* ===== game screen ===== */
 
 .game-screen {
-  padding-bottom: 16px;
+  /* must be ≥ the .game-tools sticky lift (10px + safe-area): the docked
+     card floats that far above the viewport bottom, so without matching
+     end-of-scroll clearance it would permanently cover the board's last
+     rows on phones (safe-area-inset-bottom ≈ 34px on installed PWA) */
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
 }
 
 /* in-game the top inset matches the 10px column rhythm (the roomier
@@ -4945,9 +4949,15 @@ button.bs-ship-row.dock.placed {
 }
 
 .hp-board {
+  /* fixed square tracks: header glyphs and cells share the exact same
+     columns, so they can never drift apart (the old 1fr + aspect-ratio
+     stretch combo resolved differently on iOS Safari and misaligned) */
+  --hp-cell: clamp(30px, 8.6vw, 44px);
   display: grid;
   gap: 3px;
   align-items: stretch;
+  width: max-content;
+  margin-inline: auto;
 }
 
 .hp-house {
@@ -4992,8 +5002,8 @@ button.bs-ship-row.dock.placed {
 }
 
 .hp-cell {
-  aspect-ratio: 1;
-  min-width: 30px;
+  width: 100%;
+  height: var(--hp-cell);
   display: grid;
   place-items: center;
   background: var(--surface);
@@ -12351,6 +12361,10 @@ button.bs-ship-row.dock.placed {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* cups and ball are game CONTENT: classic red plastic cups + yellow ball
+     (matching the game's sticker icon) on every accent/surface theme */
+  --cup-red: var(--play-2);
+  --cup-ball: var(--play-3);
 }
 
 .cup-status {
@@ -12417,34 +12431,79 @@ button.bs-ship-row.dock.placed {
   z-index: 1;
 }
 
-/* ---- a cup ---- */
+/* ---- a cup ----
+   The button is a transparent positioning shell (transforms + swap arcs live
+   here); the visible cup is the .cup-art SVG inside it. */
 .cup {
   position: absolute;
   bottom: 28px;
   left: calc(11% / var(--n));
   width: calc(78% / var(--n));
   aspect-ratio: 3 / 4;
-  border-radius: 42% 42% 16% 16% / 30% 30% 12% 12%;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  box-shadow: inset 0 -7px 0 var(--edge);
+  background: none;
+  border: 0;
+  padding: 0;
   z-index: 4;
   cursor: default;
   will-change: transform;
   transform: translateX(var(--tx)) translateY(var(--ty, 0px)) scale(var(--sc, 1));
-  transition: transform 0.3s cubic-bezier(0.34, 1.45, 0.5, 1), border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.34, 1.45, 0.5, 1);
 }
 
-.cup-shine {
+.cup-art {
   position: absolute;
-  top: 13%;
-  left: 17%;
-  width: 24%;
-  height: 34%;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  pointer-events: none;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  transition: filter 0.2s ease;
+}
+
+.cup-art .cup-body {
+  fill: var(--cup-red);
+  stroke: color-mix(in srgb, #000000 30%, var(--cup-red));
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  transition: stroke 0.2s ease;
+}
+
+/* moulded plastic details: darker band above the mouth, thin ridge rings,
+   recessed base at the top, a soft sheen down the left side */
+.cup-art .cup-shade {
+  fill: #000000;
+  opacity: 0.16;
+}
+
+.cup-art .cup-ridge {
+  fill: none;
+  stroke: #000000;
+  stroke-width: 2.5;
+  opacity: 0.12;
+}
+
+.cup-art .cup-base-hl {
+  fill: #ffffff;
+  opacity: 0.22;
+}
+
+.cup-art .cup-gloss {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 7;
+  stroke-linecap: round;
+  opacity: 0.2;
+}
+
+/* the rolled lip the cup stands on */
+.cup-art .cup-lip {
+  fill: color-mix(in srgb, #ffffff 86%, var(--cup-red));
+  stroke: rgba(0, 0, 0, 0.22);
+  stroke-width: 2;
+}
+
+.cup-art .cup-lip-shade {
+  fill: #000000;
+  opacity: 0.08;
 }
 
 /* a raised cup (watch reveal / peek / pick result) */
@@ -12453,19 +12512,30 @@ button.bs-ship-row.dock.placed {
   z-index: 10;
 }
 
-/* the ball's cup keeps a faint accent underglow (Ball tint assist) */
-.cup.ball-hint {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  box-shadow: inset 0 -7px 0 var(--edge),
-    inset 0 -14px 20px -8px color-mix(in srgb, var(--accent) 70%, transparent);
+/* the ball's cup keeps a faint accent glow (Ball tint assist) */
+.cup.ball-hint .cup-art {
+  filter: drop-shadow(0 2px 7px color-mix(in srgb, var(--accent) 45%, transparent));
+}
+
+.cup.ball-hint .cup-art .cup-body {
+  stroke: color-mix(in srgb, var(--accent) 55%, #000000);
 }
 
 /* result paint on the chosen cup */
-.cup.right {
-  border-color: color-mix(in srgb, var(--good) 60%, var(--border));
+.cup.right .cup-art {
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--good) 45%, transparent));
 }
-.cup.wrong {
-  border-color: color-mix(in srgb, var(--bad) 60%, var(--border));
+
+.cup.right .cup-art .cup-body {
+  stroke: var(--good);
+}
+
+.cup.wrong .cup-art {
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--bad) 45%, transparent));
+}
+
+.cup.wrong .cup-art .cup-body {
+  stroke: var(--bad);
 }
 
 @media (hover: hover) {
@@ -12474,7 +12544,9 @@ button.bs-ship-row.dock.placed {
   }
   .cup-stage.pickable .cup:hover {
     --ty: calc(-1 * var(--hoverlift));
-    border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  }
+  .cup-stage.pickable .cup:hover .cup-art .cup-body {
+    stroke: var(--accent);
   }
 }
 
@@ -12526,7 +12598,8 @@ button.bs-ship-row.dock.placed {
   width: clamp(16px, 5%, 24px);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--cup-ball);
+  border: 1.5px solid rgba(0, 0, 0, 0.28);
   box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.28), inset 3px 3px 0 rgba(255, 255, 255, 0.35);
   opacity: 0;
   z-index: 3;
@@ -12602,25 +12675,38 @@ button.bs-ship-row.dock.placed {
   justify-content: center;
 }
 .cup-tut-cup {
+  position: relative;
   width: 30px;
   height: 40px;
-  border-radius: 42% 42% 16% 16% / 30% 30% 12% 12%;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  box-shadow: inset 0 -5px 0 var(--edge);
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+/* mini upside-down cup: tapered red body + light rolled lip */
+.cup-tut-cup::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 5px 0;
+  background: var(--play-2);
+  clip-path: polygon(21% 0, 79% 0, 96% 100%, 4% 100%);
+}
+.cup-tut-cup::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, #ffffff 86%, var(--play-2));
+  border: 1px solid rgba(0, 0, 0, 0.22);
 }
 .cup-tut-cup.lift {
   transform: translateY(-26px);
 }
 .cup-tut-cup.hint {
-  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
-  box-shadow: inset 0 -5px 0 var(--edge),
-    inset 0 -12px 16px -8px color-mix(in srgb, var(--accent) 70%, transparent);
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--accent) 70%, transparent));
 }
 .cup-tut-cup.pick {
-  border-color: var(--accent);
-  box-shadow: inset 0 -5px 0 var(--edge), 0 0 0 2px var(--accent-soft);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 80%, transparent));
 }
 .cup-tut-ball {
   position: absolute;
@@ -12629,7 +12715,8 @@ button.bs-ship-row.dock.placed {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--play-3);
+  border: 1px solid rgba(0, 0, 0, 0.28);
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.28), inset 2px 2px 0 rgba(255, 255, 255, 0.35);
   transform: translateX(-50%);
 }
@@ -16432,6 +16519,11 @@ button.bs-ship-row.dock.placed {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* water is game CONTENT, so it keeps a fixed water-blue from the play
+     palette on every accent/surface theme (the tutorial promises "fills blue") */
+  --pip-water: var(--play-4);
+  --pip-water-hi: var(--play-6);
+  --pip-water-deep: color-mix(in srgb, var(--play-4) 76%, #000000);
 }
 
 /* frame carries the torus wrap markers in its gutter on the extreme board */
@@ -16518,14 +16610,14 @@ button.bs-ship-row.dock.placed {
   transition-duration: 0.06s;
 }
 
-/* wet tiles read as filled: a soft accent tint + a state glow (the sanctioned
+/* wet tiles read as filled: a soft water tint + a state glow (the sanctioned
    "lit" exception — the glow is progress information, not resting decoration) */
 .pip-cell.wet {
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
-  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: color-mix(in srgb, var(--pip-water) 13%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--pip-water) 40%, var(--border));
   box-shadow:
     inset 0 -3px 0 rgba(0, 0, 0, 0.22),
-    0 0 14px color-mix(in srgb, var(--accent) 26%, transparent);
+    0 0 14px color-mix(in srgb, var(--pip-water) 26%, transparent);
 }
 
 /* ---- the rotating pipe ---- */
@@ -16576,7 +16668,9 @@ button.bs-ship-row.dock.placed {
   stroke-width: 8;
   stroke-linecap: butt;
   fill: none;
-  transition: stroke 0.25s ease;
+  transition:
+    stroke 0.25s ease,
+    stroke-width 0.25s ease;
 }
 
 .pip-hub-core {
@@ -16584,28 +16678,85 @@ button.bs-ship-row.dock.placed {
   transition: fill 0.25s ease;
 }
 
-/* wet: body turns water-accent, core brightens and flows outward from centre */
+/* liquid layers: current streaks + drifting bubbles. Invisible while dry —
+   the animations only run on wet arms, so a resting board costs nothing */
+.pip-stream {
+  stroke: var(--pip-water-hi);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 11 15;
+  fill: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.pip-bubbles {
+  stroke: #ffffff;
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 12;
+  fill: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* wet: the bore fills — deep water walls, mid-water centre, then the moving
+   streak/bubble layers on top at two speeds so the liquid has parallax */
 .pip-cell.wet .pip-tube {
-  stroke: var(--accent);
+  stroke: var(--pip-water-deep);
 }
 
 .pip-cell.wet .pip-hub-tube {
-  fill: var(--accent);
+  fill: var(--pip-water-deep);
 }
 
 .pip-cell.wet .pip-core {
-  stroke: color-mix(in srgb, #ffffff 55%, var(--accent));
-  stroke-dasharray: 7 11;
-  animation: pip-flow 0.9s linear infinite;
+  stroke: var(--pip-water);
+  stroke-width: 17;
 }
 
 .pip-cell.wet .pip-hub-core {
-  fill: color-mix(in srgb, #ffffff 55%, var(--accent));
+  fill: var(--pip-water-hi);
+  animation: pip-hub-shimmer 1.6s ease-in-out infinite;
 }
 
-@keyframes pip-flow {
+.pip-cell.wet .pip-stream {
+  opacity: 0.85;
+  animation: pip-stream-flow 1.1s linear infinite;
+}
+
+.pip-cell.wet .pip-bubbles {
+  opacity: 0.55;
+  animation: pip-bubble-flow 1.7s linear infinite;
+}
+
+/* the arm water ENTERS through runs edge→hub; the rest run hub→edge, so the
+   current reads as one continuous run from the tank to the outlets */
+.pip-cell.wet .pip-stream.pip-in,
+.pip-cell.wet .pip-bubbles.pip-in {
+  animation-direction: reverse;
+}
+
+/* offsets are exact dash-period multiples (26 / 24.2) so the loops are seamless */
+@keyframes pip-stream-flow {
   to {
-    stroke-dashoffset: -18;
+    stroke-dashoffset: -26;
+  }
+}
+
+@keyframes pip-bubble-flow {
+  to {
+    stroke-dashoffset: -24.2;
+  }
+}
+
+@keyframes pip-hub-shimmer {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
@@ -16632,10 +16783,16 @@ button.bs-ship-row.dock.placed {
   stroke: color-mix(in srgb, #ffffff 70%, transparent);
 }
 
-/* the tank glows — it is the water source, always live */
+/* the tank glows — it is the water source, always live. Light drop with a
+   deep outline so it stays readable on top of a water-filled (deep blue) hub */
 .pip-source {
-  color: var(--accent);
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 55%, transparent));
+  color: var(--pip-water-hi);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--pip-water) 55%, transparent));
+}
+
+.pip-source .pip-badge-fill {
+  stroke: var(--pip-water-deep);
+  stroke-width: 1.5;
 }
 
 .pip-source svg {
@@ -16649,7 +16806,7 @@ button.bs-ship-row.dock.placed {
 }
 
 .pip-cell.wet .pip-drain {
-  color: color-mix(in srgb, #ffffff 30%, var(--accent));
+  color: var(--pip-water-hi);
 }
 
 /* ---- solved-mark assist ---- */
@@ -16693,7 +16850,8 @@ button.bs-ship-row.dock.placed {
   }
 }
 
-/* ---- win: everything turns "good", water rushes out from the tank ---- */
+/* ---- win: tiles pop "good" in a wave from the tank; the water stays water
+   (still blue, just rushing faster) ---- */
 
 .pip-board.pip-won .pip-cell {
   background: color-mix(in srgb, var(--good) 14%, var(--surface-2));
@@ -16705,35 +16863,12 @@ button.bs-ship-row.dock.placed {
   animation-delay: var(--pip-w, 0ms);
 }
 
-.pip-board.pip-won .pip-tube,
-.pip-board.pip-won .pip-hub-tube {
-  stroke: var(--good);
-  fill: var(--good);
+.pip-board.pip-won .pip-stream {
+  animation-duration: 0.55s;
 }
 
-.pip-board.pip-won .pip-tube {
-  fill: none;
-}
-
-.pip-board.pip-won .pip-core,
-.pip-board.pip-won .pip-hub-core {
-  stroke: color-mix(in srgb, #ffffff 60%, var(--good));
-  fill: color-mix(in srgb, #ffffff 60%, var(--good));
-}
-
-.pip-board.pip-won .pip-core {
-  fill: none;
-  stroke-dasharray: 7 11;
-  animation: pip-flow 0.5s linear infinite;
-}
-
-.pip-board.pip-won .pip-drain {
-  color: color-mix(in srgb, #ffffff 30%, var(--good));
-}
-
-.pip-board.pip-won .pip-source {
-  color: var(--good);
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--good) 55%, transparent));
+.pip-board.pip-won .pip-bubbles {
+  animation-duration: 0.85s;
 }
 
 @keyframes pip-winpop {

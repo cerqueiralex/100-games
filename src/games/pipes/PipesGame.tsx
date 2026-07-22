@@ -9,6 +9,8 @@ import {
   isSolved,
   floodWatered,
   networkDistance,
+  neighborIndex,
+  oppDir,
   DIRS,
   N,
   E,
@@ -38,6 +40,49 @@ const EDGE: Record<number, [number, number]> = {
   [S]: [50, 100 + OV],
   [W]: [-OV, 50]
 };
+
+/* the liquid layers (streaks/bubbles) run just shy of hub and edge so their
+   round caps stay inside the tube; the tube itself bridges the tile gap */
+const FLOW_A: Record<number, [number, number]> = {
+  [N]: [50, 42],
+  [E]: [58, 50],
+  [S]: [50, 58],
+  [W]: [42, 50]
+};
+const FLOW_B: Record<number, [number, number]> = {
+  [N]: [50, 1],
+  [E]: [99, 50],
+  [S]: [50, 99],
+  [W]: [1, 50]
+};
+
+/**
+ * BFS from the source over matching connectors, recording for each watered
+ * cell the side its water arrives from (effective-space direction bit; 0 for
+ * the source / dry cells). Drives the per-arm flow animation direction so the
+ * current visibly runs tank → outlets across tile boundaries.
+ */
+function floodInflow(masks: number[], size: number, wrap: boolean, source: number): number[] {
+  const n = size * size;
+  const inflow = new Array<number>(n).fill(0);
+  const seen = new Array<boolean>(n).fill(false);
+  const queue = [source];
+  seen[source] = true;
+  for (let qi = 0; qi < queue.length; qi++) {
+    const c = queue[qi];
+    for (const d of DIRS) {
+      if (!(masks[c] & d)) continue;
+      const nb = neighborIndex(c, d, size, wrap);
+      if (nb < 0) continue;
+      if (masks[nb] & oppDir(d) && !seen[nb]) {
+        seen[nb] = true;
+        inflow[nb] = oppDir(d);
+        queue.push(nb);
+      }
+    }
+  }
+  return inflow;
+}
 
 interface PipSave {
   puzzle: PipesPuzzle;
@@ -101,8 +146,11 @@ function WrapChevron({ rotate }: { rotate: number }) {
   );
 }
 
-/** the pipe arms + hub, drawn from the solved mask; the wrapper rotates it */
-function PipeArt({ mask }: { mask: number }) {
+/** the pipe arms + hub, drawn from the solved mask; the wrapper rotates it.
+    `flowIn` (solved-space dir bit) marks the arm water enters through — its
+    liquid layers animate edge→hub while the others run hub→edge, so the
+    current reads continuous from tank to outlets. */
+function PipeArt({ mask, flowIn = 0 }: { mask: number; flowIn?: number }) {
   const arms = DIRS.filter((d) => mask & d);
   return (
     <svg viewBox="0 0 100 100" className="pip-svg" aria-hidden>
@@ -116,6 +164,26 @@ function PipeArt({ mask }: { mask: number }) {
       <circle className="pip-hub-tube" cx={50} cy={50} r={15} />
       {arms.map((d) => (
         <line key={`s${d}`} className="pip-core" x1={50} y1={50} x2={EDGE[d][0]} y2={EDGE[d][1]} />
+      ))}
+      {arms.map((d) => (
+        <line
+          key={`f${d}`}
+          className={`pip-stream${d === flowIn ? ' pip-in' : ''}`}
+          x1={FLOW_A[d][0]}
+          y1={FLOW_A[d][1]}
+          x2={FLOW_B[d][0]}
+          y2={FLOW_B[d][1]}
+        />
+      ))}
+      {arms.map((d) => (
+        <line
+          key={`b${d}`}
+          className={`pip-bubbles${d === flowIn ? ' pip-in' : ''}`}
+          x1={FLOW_A[d][0]}
+          y1={FLOW_A[d][1]}
+          x2={FLOW_B[d][0]}
+          y2={FLOW_B[d][1]}
+        />
       ))}
       <circle className="pip-hub-core" cx={50} cy={50} r={5.5} />
     </svg>
@@ -171,6 +239,10 @@ export function PipesGame({
     [effMasks, size, wrap, source]
   );
   const wateredCount = useMemo(() => watered.reduce((a, v) => a + (v ? 1 : 0), 0), [watered]);
+  const inflow = useMemo(
+    () => floodInflow(effMasks, size, wrap, source),
+    [effMasks, size, wrap, source]
+  );
   const correct = useMemo(
     () => effMasks.map((m, i) => m === solved[i]),
     [effMasks, solved]
@@ -347,7 +419,11 @@ export function PipesGame({
                   className="pip-rot"
                   style={{ transform: `rotate(${rot[i] * 90}deg)` }}
                 >
-                  <PipeArt mask={solved[i]} />
+                  {/* inflow is effective-space; un-rotate it into the drawn (solved) frame */}
+                  <PipeArt
+                    mask={solved[i]}
+                    flowIn={wet && inflow[i] ? rot4(inflow[i], -rot[i]) : 0}
+                  />
                 </span>
                 {isSource && <span className="pip-badge pip-source">{SourceBadge}</span>}
                 {isDrain && <span className="pip-badge pip-drain">{DrainBadge}</span>}
