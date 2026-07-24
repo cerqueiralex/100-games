@@ -77,7 +77,11 @@ export function LightsOutGame({
   savedState,
   registerSnapshot
 }: GameProps) {
-  const saved = savedState as LoSave | undefined;
+  // ignore stale saves that lack the expected shape (board is rebuilt fresh)
+  const saved =
+    savedState && Array.isArray((savedState as LoSave).lights)
+      ? (savedState as LoSave)
+      : undefined;
 
   const board = useMemo<LightsOutBoard>(() => {
     if (saved) {

@@ -49,7 +49,7 @@ export function reflect(dir: Dir, m: Orient): Dir {
     return dir === 'E' ? 'N' : dir === 'N' ? 'E' : dir === 'W' ? 'S' : 'W';
   }
   // '\\' : E→S, S→E, W→N, N→W
-  return dir === 'E' ? 'S' : dir === 'S' ? 'E' : dir === 'W' ? 'N' : 'N';
+  return dir === 'E' ? 'S' : dir === 'S' ? 'E' : dir === 'W' ? 'N' : 'W';
 }
 
 /** The two directions perpendicular to `dir`. */
@@ -180,12 +180,15 @@ interface TierConfig {
   tray: number; // mirrors lifted into the tray (0 = rotate-only)
 }
 
+/* each tier was deliberately shifted UP one notch (the old easy — two
+   bends, one target — solved itself in seconds); extreme is a new,
+   bigger board on top */
 const CONFIG: Record<Difficulty, TierConfig> = {
-  easy: { rows: 6, cols: 6, bends: 2, targets: 1, walls: 0, tray: 0 },
-  medium: { rows: 7, cols: 7, bends: 3, targets: 2, walls: 0, tray: 0 },
-  hard: { rows: 8, cols: 8, bends: 4, targets: 3, walls: 3, tray: 0 },
-  pro: { rows: 8, cols: 8, bends: 5, targets: 3, walls: 2, tray: 2 },
-  extreme: { rows: 10, cols: 10, bends: 6, targets: 4, walls: 5, tray: 3 }
+  easy: { rows: 7, cols: 7, bends: 3, targets: 2, walls: 0, tray: 0 },
+  medium: { rows: 8, cols: 8, bends: 4, targets: 3, walls: 3, tray: 0 },
+  hard: { rows: 8, cols: 8, bends: 5, targets: 3, walls: 2, tray: 2 },
+  pro: { rows: 10, cols: 10, bends: 6, targets: 4, walls: 5, tray: 3 },
+  extreme: { rows: 11, cols: 11, bends: 8, targets: 5, walls: 7, tray: 4 }
 };
 
 interface Solution {
@@ -251,6 +254,9 @@ function buildSolution(rng: () => number, cfg: TierConfig): Solution | null {
       break;
   }
   const sourceCell = srow * cols + scol;
+  // the walk mutates `dir` at every bend — the source must remember the
+  // INITIAL firing direction, not the final leg's
+  const sourceDir = dir;
   occ[sourceCell] = 1;
   let col = scol;
   let row = srow;
@@ -330,7 +336,7 @@ function buildSolution(rng: () => number, cfg: TierConfig): Solution | null {
   shuffle(empties);
   const walls = empties.slice(0, Math.min(cfg.walls, empties.length));
 
-  return { rows, cols, source: { cell: sourceCell, dir }, mirrorCells, targets, walls };
+  return { rows, cols, source: { cell: sourceCell, dir: sourceDir }, mirrorCells, targets, walls };
 }
 
 function fallbackPuzzle(difficulty: Difficulty, seed: number): Puzzle {
@@ -401,10 +407,23 @@ export function generatePuzzle({ seed, difficulty }: GenerateOptions): Puzzle {
       trayCount = 0;
     }
 
-    // guarantee the start is not already solved
+    // guarantee the start is not already solved. Flipping an arbitrary
+    // mirror is NOT enough — one off the winning beam's path leaves the
+    // win intact — so try flips until a re-trace confirms the break.
     const startGrid = gridFrom(sol.rows, sol.cols, fixedMirrors, sol.walls, sol.targets);
     if (fixedMirrors.length > 0 && traceBeam(startGrid, sol.source).hitAll) {
-      fixedMirrors[0] = { cell: fixedMirrors[0].cell, orient: flip(fixedMirrors[0].orient) };
+      let broken = false;
+      for (let i = 0; i < fixedMirrors.length && !broken; i++) {
+        const flipped = fixedMirrors.map((m, k) =>
+          k === i ? { cell: m.cell, orient: flip(m.orient) } : m
+        );
+        const g = gridFrom(sol.rows, sol.cols, flipped, sol.walls, sol.targets);
+        if (!traceBeam(g, sol.source).hitAll) {
+          fixedMirrors = flipped;
+          broken = true;
+        }
+      }
+      if (!broken) continue; // pathological scramble — rebuild from scratch
     }
 
     return {

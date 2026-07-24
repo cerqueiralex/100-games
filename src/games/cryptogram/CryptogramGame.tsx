@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, CheckIcon, CipherGlyph, EraseIcon } from '../../platform/design/icons';
-import { PadTool } from '../../platform/components/ui';
+import { Keyboard, PadTool } from '../../platform/components/ui';
 import { generateCryptoPuzzle, type CryptoPuzzle } from './logic/words';
 
 const ROW_PTS: Record<Difficulty, number> = { easy: 60, medium: 80, hard: 100, pro: 120, extreme: 140 };
@@ -10,7 +10,6 @@ const PAR_SEC: Record<Difficulty, number> = { easy: 6 * 60, medium: 9 * 60, hard
 const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
 const ERROR_PENALTY = 15;
 const HINT_PENALTY = 30;
-const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
 type RowStatus = 'open' | 'good' | 'bad';
 
@@ -359,22 +358,10 @@ export function CryptogramGame({
             <span>Erase</span>
           </PadTool>
         </div>
-        <div className="cw-keyboard">
-          {KEY_ROWS.map((keys, ri) => (
-            <div key={ri} className="cw-krow">
-              {keys.split('').map((k) => (
-                <button key={k} className="cw-key" onClick={() => setLetter(k)}>
-                  {k}
-                </button>
-              ))}
-              {ri === 2 && (
-                <button className="cw-key cw-key-wide" onClick={erase} aria-label="Erase">
-                  ⌫
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+        <Keyboard
+          onKey={setLetter}
+          bottomRight={{ node: '⌫', ariaLabel: 'Erase', onPress: erase }}
+        />
       </div>
     </div>
   );

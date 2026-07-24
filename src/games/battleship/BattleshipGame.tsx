@@ -536,7 +536,7 @@ export function BattleshipGame({
             </PadTool>
             <PadTool active silent onClick={startBattle} disabled={myFleet.length !== FLEET.length}>
               <CheckIcon />
-              <span>To battle</span>
+              <span>Battle</span>
             </PadTool>
           </div>
         ) : (

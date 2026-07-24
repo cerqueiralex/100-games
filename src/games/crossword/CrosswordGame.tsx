@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, CheckIcon } from '../../platform/design/icons';
-import { PadTool } from '../../platform/components/ui';
+import { Keyboard, PadTool } from '../../platform/components/ui';
 import { buildPuzzle, type CrosswordDef, type Dir, type Slot } from './logic/engine';
 import { pickPuzzle } from './logic/puzzles';
 
@@ -12,7 +12,6 @@ const HINT_PENALTY = 25;
 const PAR_SEC: Record<Difficulty, number> = { easy: 6 * 60, medium: 12 * 60, hard: 20 * 60, pro: 28 * 60, extreme: 36 * 60 };
 const BONUS_PER_SEC: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
 
-const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
 interface CrosswordSave {
   def: CrosswordDef;
@@ -441,22 +440,10 @@ export function CrosswordGame({
         </div>
       )}
 
-      <div className="cw-keyboard">
-        {KEY_ROWS.map((row, ri) => (
-          <div key={ri} className="cw-krow">
-            {row.split('').map((k) => (
-              <button key={k} className="cw-key" onClick={() => typeLetter(k)}>
-                {k}
-              </button>
-            ))}
-            {ri === 2 && (
-              <button className="cw-key cw-key-wide" onClick={backspace} aria-label="Backspace">
-                ⌫
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
+      <Keyboard
+        onKey={typeLetter}
+        bottomRight={{ node: '⌫', ariaLabel: 'Backspace', onPress: backspace }}
+      />
       </div>
     </div>
   );

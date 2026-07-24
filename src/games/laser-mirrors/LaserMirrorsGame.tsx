@@ -12,7 +12,8 @@ import {
 } from './logic/generator';
 
 const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
-const PAR_SEC: Record<Difficulty, number> = { easy: 60, medium: 120, hard: 200, pro: 260, extreme: 340 };
+/* pars follow the one-notch-harder tier configs in logic/generator.ts */
+const PAR_SEC: Record<Difficulty, number> = { easy: 120, medium: 200, hard: 260, pro: 340, extreme: 430 };
 const WIN_BASE = 400;
 const HINT_PENALTY = 60;
 

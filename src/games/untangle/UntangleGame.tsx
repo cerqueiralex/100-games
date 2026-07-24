@@ -228,24 +228,44 @@ export function UntangleGame({
     sfx.tap();
   };
 
+  // pointer moves coalesce to one React commit per frame — a 120 Hz
+  // pointer otherwise floods renders of the whole edge graph (QA-LEDGER
+  // drag rule)
+  const pendingPt = useRef<Pt | null>(null);
+  const moveRaf = useRef(0);
+  useEffect(() => () => cancelAnimationFrame(moveRaf.current), []);
+
   const onPointerMove = (e: React.PointerEvent) => {
     const g = drag.current;
     if (g.id === null || paused || done.current) return;
     const p = pointToNorm(e.clientX, e.clientY);
-    const cur = posRef.current;
-    if (Math.abs(cur[g.id].x - p.x) < 1e-4 && Math.abs(cur[g.id].y - p.y) < 1e-4) return;
-    g.moved = true;
-    const next = cur.map((q, i) => (i === g.id ? p : q));
-    commit(next);
-    const now = performance.now();
-    if (now - g.lastTick > 90) {
-      g.lastTick = now;
-      sfx.drag();
-    }
+    const cur = posRef.current[g.id];
+    if (Math.abs(cur.x - p.x) < 1e-4 && Math.abs(cur.y - p.y) < 1e-4) return;
+    g.moved = true; // synchronous — a fast flick may release before the rAF
+    pendingPt.current = p;
+    if (moveRaf.current) return;
+    moveRaf.current = requestAnimationFrame(() => {
+      moveRaf.current = 0;
+      const gg = drag.current;
+      const pp = pendingPt.current;
+      if (gg.id === null || !pp) return;
+      commit(posRef.current.map((q, i) => (i === gg.id ? pp : q)));
+      const now = performance.now();
+      if (now - gg.lastTick > 90) {
+        gg.lastTick = now;
+        sfx.drag();
+      }
+    });
   };
 
   const onPointerUp = () => {
     const g = drag.current;
+    // flush the last coalesced position so the drop lands where the finger was
+    if (g.id !== null && pendingPt.current && g.moved) {
+      const p = pendingPt.current;
+      commit(posRef.current.map((q, i) => (i === g.id ? p : q)));
+    }
+    pendingPt.current = null;
     drag.current = { id: null, moved: false, lastTick: 0 };
     setDragId(null);
     if (g.id === null) return;

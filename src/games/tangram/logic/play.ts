@@ -12,6 +12,7 @@ import {
   PIECE_SET,
   transform,
   centroid,
+  bounds,
   isSolved
 } from './geometry';
 import type { TangramPuzzle } from './puzzles';
@@ -33,15 +34,19 @@ export const SNAP_RADIUS: Record<Difficulty, number> = {
 /** the strong-snap assist widens the catch radius */
 export const SNAP_BOOST = 0.55;
 
+/* ring = clearance beyond the silhouette's half-extent: pieces scatter on a
+   snug ellipse hugging the figure so the arena (and therefore the on-screen
+   scale) stays compact — the figure must fill the canvas, not float in a
+   sea of empty space */
 export const SCATTER: Record<
   Difficulty,
   { ring: number; jitter: number; rots: number[]; flip: boolean; keepRot: boolean }
 > = {
-  easy: { ring: 1.4, jitter: 0.5, rots: [0, 2, 4, 6], flip: false, keepRot: true },
-  medium: { ring: 1.9, jitter: 0.9, rots: [0, 2, 4, 6], flip: false, keepRot: false },
-  hard: { ring: 2.3, jitter: 1.1, rots: [0, 2, 4, 6], flip: true, keepRot: false },
-  pro: { ring: 2.5, jitter: 1.3, rots: [0, 1, 2, 3, 4, 5, 6, 7], flip: true, keepRot: false },
-  extreme: { ring: 2.8, jitter: 1.5, rots: [0, 1, 2, 3, 4, 5, 6, 7], flip: true, keepRot: false }
+  easy: { ring: 1.0, jitter: 0.3, rots: [0, 2, 4, 6], flip: false, keepRot: true },
+  medium: { ring: 1.1, jitter: 0.4, rots: [0, 2, 4, 6], flip: false, keepRot: false },
+  hard: { ring: 1.2, jitter: 0.45, rots: [0, 2, 4, 6], flip: true, keepRot: false },
+  pro: { ring: 1.25, jitter: 0.5, rots: [0, 1, 2, 3, 4, 5, 6, 7], flip: true, keepRot: false },
+  extreme: { ring: 1.35, jitter: 0.55, rots: [0, 1, 2, 3, 4, 5, 6, 7], flip: true, keepRot: false }
 };
 
 /** content palette slot per piece instance (never --play-9 white) */
@@ -74,9 +79,9 @@ export function scatterPieces(
 ): PieceCore[] {
   const cfg = SCATTER[difficulty];
   const target = puzzleTarget(puzzle);
-  const verts = target.polys.flat();
-  const cx = verts.reduce((s, p) => s + p.x, 0) / verts.length;
-  const cy = verts.reduce((s, p) => s + p.y, 0) / verts.length;
+  const bb = bounds(target.polys);
+  const cx = (bb.minX + bb.maxX) / 2;
+  const cy = (bb.minY + bb.maxY) / 2;
 
   const pool: Record<string, Placement[]> = {};
   for (const s of puzzle.solution) (pool[s.kind] ??= []).push(s);
@@ -87,9 +92,11 @@ export function scatterPieces(
     const homeList = pool[kind] ?? [];
     const idx = (taken[kind] = (taken[kind] ?? 0) + 1) - 1;
     const home = homeList[idx] ?? homeList[0];
-    const ang = (i / PIECE_SET.length) * Math.PI * 2 + rand(-0.35, 0.35);
-    const r = cfg.ring + rand(-cfg.jitter, cfg.jitter);
-    const at = { x: cx + Math.cos(ang) * (r + 1.6), y: cy + Math.sin(ang) * (r + 1.6) };
+    const ang = (i / PIECE_SET.length) * Math.PI * 2 + rand(-0.3, 0.3);
+    const at = {
+      x: cx + Math.cos(ang) * ((bb.maxX - bb.minX) / 2 + cfg.ring + rand(0, cfg.jitter)),
+      y: cy + Math.sin(ang) * ((bb.maxY - bb.minY) / 2 + cfg.ring + rand(0, cfg.jitter))
+    };
     const rot = cfg.keepRot ? home.rot : cfg.rots[Math.floor(rnd() * cfg.rots.length)];
     const flip = cfg.keepRot ? home.flip : cfg.flip ? rnd() < 0.5 : false;
     return { kind, slot: SLOTS[i], home, rot, flip, pos: posForCentroid(kind, rot, flip, at) };

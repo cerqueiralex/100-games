@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GameProps } from '../../platform/types';
 import { sfx, playNote } from '../../platform/audio';
-import { BulbIcon, EyeIcon, PadTool } from '../../platform/components/ui';
+import { BulbIcon, EyeIcon, Keyboard, PadTool } from '../../platform/components/ui';
 import { LIVES, MULT, SHOW_CATEGORY, pickWord } from './logic/words';
 import {
   computeScore,
@@ -13,7 +13,6 @@ import {
 } from './logic/engine';
 import { BalloonScene, type SceneState } from './BalloonScene';
 
-const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 const MAX_VOWEL_PEEKS = 2;
 
 interface HangmanSave {
@@ -241,7 +240,13 @@ export function HangmanGame({
 
   return (
     <div className={`hangman ${paused ? 'board-hidden' : ''}`}>
-      <BalloonScene sink={sink} state={sceneState} wobbleNonce={wobbleNonce} />
+      <BalloonScene
+        sink={sink}
+        state={sceneState}
+        wobbleNonce={wobbleNonce}
+        lives={lives}
+        livesLost={phase === 'lost' ? lives : livesLost}
+      />
 
       <div className="hng-clue">
         {categoryVisible ? (
@@ -301,27 +306,14 @@ export function HangmanGame({
           </div>
         )}
 
-        <div className="hng-keyboard">
-          {KEY_ROWS.map((row, ri) => (
-            <div key={ri} className="hng-krow">
-              {row.split('').map((k) => {
-                const isGuessed = guessed.has(k);
-                const inWord = [...word].includes(k);
-                const tone = isGuessed ? (inWord ? 'good' : 'bad') : '';
-                const shaking = shake?.key === k;
-                return (
-                  <button
-                    key={`${k}-${shaking ? shake!.n : 0}`}
-                    className={`hng-key ${tone} ${shaking ? 'shake' : ''}`}
-                    onClick={() => guess(k)}
-                  >
-                    {k}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+        <Keyboard
+          onKey={guess}
+          keyClass={(k) => {
+            const tone = guessed.has(k) ? ([...word].includes(k) ? 'good' : 'bad') : '';
+            return shake?.key === k ? `${tone} shake` : tone;
+          }}
+          keyNonce={(k) => (shake?.key === k ? shake.n : 0)}
+        />
       </div>
     </div>
   );

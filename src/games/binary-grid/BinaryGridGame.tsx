@@ -94,7 +94,13 @@ export function BinaryGridGame({
   savedState,
   registerSnapshot
 }: GameProps) {
-  const saved = savedState as BinSave | undefined;
+  // ignore stale saves that lack the expected shape
+  const saved =
+    savedState &&
+    Array.isArray((savedState as BinSave).givens) &&
+    Array.isArray((savedState as BinSave).solution)
+      ? (savedState as BinSave)
+      : undefined;
   const cfg = CONFIG[difficulty];
 
   const puzzle = useMemo<BinaryPuzzle>(() => {

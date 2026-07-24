@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, CheckIcon, FlagIcon, RestartIcon } from '../../platform/design/icons';
-import { PadTool } from '../../platform/components/ui';
+import { Keyboard, PadTool } from '../../platform/components/ui';
 import { DICTS, shortestPath, wordSet } from './logic/words';
 import { generateLadder, LADDER_CONFIG, type Ladder } from './logic/generator';
 
@@ -13,7 +13,6 @@ const HINT_PENALTY = 60;
 const ERROR_PENALTY = 15;
 const RUNG_POINTS = 15;
 
-const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
 interface LadderSave {
   ladder: Ladder;
@@ -432,35 +431,16 @@ export function WordLadderGame({
           </PadTool>
         </div>
 
-        <div className="wlad-keyboard">
-          {KEY_ROWS.map((row, ri) => (
-            <div key={ri} className="wlad-krow">
-              {ri === 2 && (
-                <button
-                  className="wlad-key wlad-key-wide"
-                  onClick={backspace}
-                  aria-label="Delete letter"
-                >
-                  ⌫
-                </button>
-              )}
-              {row.split('').map((k) => (
-                <button key={k} className="wlad-key" onClick={() => typeLetter(k)}>
-                  {k}
-                </button>
-              ))}
-              {ri === 2 && (
-                <button
-                  className={`wlad-key wlad-key-wide wlad-submit${draftChanged ? ' ready' : ''}`}
-                  onClick={submit}
-                  aria-label="Submit word"
-                >
-                  <CheckIcon />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+        <Keyboard
+          onKey={typeLetter}
+          bottomLeft={{ node: '⌫', ariaLabel: 'Delete letter', onPress: backspace }}
+          bottomRight={{
+            node: <CheckIcon />,
+            ariaLabel: 'Submit word',
+            onPress: submit,
+            className: draftChanged ? 'ready' : ''
+          }}
+        />
       </div>
     </div>
   );

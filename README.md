@@ -14,7 +14,7 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 | **Dual N-Back** | Positions AND letters tracked at once on independent channels; ≥65% accuracy wins |
 | **Word Wheel** | Spell words from a letter wheel in two modes: fill a hand-crafted criss-cross grid, or hunt every hidden word on a random wheel |
 | **Number Merge** | Drag chains of equal/doubling numbers to merge toward the goal tile (256 up to 4096) |
-| **Color Connect** | Flow-style: link every dot pair and cover the board; levels freshly generated every game |
+| **Color Connect** | Flow-style: link every dot pair and cover the board; freshly generated every game with more colors at every tier (4 up to 8) |
 | **Tic-Tac-Toe** | Race the robot to 3 round wins; AI scales from sloppy to near-flawless minimax (on extreme it opens every round) |
 | **Image Puzzle** | Sliding photo tiles (3×3 up to 7×7), always solvable — add your own photos (see below) |
 | **Maze** | Generated labyrinths — tap or drag one step at a time, classic sizes or custom boards; beat the shortest path for max score |
@@ -49,7 +49,7 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 | **Word Ladder** | Turn one word into another one letter at a time, every rung a real word |
 | **Anagram Sprint** | Unscramble as many jumbled words as you can before time runs out |
 | **Missing Vowels** | The vowels vanished — restore the hidden word or phrase |
-| **Hangman** | Guess the word letter by letter before the balloon pops |
+| **Hangman** | Guess the word letter by letter — every miss visibly deflates one stripe of the balloon before it pops |
 | **Letter Hunt** | Swipe chains of neighbouring letters into as many words as you can (Boggle-style) |
 | **Backwards Span** | Watch a growing sequence, then key it back in reverse |
 | **Number Trail** | Memorise where the numbers sat, then tap them in order once they hide |
@@ -61,8 +61,8 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 | **Count & Compare** | A flash of shapes — count or compare them before it fades |
 | **Sokoban** | Push every crate onto a target, never pulling; always-solvable levels with an optimal-push par |
 | **Pipes** | Rotate the pipe tiles to connect the source and make the water flow to every end |
-| **Gridlock** | Slide the blocking cars and trucks aside to drive the red car out (Rush Hour) |
-| **Tower of Hanoi** | Move the graduated disc stack to the far peg, never a big disc on a small one; optimal-move par |
+| **Gridlock** | Slide the blocking cars and trucks around the parking lot to drive the red car out the exit (Rush Hour) |
+| **Tower of Hanoi** | Move the stack of colored hex nuts between threaded steel bolts, never a big nut on a small one; physics-feel dragging and an optimal-move par |
 | **Tangram** | Fit the seven geometric pieces into the target silhouette |
 | **Untangle** | Drag the nodes until no two lines cross |
 | **Laser Mirrors** | Aim the mirrors so the beam lights every target |
@@ -80,11 +80,11 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 - **Save & resume**: a save button in every game's header snapshots the running game; a "Continue saved game" card on the start screen restores board, timer, score and assist usage — even after closing the app
 - **Illustrated tutorials**: every game ships a step-by-step "How to play" with theme-aware illustrations, on the game's start screen and behind the help button while playing
 - **Assist / help tracking**: every assist is toggleable (some in-game); whatever you use is stored per game, so history and stats always distinguish **clean wins** from **wins with help**
-- **Statistics & history**: win rate, best/avg time, best/avg score, streaks, errors, hints, time played, high scores per difficulty, filterable per game (Profile tab)
+- **Statistics & history**: win rate, best/avg time, best/avg score, streaks, errors, hints, time played, high scores per difficulty, filterable per game, with a calendar to browse any day's games (Profile tab)
 - **Profile**: name + avatar, totals across games
 - **Share cards**: on any win, generate a 1080×1350 PNG win card — native share sheet on iPhone (WhatsApp etc.), download or long-press-copy anywhere
 - **Themes**: 3 surface themes (pure black / dim / warm-paper light) × 6 accent colors (orange default, blue, green, red, purple, and a black & white monochrome) that recolor every tool in every game
-- **Progress charts** on the profile: a most-played donut, a 30-day stacked activity timeline colored per game, and a per-game improvement trend (score / win time / win % / errors)
+- **Progress charts** on the profile: a most-played donut and a 30-day stacked activity timeline (both capped to the top games, tail folded into "Other"), and a per-game improvement trend (score / win time / win % / errors)
 - **Pinned favorites**: star any game to move it into a Pinned section at the top of the menu
 - **Search** on the home page to find games as the catalog grows
 - Sound effects synthesized with WebAudio (no assets), volume control, data export/reset

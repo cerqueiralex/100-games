@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, EyeIcon } from '../../platform/design/icons';
-import { PadTool } from '../../platform/components/ui';
+import { Keyboard, PadTool } from '../../platform/components/ui';
 import {
   CONFIG,
   computeScore,
@@ -16,7 +16,6 @@ import {
   type Mark
 } from './logic/engine';
 
-const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 const FLIP_STAGGER = 120; // ms between tiles flipping
 const FLIP_DUR = 480; // ms for a single tile's flip
 
@@ -372,48 +371,26 @@ export function WordGuessGame({
           </div>
         )}
 
-        <div className="wg-keyboard">
-          {KEY_ROWS.map((row, ri) => (
-            <div key={ri} className="wg-krow">
-              {ri === 2 && (
-                <button
-                  className="wg-key wg-key-wide"
-                  onClick={() => {
-                    sfx.tap();
-                    submit();
-                  }}
-                  aria-label="Submit guess"
-                >
-                  ENTER
-                </button>
-              )}
-              {row.split('').map((k) => {
-                const state = keyColorActive ? keyStates[k] : undefined;
-                return (
-                  <button
-                    key={k}
-                    className={`wg-key ${state ?? ''}`}
-                    onClick={() => typeLetter(k)}
-                  >
-                    {k}
-                  </button>
-                );
-              })}
-              {ri === 2 && (
-                <button
-                  className="wg-key wg-key-wide"
-                  onClick={() => {
-                    sfx.tap();
-                    backspace();
-                  }}
-                  aria-label="Backspace"
-                >
-                  ⌫
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+        <Keyboard
+          onKey={typeLetter}
+          keyClass={(k) => (keyColorActive ? (keyStates[k] ?? '') : '')}
+          bottomLeft={{
+            node: 'ENTER',
+            ariaLabel: 'Submit guess',
+            onPress: () => {
+              sfx.tap();
+              submit();
+            }
+          }}
+          bottomRight={{
+            node: '⌫',
+            ariaLabel: 'Backspace',
+            onPress: () => {
+              sfx.tap();
+              backspace();
+            }
+          }}
+        />
       </div>
     </div>
   );

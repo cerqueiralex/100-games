@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx, playNote } from '../../platform/audio';
-import { BulbIcon, RestartIcon } from '../../platform/design/icons';
+import { BulbIcon, RestartIcon, UndoIcon } from '../../platform/design/icons';
 import { PadTool } from '../../platform/components/ui';
 import {
   optimalMoves,
@@ -89,7 +89,7 @@ export function TowerOfHanoiGame({
   const [score, setScore] = useState(0);
 
   // transient presentation-only state
-  const [pointerBoard, setPointerBoard] = useState<{ x: number; y: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
   const [hoverPeg, setHoverPeg] = useState<number | null>(null);
   const [landing, setLanding] = useState<Landing | null>(null);
   const [hintMove, setHintMove] = useState<Move | null>(null);
@@ -111,6 +111,52 @@ export function TowerOfHanoiGame({
   const done = useRef(false);
   const boardRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ active: false, moved: false, startX: 0, startY: 0 });
+  // simple drag physics: the held nut spring-chases the pointer each frame
+  // and tilts with its lag, so it swings like something with real weight
+  const liftedEl = useRef<HTMLSpanElement | null>(null);
+  const pointerRef = useRef<{ x: number; y: number } | null>(null);
+  const phys = useRef({ x: 0, y: 0, tilt: 0 });
+  const rafRef = useRef(0);
+
+  const applyPhys = () => {
+    const el = liftedEl.current;
+    if (!el) return;
+    const p = phys.current;
+    el.style.left = `${p.x}px`;
+    el.style.top = `${p.y}px`;
+    el.style.transform = `translate(-50%, -50%) rotate(${p.tilt.toFixed(2)}deg) scale(1.07)`;
+  };
+
+  const stopPhysics = () => {
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = 0;
+    pointerRef.current = null;
+  };
+
+  const startPhysics = () => {
+    cancelAnimationFrame(rafRef.current);
+    const tick = () => {
+      const target = pointerRef.current;
+      if (!target) return;
+      const p = phys.current;
+      const dx = target.x - p.x;
+      p.x += dx * 0.3;
+      p.y += (target.y - p.y) * 0.3;
+      const tiltTarget = Math.max(-15, Math.min(15, dx * 0.32));
+      p.tilt += (tiltTarget - p.tilt) * 0.22;
+      applyPhys();
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+  };
+
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+
+  // re-renders mid-drag (hover peg changes) must not wipe the loop's
+  // inline position — re-apply it before paint
+  useLayoutEffect(() => {
+    if (pointerRef.current) applyPhys();
+  });
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
 
@@ -270,10 +316,22 @@ export function TowerOfHanoiGame({
     if (!drag.current.active || liftedRef.current === null) return;
     if (!drag.current.moved) {
       const dist = Math.hypot(e.clientX - drag.current.startX, e.clientY - drag.current.startY);
-      if (dist > MOVE_THRESHOLD) drag.current.moved = true;
+      if (dist > MOVE_THRESHOLD) {
+        drag.current.moved = true;
+        // seed the spring at the tap-hover spot so the nut glides into the hand
+        const rect = boardRef.current?.getBoundingClientRect();
+        phys.current = {
+          x: rect ? ((liftedRef.current.peg + 0.5) / pegCount) * rect.width : 0,
+          y: 22,
+          tilt: 0
+        };
+        pointerRef.current = boardRel(e.clientX, e.clientY);
+        setDragging(true);
+        startPhysics();
+      }
     }
     if (drag.current.moved) {
-      setPointerBoard(boardRel(e.clientX, e.clientY));
+      pointerRef.current = boardRel(e.clientX, e.clientY);
       setHoverPeg(pegFromPoint(e.clientX));
     }
   };
@@ -283,7 +341,8 @@ export function TowerOfHanoiGame({
     const wasMoved = drag.current.moved;
     drag.current.active = false;
     boardRef.current?.releasePointerCapture?.(e.pointerId);
-    setPointerBoard(null);
+    stopPhysics();
+    setDragging(false);
     setHoverPeg(null);
     if (wasMoved) {
       const target = pegFromPoint(e.clientX);
@@ -296,7 +355,8 @@ export function TowerOfHanoiGame({
   const onPointerCancel = () => {
     if (!drag.current.active) return;
     drag.current.active = false;
-    setPointerBoard(null);
+    stopPhysics();
+    setDragging(false);
     setHoverPeg(null);
     putDown();
   };
@@ -383,12 +443,11 @@ export function TowerOfHanoiGame({
   const liftedStyle: CSSProperties | undefined = useMemo(() => {
     if (!lifted) return undefined;
     const w = `${(discFrac(lifted.disc) * 100) / pegCount}%`;
-    if (drag.current.moved && pointerBoard) {
-      return { left: `${pointerBoard.x}px`, top: `${pointerBoard.y}px`, width: w, transform: 'translate(-50%, -50%)' };
-    }
+    // while dragging, position comes from the physics loop's inline styles
+    if (dragging) return { width: w };
     // tap mode: hover above the source peg
     return { left: `${((lifted.peg + 0.5) / pegCount) * 100}%`, top: '4px', width: w, transform: 'translateX(-50%)' };
-  }, [lifted, pointerBoard, pegCount, discFrac]);
+  }, [lifted, dragging, pegCount, discFrac]);
 
   return (
     <div className={`toh ${paused ? 'board-hidden' : ''}`}>
@@ -484,8 +543,9 @@ export function TowerOfHanoiGame({
         {lifted && (
           <span
             key={`lift-${shakeKey}`}
+            ref={liftedEl}
             className={`toh-disc toh-d${lifted.disc} toh-lifted ${shakeKey ? 'shake' : ''} ${
-              drag.current.moved ? 'dragging' : 'held'
+              dragging ? 'dragging' : 'held'
             }`}
             style={liftedStyle}
             aria-hidden
@@ -517,11 +577,3 @@ export function TowerOfHanoiGame({
   );
 }
 
-function UndoIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M9 7L4 12l5 5" />
-      <path d="M4 12h11a5 5 0 0 1 0 10h-1" />
-    </svg>
-  );
-}

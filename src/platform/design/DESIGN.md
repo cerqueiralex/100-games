@@ -192,6 +192,31 @@ standard for free:
   Big content inside it compacts (Word Wheel's wheel shrinks to
   `min(180px, 50vw, 30vh)`) or scrolls internally (Logic Puzzles' clue
   list caps at `18vh`) — the card never grows at the board's expense.
+- **`.game-tools` always spans the game column** (`width: 100%` in the
+  base rule). Several game roots center their children
+  (`align-items: center`); without the explicit width the card
+  shrink-wraps and flexible content — the shared keyboard especially —
+  collapses to its tiny intrinsic width.
+
+## Keyboard (the on-screen QWERTY standard)
+
+Every letter-input game uses the **`Keyboard`** component from
+`platform/components/ui` — never hand-rolled key rows. One shared `.kbd`
+CSS block styles it for every game (extruded keys, press-down, phone
+compaction), so keyboards look and feel identical everywhere.
+
+- `onKey` receives the tapped letter. The component plays **no sounds** —
+  the game's handlers own audio feedback (correct/wrong sounds differ per
+  game), so nothing double-fires.
+- `keyClass` paints per-letter knowledge: `good`/`bad` (soft tints, e.g.
+  Hangman), `correct`/`present`/`absent` (solid heat, Word Guess),
+  `shake` (rejected input); `keyNonce` remounts a key so its animation
+  can replay.
+- `bottomLeft`/`bottomRight` dock wide action keys (Enter, ⌫, submit) at
+  the ends of the bottom row; pass `className: 'ready'` for an armed
+  solid-accent submit (Word Ladder).
+- Current users: Hangman, Word Guess, Word Ladder, Crossword, Cryptogram.
+  A new letter game must reuse this component, not fork it.
 
 ## Tutorials (required for every game)
 
@@ -225,6 +250,12 @@ Every game must support mid-game saving via two `GameProps` members:
 - **`savedState`** — when present, every state initializer must hydrate
   from it instead of generating fresh content, including refs like
   `assistsUsed` and derived counters.
+- **Shape-guard the save before trusting it**: `savedState` may be a
+  stale snapshot from an older version of the game. Never cast and
+  index into nested fields directly — verify the fields the code will
+  dereference (`Array.isArray(save.board)` etc.) and fall back to a
+  fresh game when the shape doesn't match. A redesigned game must not
+  crash at mount because of last month's save.
 
 The shell owns everything else: the header Save button, the saved-game
 card on the setup screen, elapsed-time restoration, and clearing the

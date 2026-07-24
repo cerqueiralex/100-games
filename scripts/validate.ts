@@ -7,7 +7,7 @@ import { PUZZLES } from '../src/games/crossword/logic/puzzles';
 import { buildPuzzle, validatePuzzle } from '../src/games/crossword/logic/engine';
 import { generatePuzzle } from '../src/games/sudoku/logic/generator';
 import { LEVELS, validateWheelLevel } from '../src/games/word-wheel/logic/levels';
-import { generateFlowLevel } from '../src/games/color-connect/logic/generator';
+import { generateFlowLevel, FLOW_CONFIG } from '../src/games/color-connect/logic/generator';
 
 let failed = false;
 
@@ -257,13 +257,16 @@ for (const difficulty of ['easy', 'medium', 'hard', 'pro', 'extreme'] as const) 
             1
       )
     );
-    if (covered.size === level.size * level.size && contiguous) ok++;
+    const exactColors = level.paths.length === FLOW_CONFIG[difficulty].colors;
+    if (covered.size === level.size * level.size && contiguous && exactColors) ok++;
   }
   if (ok !== 25) {
     failed = true;
     console.error(`✗ ${difficulty}: ${ok}/25 generated levels valid`);
   } else {
-    console.log(`✓ ${difficulty}: 25/25 generated levels cover the board with contiguous paths`);
+    console.log(
+      `✓ ${difficulty}: 25/25 levels cover the board with ${FLOW_CONFIG[difficulty].colors} contiguous colors`
+    );
   }
 }
 
@@ -2436,17 +2439,33 @@ console.log('— Sequence Cracker —');
 
 console.log('— Laser Mirrors —');
 {
-  const { generatePuzzle, traceBeam, gridFromOrients } = await import('../src/games/laser-mirrors/logic/generator');
-  const SIZE: Record<string, [number, number]> = {
-    easy: [6, 6],
-    medium: [7, 7],
-    hard: [8, 8],
-    pro: [8, 8],
-    extreme: [10, 10]
+  const { generatePuzzle, traceBeam, gridFromOrients, reflect } = await import('../src/games/laser-mirrors/logic/generator');
+
+  // mirror physics sanity: reflecting twice off the same mirror is the
+  // identity, and every reflection turns the beam 90° (a wrong ternary
+  // branch here once made N pass straight through '\')
+  for (const o of ['/', '\\'] as const) {
+    for (const d of ['N', 'E', 'S', 'W'] as const) {
+      const r = reflect(d, o);
+      const vertical = (x: string) => x === 'N' || x === 'S';
+      if (reflect(r, o) !== d || vertical(r) === vertical(d)) {
+        failed = true;
+        console.error(`✗ laser-mirrors: reflect(${d}, ${o}) = ${r} breaks mirror physics`);
+      }
+    }
+  }
+  // [rows, cols, solution mirrors, targets] — mirror/target counts prove the
+  // real generator ran (the emergency fallback puzzle has 1 mirror, 1 target)
+  const SIZE: Record<string, [number, number, number, number]> = {
+    easy: [7, 7, 3, 2],
+    medium: [8, 8, 4, 3],
+    hard: [8, 8, 5, 3],
+    pro: [10, 10, 6, 4],
+    extreme: [11, 11, 8, 5]
   };
   for (const difficulty of ['easy', 'medium', 'hard', 'pro', 'extreme'] as const) {
     let ok = 0;
-    const [er, ec] = SIZE[difficulty];
+    const [er, ec, ebends, etargets] = SIZE[difficulty];
     for (let seed = 1; seed <= 25; seed++) {
       const p = generatePuzzle({ seed, difficulty });
       const n = p.rows * p.cols;
@@ -2455,8 +2474,10 @@ console.log('— Laser Mirrors —');
       // determinism per seed
       if (JSON.stringify(p) !== JSON.stringify(generatePuzzle({ seed, difficulty }))) bad = 'non-deterministic';
 
-      // grid within tier size
+      // grid within tier size, and the REAL generator ran (not the fallback)
       if (!bad && (p.rows !== er || p.cols !== ec)) bad = `size ${p.rows}x${p.cols}`;
+      if (!bad && (p.solutionMirrors.length !== ebends || p.targets.length !== etargets))
+        bad = `fallback-shaped puzzle (${p.solutionMirrors.length} mirrors, ${p.targets.length} targets)`;
 
       // the constructed solution lights ALL targets and terminates
       if (!bad) {
@@ -2467,11 +2488,13 @@ console.log('— Laser Mirrors —');
         else if (!t.hitAll || t.targetsHit.length !== p.targets.length) bad = 'solution misses targets';
       }
 
-      // the scrambled start is well-formed and terminates (no infinite loop)
+      // the scrambled start is well-formed, terminates, and is NOT already won
       if (!bad) {
         const startOr = new Array(n).fill(null);
         for (const m of p.fixedMirrors) startOr[m.cell] = m.orient;
-        if (!traceBeam(gridFromOrients(p, startOr), p.source).terminated) bad = 'start trace ran away';
+        const t = traceBeam(gridFromOrients(p, startOr), p.source);
+        if (!t.terminated) bad = 'start trace ran away';
+        else if (t.hitAll) bad = 'starts already solved';
       }
 
       // structural: no overlapping roles, tray + fixed == solution mirror count

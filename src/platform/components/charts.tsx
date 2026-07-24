@@ -19,6 +19,12 @@ export function gameColor(gameId: string): string {
 
 const gameName = (gameId: string) => GAMES.find((g) => g.id === gameId)?.name ?? gameId;
 
+/* charts cap their series count for readability; the long tail is folded
+   into one neutral-grey "Other" pseudo-series */
+const OTHER_ID = '__other';
+const seriesColor = (id: string) => (id === OTHER_ID ? 'var(--text-dim)' : gameColor(id));
+const seriesName = (id: string) => (id === OTHER_ID ? 'Other' : gameName(id));
+
 function lastDays(n: number): { key: string; label: string; end: number }[] {
   const out: { key: string; label: string; end: number }[] = [];
   const today = new Date();
@@ -42,8 +48,8 @@ function Legend({ ids, counts }: { ids: string[]; counts?: Map<string, number> }
     <div className="chart-legend">
       {ids.map((id) => (
         <span key={id} className="legend-item">
-          <span className="legend-dot" style={{ background: gameColor(id) }} />
-          {gameName(id)}
+          <span className="legend-dot" style={{ background: seriesColor(id) }} />
+          {seriesName(id)}
           {counts && <b>{counts.get(id)}</b>}
         </span>
       ))}
@@ -71,9 +77,14 @@ function donutSlice(cx: number, cy: number, rO: number, rI: number, a0: number, 
 
 export function GamesPieChart({ history }: { history: GameResult[] }) {
   const { slices, total, counts } = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const r of history) counts.set(r.gameId, (counts.get(r.gameId) ?? 0) + 1);
-    const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    const byGame = new Map<string, number>();
+    for (const r of history) byGame.set(r.gameId, (byGame.get(r.gameId) ?? 0) + 1);
+    // top 10 games only — beyond that the donut and legend turn to confetti;
+    // the tail folds into one "Other" slice so the total stays honest
+    const ranked = [...byGame.entries()].sort((a, b) => b[1] - a[1]);
+    const entries = ranked.slice(0, 10);
+    const restTotal = ranked.slice(10).reduce((s, [, c]) => s + c, 0);
+    if (restTotal > 0) entries.push([OTHER_ID, restTotal]);
     const total = history.length;
     let angle = 0;
     const slices = entries.map(([id, count]) => {
@@ -81,7 +92,7 @@ export function GamesPieChart({ history }: { history: GameResult[] }) {
       angle += (count / total) * 360;
       return { id, count, a0, a1: angle };
     });
-    return { slices, total, counts };
+    return { slices, total, counts: new Map(entries) };
   }, [history]);
 
   if (total === 0) {
@@ -92,7 +103,7 @@ export function GamesPieChart({ history }: { history: GameResult[] }) {
     <div className="pie-wrap">
       <svg viewBox="0 0 180 180" className="pie-svg" role="img" aria-label="Most played games">
         {slices.map((s) => (
-          <path key={s.id} d={donutSlice(90, 90, 82, 52, s.a0, s.a1)} fill={gameColor(s.id)} />
+          <path key={s.id} d={donutSlice(90, 90, 82, 52, s.a0, s.a1)} fill={seriesColor(s.id)} />
         ))}
         <text x="90" y="85" textAnchor="middle" className="pie-total">
           {total}
@@ -166,25 +177,43 @@ export function CategoryBarChart({ history }: { history: GameResult[] }) {
 
 export function ActivityChart({ history }: { history: GameResult[] }) {
   const days = useMemo(() => lastDays(30), []);
-  const { perDay, gameIds, max } = useMemo(() => {
+  const { perDay, seriesIds, totals, max } = useMemo(() => {
     const start = days[0].end - 86400000;
-    const perDay = new Map<string, Map<string, number>>();
-    const gameIds: string[] = [];
+    const raw = new Map<string, Map<string, number>>();
+    const totals = new Map<string, number>();
     for (const r of history) {
       if (r.finishedAt < start) continue;
       const key = dayKey(r.finishedAt);
-      const m = perDay.get(key) ?? new Map<string, number>();
+      const m = raw.get(key) ?? new Map<string, number>();
       m.set(r.gameId, (m.get(r.gameId) ?? 0) + 1);
-      perDay.set(key, m);
-      if (!gameIds.includes(r.gameId)) gameIds.push(r.gameId);
+      raw.set(key, m);
+      totals.set(r.gameId, (totals.get(r.gameId) ?? 0) + 1);
     }
+    // stack only the window's top 8 games; the tail folds into "Other" —
+    // thirty hair-thin unlabelable slivers per bar is what made this
+    // chart unreadable
+    const ranked = [...totals.entries()].sort((a, b) => b[1] - a[1]);
+    const top = ranked.slice(0, 8).map(([id]) => id);
+    const foldedTotal = ranked.slice(8).reduce((s, [, c]) => s + c, 0);
+    const seriesIds = foldedTotal > 0 ? [...top, OTHER_ID] : top;
+    const shownTotals = new Map(ranked.slice(0, 8));
+    if (foldedTotal > 0) shownTotals.set(OTHER_ID, foldedTotal);
+
+    const topSet = new Set(top);
+    const perDay = new Map<string, Map<string, number>>();
     let max = 1;
-    perDay.forEach((m) => {
+    raw.forEach((m, key) => {
+      const folded = new Map<string, number>();
       let t = 0;
-      m.forEach((c) => (t += c));
+      m.forEach((count, id) => {
+        const slot = topSet.has(id) ? id : OTHER_ID;
+        folded.set(slot, (folded.get(slot) ?? 0) + count);
+        t += count;
+      });
+      perDay.set(key, folded);
       max = Math.max(max, t);
     });
-    return { perDay, gameIds: gameIds.sort(), max };
+    return { perDay, seriesIds, totals: shownTotals, max };
   }, [history, days]);
 
   if (perDay.size === 0) {
@@ -193,21 +222,33 @@ export function ActivityChart({ history }: { history: GameResult[] }) {
 
   const W = 600;
   const H = 170;
+  const padL = 30;
   const bottom = 146;
   const chartH = 130;
-  const step = W / 30;
+  const step = (W - padL) / 30;
   const barW = step - 4;
+  const yFor = (v: number) => bottom - (v / max) * chartH;
+  const ticks = max >= 2 ? [...new Set([max, Math.round(max / 2)])] : [max];
 
   return (
     <div>
       <svg viewBox={`0 0 ${W} ${H}`} className="chart-svg" role="img" aria-label="Games per day">
+        {ticks.map((v) => (
+          <g key={v}>
+            <line x1={padL} y1={yFor(v)} x2={W} y2={yFor(v)} className="grid-line" />
+            <text x={padL - 7} y={yFor(v) + 3.5} textAnchor="end" className="axis-label">
+              {v}
+            </text>
+          </g>
+        ))}
+        <line x1={padL} y1={bottom} x2={W} y2={bottom} className="grid-line" />
         {days.map((d, i) => {
           const m = perDay.get(d.key);
           if (!m) return null;
           let y = bottom;
           return (
             <g key={d.key}>
-              {gameIds.map((id) => {
+              {seriesIds.map((id) => {
                 const count = m.get(id) ?? 0;
                 if (count === 0) return null;
                 const h = (count / max) * chartH;
@@ -215,12 +256,12 @@ export function ActivityChart({ history }: { history: GameResult[] }) {
                 return (
                   <rect
                     key={id}
-                    x={i * step + 2}
+                    x={padL + i * step + 2}
                     y={y}
                     width={barW}
                     height={Math.max(h - 1.5, 1)}
                     rx={2}
-                    fill={gameColor(id)}
+                    fill={seriesColor(id)}
                   />
                 );
               })}
@@ -228,12 +269,18 @@ export function ActivityChart({ history }: { history: GameResult[] }) {
           );
         })}
         {[0, 10, 20, 29].map((i) => (
-          <text key={i} x={i * step + step / 2} y={H - 6} textAnchor="middle" className="axis-label">
+          <text
+            key={i}
+            x={padL + i * step + step / 2}
+            y={H - 6}
+            textAnchor="middle"
+            className="axis-label"
+          >
             {days[i].label}
           </text>
         ))}
       </svg>
-      <Legend ids={gameIds} />
+      <Legend ids={seriesIds} counts={totals} />
     </div>
   );
 }

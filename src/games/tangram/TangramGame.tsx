@@ -63,10 +63,12 @@ export function TangramGame({
     const pieces: Piece[] = saved
       ? saved.pieces.map((p, i) => ({ id: i, ...p }))
       : scatterPieces(puzzle, difficulty).map((p, i) => ({ id: i, ...p }));
-    // arena from union of target + scattered pieces, padded
+    // arena from union of target + scattered pieces, padded — the pad is
+    // deliberately small so the figure fills the canvas instead of
+    // shrinking into it
     const polys = [...target.polys, ...pieces.map((p) => transform(p.kind, p.rot, p.flip, p.pos))];
     const bb = bounds(polys);
-    const pad = 1;
+    const pad = 0.55;
     const arena = { x: bb.minX - pad, y: bb.minY - pad, w: bb.maxX - bb.minX + pad * 2, h: bb.maxY - bb.minY + pad * 2 };
     const loops = silhouetteLoops(target.polys);
     const silPath = loops.map((lp) => 'M' + lp.map((p) => `${round(p.x)},${round(p.y)}`).join('L') + 'Z').join(' ');
@@ -80,6 +82,9 @@ export function TangramGame({
   const [hintsUsed, setHintsUsed] = useState(saved?.hintsUsed ?? 0);
   const [score, setScore] = useState(0);
   const [solved, setSolved] = useState(false);
+  /** the snap-settle micro-animation: the just-dropped piece glides the
+      last stretch into its clicked position instead of teleporting */
+  const [settle, setSettle] = useState<{ id: number; dx: number; dy: number; n: number } | null>(null);
 
   const piecesRef = useRef(pieces);
   piecesRef.current = pieces;
@@ -206,13 +211,18 @@ export function TangramGame({
     setSelected(p.id);
   };
 
-  const onPointerMove = (e: React.PointerEvent) => {
+  // pointer moves are coalesced to one React commit per frame — a 120 Hz
+  // pointer otherwise floods state updates and the drag feels rough
+  const pendingWorld = useRef<Pt | null>(null);
+  const rafId = useRef(0);
+  useEffect(() => () => cancelAnimationFrame(rafId.current), []);
+
+  const applyDragTo = (w: Pt) => {
     const d = drag.current;
-    if (!d || paused || done.current) return;
-    const w = toWorld(e.clientX, e.clientY);
+    if (!d) return;
     const dx = w.x - d.startWorld.x;
     const dy = w.y - d.startWorld.y;
-    if (Math.abs(dx) > 0.06 || Math.abs(dy) > 0.06) d.moved = true;
+    if (Math.abs(dx) > 0.08 || Math.abs(dy) > 0.08) d.moved = true;
     commit(
       piecesRef.current.map((q) =>
         q.id === d.id ? { ...q, pos: clampToArena(q.kind, q.rot, q.flip, { x: d.startPos.x + dx, y: d.startPos.y + dy }) } : q
@@ -220,8 +230,21 @@ export function TangramGame({
     );
   };
 
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || paused || done.current) return;
+    pendingWorld.current = toWorld(e.clientX, e.clientY);
+    if (rafId.current) return;
+    rafId.current = requestAnimationFrame(() => {
+      rafId.current = 0;
+      if (pendingWorld.current && drag.current) applyDragTo(pendingWorld.current);
+    });
+  };
+
   const endDrag = () => {
     const d = drag.current;
+    if (d && !done.current && !paused && pendingWorld.current) applyDragTo(pendingWorld.current);
+    pendingWorld.current = null;
     drag.current = null;
     if (!d || done.current || paused) return;
     if (!d.moved) {
@@ -229,9 +252,20 @@ export function TangramGame({
       if (d.wasSelected) rotateSelected(d.id);
       return;
     }
-    const next = piecesRef.current.map((q) => (q.id === d.id ? snapPiece(q) : q));
+    const before = piecesRef.current.find((q) => q.id === d.id)!;
+    const snapped = snapPiece(before);
+    const next = piecesRef.current.map((q) => (q.id === d.id ? snapped : q));
     commit(next);
-    sfx.place();
+    // glide the snap distance instead of teleporting
+    const sx = before.pos.x - snapped.pos.x;
+    const sy = before.pos.y - snapped.pos.y;
+    if (Math.hypot(sx, sy) > 0.02 && !done.current) {
+      setSettle((s) => ({ id: d.id, dx: sx, dy: sy, n: (s?.n ?? 0) + 1 }));
+    }
+    // a lock onto the correct cell clicks louder than a plain drop
+    const lockedNow = matchesSolutionCell(transform(snapped.kind, snapped.rot, snapped.flip, snapped.pos), target);
+    if (lockedNow) sfx.pop();
+    else sfx.place();
     finishIfSolved(next, hintsUsed);
   };
 
@@ -321,6 +355,27 @@ export function TangramGame({
       >
         {/* transparent backdrop so taps on empty space register (deselect) */}
         <rect x={arena.x} y={arena.y} width={arena.w} height={arena.h} fill="transparent" />
+        {/* half-unit dot lattice: quiet spatial reference for lining pieces up */}
+        <defs>
+          <pattern
+            id="tgr-dots"
+            x={0}
+            y={0}
+            width={0.5}
+            height={0.5}
+            patternUnits="userSpaceOnUse"
+          >
+            <circle cx={0} cy={0} r={0.028} className="tgr-dot" />
+          </pattern>
+        </defs>
+        <rect
+          x={arena.x}
+          y={arena.y}
+          width={arena.w}
+          height={arena.h}
+          fill="url(#tgr-dots)"
+          pointerEvents="none"
+        />
         {/* target silhouette */}
         <path className="tgr-silhouette" d={silPath} fillRule="evenodd" />
         {assists.edgeHints &&
@@ -335,13 +390,19 @@ export function TangramGame({
           const facePts = ptsStr(poly);
           const edgePts = ptsStr(poly.map((q) => ({ x: q.x, y: q.y + 0.13 })));
           const good = placedFlags[i] ?? false;
+          const settling = !solved && settle?.id === p.id;
           return (
             <g
-              key={p.id}
+              key={settling ? `${p.id}-s${settle.n}` : p.id}
               className={`tgr-piece c${p.slot} ${selected === p.id ? 'sel' : ''} ${good ? 'good' : ''} ${
                 solved ? 'won' : ''
-              }`}
-              style={{ ['--i' as string]: i }}
+              } ${settling ? 'settling' : ''}`}
+              style={{
+                ['--i' as string]: i,
+                ...(settling
+                  ? { ['--sx' as string]: `${round(settle.dx)}px`, ['--sy' as string]: `${round(settle.dy)}px` }
+                  : null)
+              }}
             >
               <polygon className="tgr-edge" points={edgePts} />
               <polygon className="tgr-face" points={facePts} />

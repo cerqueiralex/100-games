@@ -6,89 +6,90 @@ export interface FlowLevel {
   paths: number[][];
 }
 
-const CONFIG: Record<Difficulty, { size: number; minPaths: number; maxPaths: number }> = {
-  easy: { size: 5, minPaths: 4, maxPaths: 5 },
-  medium: { size: 6, minPaths: 5, maxPaths: 7 },
-  hard: { size: 7, minPaths: 6, maxPaths: 9 },
-  // the board paints at most 9 distinct pipe colors, so bigger tiers grow
-  // the grid (longer, twistier paths) rather than the path count
-  pro: { size: 8, minPaths: 7, maxPaths: 9 },
-  extreme: { size: 9, minPaths: 8, maxPaths: 9 }
+// every tier grows BOTH the grid and the palette: one extra color per step
+// up, so harder boards read as busier, not just bigger (the board paints at
+// most 9 distinct pipe colors — extreme stays within that)
+export const FLOW_CONFIG: Record<Difficulty, { size: number; colors: number }> = {
+  easy: { size: 5, colors: 4 },
+  medium: { size: 6, colors: 5 },
+  hard: { size: 7, colors: 6 },
+  pro: { size: 8, colors: 7 },
+  extreme: { size: 9, colors: 8 }
 };
 
 const MIN_LEN = 3;
 
 /**
- * Generates a guaranteed-solvable Flow level by partitioning the grid into
- * random snake paths that cover every cell (the partition IS the solution).
+ * Generates a guaranteed-solvable Flow level with an EXACT color count:
+ * a random Hamiltonian path over the grid (backbite walk) is cut into
+ * `colors` segments — the partition covers every cell and IS the solution,
+ * so generation can never miss its target or fall back to fewer colors.
  */
 export function generateFlowLevel(difficulty: Difficulty): FlowLevel {
-  const { size, minPaths, maxPaths } = CONFIG[difficulty];
-  for (let attempt = 0; attempt < 400; attempt++) {
-    const level = tryGenerate(size);
-    if (level && level.paths.length >= minPaths && level.paths.length <= maxPaths) {
-      return level;
-    }
-  }
-  // practically unreachable; keep types safe with a trivial fallback
-  return fallbackLevel(size);
-}
-
-function tryGenerate(size: number): FlowLevel | null {
-  const n = size * size;
-  const owner = new Array<number>(n).fill(-1);
-  const paths: number[][] = [];
-  const neighbors = (i: number): number[] => {
-    const r = Math.floor(i / size);
-    const c = i % size;
-    const out: number[] = [];
-    if (r > 0) out.push(i - size);
-    if (r < size - 1) out.push(i + size);
-    if (c > 0) out.push(i - 1);
-    if (c < size - 1) out.push(i + 1);
-    return out;
-  };
-
-  let remaining = n;
-  while (remaining > 0) {
-    const free: number[] = [];
-    for (let i = 0; i < n; i++) if (owner[i] === -1) free.push(i);
-    const start = free[Math.floor(Math.random() * free.length)];
-    const path = [start];
-    owner[start] = paths.length;
-    // random walk through unclaimed cells
-    for (;;) {
-      const last = path[path.length - 1];
-      const options = neighbors(last).filter((j) => owner[j] === -1);
-      if (options.length === 0) break;
-      // bias towards continuing (longer snakes look better)
-      if (path.length >= MIN_LEN && Math.random() < 0.25) break;
-      const next = options[Math.floor(Math.random() * options.length)];
-      owner[next] = paths.length;
-      path.push(next);
-    }
-    if (path.length < MIN_LEN) return null; // stranded stub — retry whole level
-    paths.push(path);
-    remaining -= path.length;
-    if (paths.length > 12) return null;
+  const { size, colors } = FLOW_CONFIG[difficulty];
+  const ham = randomHamiltonianPath(size);
+  const paths = splitPath(ham, colors);
+  // shuffle so segment order along the snake doesn't map to color order
+  for (let i = paths.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [paths[i], paths[j]] = [paths[j], paths[i]];
   }
   return { size, paths };
 }
 
-function fallbackLevel(size: number): FlowLevel {
-  // boustrophedon rows split into equal snakes — always valid
-  const cells: number[] = [];
+/** random Hamiltonian path via the backbite algorithm (always succeeds) */
+function randomHamiltonianPath(size: number): number[] {
+  const n = size * size;
+  // seed with a boustrophedon sweep, then randomize
+  let path: number[] = [];
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
-      cells.push(r * size + (r % 2 === 0 ? c : size - 1 - c));
+      path.push(r * size + (r % 2 === 0 ? c : size - 1 - c));
     }
   }
-  const per = Math.max(MIN_LEN, Math.floor(cells.length / 4));
-  const paths: number[][] = [];
-  for (let i = 0; i < cells.length; i += per) {
-    const slice = cells.slice(i, i + per);
-    if (slice.length < MIN_LEN) paths[paths.length - 1].push(...slice);
-    else paths.push(slice);
+  const pos = new Array<number>(n);
+  const reindex = () => path.forEach((cell, i) => (pos[cell] = i));
+  reindex();
+
+  const iterations = 12 * n;
+  for (let it = 0; it < iterations; it++) {
+    if (Math.random() < 0.5) {
+      path.reverse();
+      reindex();
+    }
+    const tail = path[n - 1];
+    const r = Math.floor(tail / size);
+    const c = tail % size;
+    const nbs: number[] = [];
+    if (r > 0) nbs.push(tail - size);
+    if (r < size - 1) nbs.push(tail + size);
+    if (c > 0) nbs.push(tail - 1);
+    if (c < size - 1) nbs.push(tail + 1);
+    const candidates = nbs.filter((u) => u !== path[n - 2]);
+    if (candidates.length === 0) continue;
+    const u = candidates[Math.floor(Math.random() * candidates.length)];
+    const j = pos[u];
+    // reverse the suffix after u: the path stays Hamiltonian
+    path = path.slice(0, j + 1).concat(path.slice(j + 1).reverse());
+    reindex();
   }
-  return { size, paths };
+  return path;
+}
+
+/** cut the path into exactly k contiguous segments, each at least MIN_LEN */
+function splitPath(path: number[], k: number): number[][] {
+  const n = path.length;
+  const lengths = new Array<number>(k).fill(MIN_LEN);
+  let extra = n - MIN_LEN * k;
+  while (extra > 0) {
+    lengths[Math.floor(Math.random() * k)]++;
+    extra--;
+  }
+  const out: number[][] = [];
+  let at = 0;
+  for (const len of lengths) {
+    out.push(path.slice(at, at + len));
+    at += len;
+  }
+  return out;
 }

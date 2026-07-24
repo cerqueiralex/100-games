@@ -67,7 +67,11 @@ export function ImagePuzzleGame({
 }: GameProps) {
   const n = SIZE[difficulty];
   const blankTile = n * n - 1;
-  const saved = savedState as PuzzleSave | undefined;
+  // ignore stale saves that lack the expected shape
+  const saved =
+    savedState && Array.isArray((savedState as PuzzleSave).perm)
+      ? (savedState as PuzzleSave)
+      : undefined;
 
   // perm[position] = tile that currently sits there
   const [perm, setPerm] = useState<number[]>(() =>

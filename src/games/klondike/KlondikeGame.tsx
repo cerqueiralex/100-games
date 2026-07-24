@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx, playNote } from '../../platform/audio';
-import { BulbIcon } from '../../platform/design/icons';
+import { BulbIcon, UndoIcon } from '../../platform/design/icons';
 import { PadTool } from '../../platform/components/ui';
 import {
   applyMove,
@@ -91,14 +91,6 @@ function isSave(s: unknown): s is KlonSave {
 }
 
 /* -------- inline monochrome tool icons (currentColor) -------- */
-function UndoIcon() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M9 7L4 12l5 5" />
-      <path d="M4 12h11a5 5 0 0 1 0 10h-1" />
-    </svg>
-  );
-}
 function AutoIcon() {
   return (
     <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>

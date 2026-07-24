@@ -32,6 +32,15 @@ function Svg({
 
 /* ---------- navigation / chrome ---------- */
 
+export function UndoIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M9 7L4 12l5 5" />
+      <path d="M4 12h11a5 5 0 0 1 0 10h-1" />
+    </Svg>
+  );
+}
+
 export function BackIcon() {
   return (
     <Svg size={20}>

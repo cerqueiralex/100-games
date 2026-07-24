@@ -60,7 +60,7 @@ export function NumberTrailGame({
 }: GameProps) {
   const cfg = TIERS[difficulty];
   const saved =
-    savedState && typeof savedState === 'object' && 'order' in (savedState as object)
+    savedState && Array.isArray((savedState as NTSave).order) && Array.isArray((savedState as NTSave).items)
       ? (savedState as NTSave)
       : undefined;
 

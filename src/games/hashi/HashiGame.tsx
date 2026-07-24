@@ -17,6 +17,11 @@ const ISLAND_PTS = 30;
 const HINT_PENALTY = 40;
 const ERROR_PENALTY = 15;
 
+/** extra cells of margin on every board side: island discs render 1.18×
+    a cell wide (plus a selection glow), so without this the edge rows
+    poke outside the card */
+const EDGE = 0.3;
+
 interface HshSave {
   puzzle: HashiPuzzle;
   bridges: number[];
@@ -272,12 +277,12 @@ export function HashiGame({
     (x: number, y: number): number | null => {
       const el = boardRef.current;
       if (!el) return null;
-      const cw = el.clientWidth / w;
-      const ch = el.clientHeight / h;
+      const cw = el.clientWidth / (w + EDGE * 2);
+      const ch = el.clientHeight / (h + EDGE * 2);
       let best = -1;
       let bd = Infinity;
       islands.forEach((isl, i) => {
-        const d = Math.hypot(x - (isl.c + 0.5) * cw, y - (isl.r + 0.5) * ch);
+        const d = Math.hypot(x - (isl.c + EDGE + 0.5) * cw, y - (isl.r + EDGE + 0.5) * ch);
         if (d < bd) {
           bd = d;
           best = i;
@@ -292,8 +297,8 @@ export function HashiGame({
     (x: number, y: number): number | null => {
       const el = boardRef.current;
       if (!el) return null;
-      const cw = el.clientWidth / w;
-      const ch = el.clientHeight / h;
+      const cw = el.clientWidth / (w + EDGE * 2);
+      const ch = el.clientHeight / (h + EDGE * 2);
       const thresh = Math.max(cw * 0.32, 12);
       let best = -1;
       let bd = Infinity;
@@ -302,19 +307,19 @@ export function HashiGame({
         const A = islands[l.a];
         const B = islands[l.b];
         if (A.r === B.r) {
-          const x1 = (Math.min(A.c, B.c) + 0.5) * cw;
-          const x2 = (Math.max(A.c, B.c) + 0.5) * cw;
+          const x1 = (Math.min(A.c, B.c) + EDGE + 0.5) * cw;
+          const x2 = (Math.max(A.c, B.c) + EDGE + 0.5) * cw;
           if (x < x1 || x > x2) return;
-          const d = Math.abs(y - (A.r + 0.5) * ch);
+          const d = Math.abs(y - (A.r + EDGE + 0.5) * ch);
           if (d < bd) {
             bd = d;
             best = e;
           }
         } else {
-          const y1 = (Math.min(A.r, B.r) + 0.5) * ch;
-          const y2 = (Math.max(A.r, B.r) + 0.5) * ch;
+          const y1 = (Math.min(A.r, B.r) + EDGE + 0.5) * ch;
+          const y2 = (Math.max(A.r, B.r) + EDGE + 0.5) * ch;
           if (y < y1 || y > y2) return;
-          const d = Math.abs(x - (A.c + 0.5) * cw);
+          const d = Math.abs(x - (A.c + EDGE + 0.5) * cw);
           if (d < bd) {
             bd = d;
             best = e;
@@ -363,7 +368,7 @@ export function HashiGame({
     const rect = el.getBoundingClientRect();
     const dx = e.clientX - rect.left - g.x;
     const dy = e.clientY - rect.top - g.y;
-    if (Math.hypot(dx, dy) < Math.max(18, (el.clientWidth / w) * 0.45)) return;
+    if (Math.hypot(dx, dy) < Math.max(18, (el.clientWidth / (w + EDGE * 2)) * 0.45)) return;
     const dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'e' : 'w') : dy > 0 ? 's' : 'n';
     const link = dirLink[g.island][dir];
     if (link === -1) return; // no neighbour that way — the drag may still curve
@@ -437,7 +442,8 @@ export function HashiGame({
 
   /* ---------- render ---------- */
 
-  const pct = (v: number, total: number) => `${((v + 0.5) / total) * 100}%`;
+  const pct = (v: number, total: number) => `${((v + EDGE + 0.5) / (total + EDGE * 2)) * 100}%`;
+  const span = (cells: number, total: number) => `${(cells / (total + EDGE * 2)) * 100}%`;
 
   const linkEls = links.map((l, e) => {
     const n = bridges[e];
@@ -452,12 +458,12 @@ export function HashiGame({
     const style: CSSProperties = horizontal
       ? {
           left: pct(Math.min(A.c, B.c), w),
-          width: `${((Math.abs(A.c - B.c)) / w) * 100}%`,
+          width: span(Math.abs(A.c - B.c), w),
           top: pct(A.r, h)
         }
       : {
           top: pct(Math.min(A.r, B.r), h),
-          height: `${((Math.abs(A.r - B.r)) / h) * 100}%`,
+          height: span(Math.abs(A.r - B.r), h),
           left: pct(A.c, w)
         };
     if (winDepths) {
@@ -498,12 +504,12 @@ export function HashiGame({
             const style: CSSProperties = horizontal
               ? {
                   left: pct(Math.min(A.c, B.c), w),
-                  width: `${(Math.abs(A.c - B.c) / w) * 100}%`,
+                  width: span(Math.abs(A.c - B.c), w),
                   top: pct(A.r, h)
                 }
               : {
                   top: pct(Math.min(A.r, B.r), h),
-                  height: `${(Math.abs(A.r - B.r) / h) * 100}%`,
+                  height: span(Math.abs(A.r - B.r), h),
                   left: pct(A.c, w)
                 };
             return <div key={`g${e}`} className={`hsh-ghost ${horizontal ? 'h' : 'v'}`} style={style} />;
@@ -528,9 +534,9 @@ export function HashiGame({
         className={`hsh-board ${winDepths ? 'hsh-won' : ''}`}
         style={
           {
-            '--hsh-w': w,
-            '--hsh-h': h,
-            aspectRatio: `${w} / ${h}`
+            '--hsh-w': w + EDGE * 2,
+            '--hsh-h': h + EDGE * 2,
+            aspectRatio: `${w + EDGE * 2} / ${h + EDGE * 2}`
           } as CSSProperties
         }
         onPointerDown={onPointerDown}

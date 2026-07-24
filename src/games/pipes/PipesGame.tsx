@@ -41,8 +41,8 @@ const EDGE: Record<number, [number, number]> = {
   [W]: [-OV, 50]
 };
 
-/* the liquid layers (streaks/bubbles) run just shy of hub and edge so their
-   round caps stay inside the tube; the tube itself bridges the tile gap */
+/* the liquid glint layer runs just shy of hub and edge so its round caps
+   stay inside the tube; the tube itself bridges the tile gap */
 const FLOW_A: Record<number, [number, number]> = {
   [N]: [50, 42],
   [E]: [58, 50],
@@ -92,31 +92,19 @@ interface PipSave {
   assistsUsed: string[];
 }
 
-/** small water-drop tank drawn on the source cell (never rotates) */
+/** the source valve: solid dot in a ring — minimal mark, never rotates */
 const SourceBadge = (
   <svg viewBox="0 0 24 24" aria-hidden>
-    <path
-      className="pip-badge-fill"
-      d="M12 2.5c0 0-6.5 7-6.5 11.4a6.5 6.5 0 0 0 13 0C18.5 9.5 12 2.5 12 2.5Z"
-    />
-    <path
-      className="pip-badge-shine"
-      d="M9.4 12.6a3 3 0 0 0 .5 3.4"
-      fill="none"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-    />
+    <circle className="pip-badge-ring" cx="12" cy="12" r="8" fill="none" strokeWidth="2.4" />
+    <circle className="pip-badge-dot" cx="12" cy="12" r="3.6" />
   </svg>
 );
 
-/** little outlet cup drawn on each drain cell (never rotates) */
+/** an outlet: open ring whose centre dot appears once water arrives */
 const DrainBadge = (
   <svg viewBox="0 0 24 24" aria-hidden>
-    <path
-      className="pip-badge-fill"
-      d="M6 8.5h12l-1.2 9.2a2.4 2.4 0 0 1 -2.38 2.1H9.58a2.4 2.4 0 0 1 -2.38 -2.1Z"
-    />
-    <rect className="pip-badge-fill" x="4.6" y="6" width="14.8" height="3.2" rx="1.4" />
+    <circle className="pip-badge-ring" cx="12" cy="12" r="8" fill="none" strokeWidth="2.4" />
+    <circle className="pip-badge-dot" cx="12" cy="12" r="3.6" />
   </svg>
 );
 
@@ -175,16 +163,6 @@ function PipeArt({ mask, flowIn = 0 }: { mask: number; flowIn?: number }) {
           y2={FLOW_B[d][1]}
         />
       ))}
-      {arms.map((d) => (
-        <line
-          key={`b${d}`}
-          className={`pip-bubbles${d === flowIn ? ' pip-in' : ''}`}
-          x1={FLOW_A[d][0]}
-          y1={FLOW_A[d][1]}
-          x2={FLOW_B[d][0]}
-          y2={FLOW_B[d][1]}
-        />
-      ))}
       <circle className="pip-hub-core" cx={50} cy={50} r={5.5} />
     </svg>
   );
@@ -199,7 +177,14 @@ export function PipesGame({
   savedState,
   registerSnapshot
 }: GameProps) {
-  const saved = savedState as PipSave | undefined;
+  // ignore stale saves that lack the expected shape
+  const saved =
+    savedState &&
+    Array.isArray((savedState as PipSave).rot) &&
+    Array.isArray((savedState as PipSave).puzzle?.solved) &&
+    Array.isArray((savedState as PipSave).puzzle?.startRot)
+      ? (savedState as PipSave)
+      : undefined;
 
   const puzzle = useMemo<PipesPuzzle>(() => {
     if (saved) return saved.puzzle;

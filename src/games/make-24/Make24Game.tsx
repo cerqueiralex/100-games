@@ -9,7 +9,7 @@ import {
 import type { CSSProperties } from 'react';
 import type { GameProps } from '../../platform/types';
 import { sfx, playNote } from '../../platform/audio';
-import { BulbIcon, CheckIcon, EyeIcon, RestartIcon, TargetIcon } from '../../platform/design/icons';
+import { BulbIcon, CheckIcon, EyeIcon, RestartIcon, TargetIcon, UndoIcon } from '../../platform/design/icons';
 import { PadTool } from '../../platform/components/ui';
 import {
   DIFF_CONFIG,
@@ -71,14 +71,6 @@ function maxIdOf(save: Make24Save): number {
 }
 
 /** Undo (counter-clockwise arrow) — no matching glyph in the shared icon set. */
-function UndoIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 8h10a6 6 0 0 1 0 12H7" />
-      <path d="M3 8l4-4M3 8l4 4" />
-    </svg>
-  );
-}
 
 /** A card's number — integers count up on merge, fractions stack over a bar. */
 function CardValue({ frac, animate }: { frac: Frac; animate: boolean }) {
@@ -122,7 +114,13 @@ export function Make24Game({
   registerSnapshot
 }: GameProps) {
   const cfg = DIFF_CONFIG[difficulty];
-  const saved = savedState as Make24Save | undefined;
+  // ignore stale saves that lack the expected shape
+  const saved =
+    savedState &&
+    Array.isArray((savedState as Make24Save).cards) &&
+    Array.isArray((savedState as Make24Save).history)
+      ? (savedState as Make24Save)
+      : undefined;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const deals = useMemo<Deal[]>(

@@ -14,6 +14,7 @@ import {
   type GridlockPuzzle,
   type Piece
 } from './logic/generator';
+import { CarArt } from './CarArt';
 
 const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
 const WIN_BONUS = 400;
@@ -196,12 +197,27 @@ export function GridlockGame({
     if (!dr || dr.pointerId !== e.pointerId) return;
     dragRef.current = null;
     setLiftId(null);
-    dr.el.style.transform = '';
-    if (paused || done.current) return; // paused mid-drag → abandon the slide
+    if (paused || done.current) {
+      dr.el.style.transform = '';
+      return; // paused mid-drag → abandon the slide
+    }
     const coord = dr.axis === 'x' ? e.clientX : e.clientY;
     const delta = clampDelta(dr, coord - dr.startCoord);
     const newPos = Math.max(dr.lo, Math.min(dr.hi, Math.round(dr.cur + delta / dr.pitch)));
+    // settle animation: keep the fractional drag offset as a transform (the
+    // grid position updates synchronously underneath), then spring it to 0
+    const residual = delta - (newPos - dr.cur) * dr.pitch;
+    const el = dr.el;
+    el.style.transform =
+      dr.axis === 'x' ? `translateX(${residual}px)` : `translateY(${residual}px)`;
     commitMove(dr.id, newPos);
+    requestAnimationFrame(() => {
+      el.style.transition = 'transform 0.22s cubic-bezier(0.2, 1.4, 0.4, 1)';
+      el.style.transform = '';
+      window.setTimeout(() => {
+        el.style.transition = '';
+      }, 260);
+    });
   };
 
   const undo = () => {
@@ -302,12 +318,23 @@ export function GridlockGame({
           />
         ))}
 
-        {/* exit gap on the right edge of the exit row */}
+        {/* exit gap on the right edge of the exit row, marked by a sign */}
         <span
           className={`grd-exit ${canExit ? 'open' : ''}`}
           style={{ top: `${(EXIT_ROW / SIZE) * 100}%`, height: `${(1 / SIZE) * 100}%` }}
           aria-hidden
-        />
+        >
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M4 12h12M10.5 5.5 17 12l-6.5 6.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
 
         {/* hint ghost: where the suggested car should slide to */}
         {hint && (
@@ -337,8 +364,7 @@ export function GridlockGame({
               style={footprint(piece, pos[piece.id])}
               onPointerDown={(e) => onPointerDown(e, piece.id)}
             >
-              <span className="grd-cabin" />
-              {isRed && <span className="grd-shine" />}
+              <CarArt len={piece.len} orient={piece.orient} />
             </div>
           );
         })}

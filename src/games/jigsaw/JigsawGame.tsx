@@ -375,13 +375,26 @@ export function JigsawGame({
     [commitOne]
   );
 
+  // pointer moves coalesce to one React commit per frame — a 120 Hz
+  // pointer otherwise floods renders of the whole piece field (QA-LEDGER
+  // drag rule)
+  const movePending = useRef<{ id: number; x: number; y: number } | null>(null);
+  const moveRaf = useRef(0);
+  useEffect(() => () => cancelAnimationFrame(moveRaf.current), []);
+
   const onMove = useCallback(
     (e: ReactPointerEvent, id: number) => {
       const dr = drag.current;
       if (!dr || dr.id !== id) return;
       const c = cellRef.current || 1;
       if (!dr.moved && Math.hypot(e.clientX - dr.sx, e.clientY - dr.sy) > 4) dr.moved = true;
-      commitOne(id, { x: dr.ox + (e.clientX - dr.sx) / c, y: dr.oy + (e.clientY - dr.sy) / c });
+      movePending.current = { id, x: dr.ox + (e.clientX - dr.sx) / c, y: dr.oy + (e.clientY - dr.sy) / c };
+      if (moveRaf.current) return;
+      moveRaf.current = requestAnimationFrame(() => {
+        moveRaf.current = 0;
+        const m = movePending.current;
+        if (m && drag.current?.id === m.id) commitOne(m.id, { x: m.x, y: m.y });
+      });
     },
     [commitOne]
   );
@@ -390,6 +403,10 @@ export function JigsawGame({
     (e: ReactPointerEvent, id: number) => {
       const dr = drag.current;
       if (!dr || dr.id !== id) return;
+      // flush the last coalesced position so the drop lands under the finger
+      const m = movePending.current;
+      if (m && m.id === id) commitOne(id, { x: m.x, y: m.y });
+      movePending.current = null;
       drag.current = null;
       try {
         (e.currentTarget as Element).releasePointerCapture(dr.pid);

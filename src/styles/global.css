@@ -740,6 +740,11 @@ p {
   bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: 30;
   box-shadow: var(--shadow);
+  /* always spans the game column — a centering game root (align-items:
+     center) must never shrink-wrap this card, or flexible content like
+     the shared keyboard collapses to its tiny intrinsic width */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* (pad-tool is NOT in this list — tool buttons carry their own accent
@@ -1124,6 +1129,151 @@ p {
 .dropdown-item.active {
   background: var(--accent-soft);
   color: var(--accent);
+}
+
+/* ---- calendar picker (dates are picked on a month grid, not a list) ---- */
+
+.cal-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-width: 360px;
+  z-index: 60;
+  border-radius: var(--radius-m);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: dropin 0.14s ease;
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cal-title {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.cal-nav {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 -2px 0 var(--edge);
+  color: var(--text);
+}
+
+.cal-nav svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cal-nav:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 -1px 0 var(--edge);
+}
+
+.cal-nav:disabled {
+  opacity: 0.35;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.cal-dow {
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  padding: 2px 0;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 -2px 0 var(--edge);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+/* days with nothing to show are inert, not buttons pretending otherwise */
+.cal-day:disabled {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--text-dim);
+  opacity: 0.45;
+  font-weight: 600;
+}
+
+.cal-day .cal-count {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+.cal-day.today {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+.cal-day.sel {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.cal-day.sel .cal-count {
+  color: var(--on-accent);
+}
+
+.cal-day:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 -1px 0 var(--edge);
+}
+
+.cal-all {
+  height: 40px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 -2px 0 var(--edge);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cal-all.active {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+
+.cal-all:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 -1px 0 var(--edge);
 }
 
 .stat-grid {
@@ -1736,12 +1886,15 @@ p {
   line-height: 1;
 }
 
-/* equal-width, equal-height toolbar rows (see DESIGN.md) */
+/* equal-width, equal-height toolbar rows (see DESIGN.md) — minmax(0, 1fr)
+   so tracks can shrink below their content's min width: a long label row
+   (e.g. Battleship's four placement tools) must never push past the
+   viewport edge on phones */
 .sudoku-controls,
 .cw-tools {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 1fr;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 8px;
 }
 
@@ -1794,6 +1947,179 @@ p {
 
 .pad-tool:disabled {
   opacity: 0.4;
+}
+
+/* labels clip gracefully (ellipsis) rather than widening the button past
+   its grid track */
+.pad-tool {
+  min-width: 0;
+}
+
+.pad-tool > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* phones: tighter tool buttons so four-label rows fit uncut */
+@media (max-width: 480px) {
+  .pad-tool {
+    font-size: 11.5px;
+    gap: 4px;
+    padding: 0 4px;
+  }
+
+  .pad-tool svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+/* The on-screen QWERTY keyboard standard (the platform Keyboard component
+   — see DESIGN.md "Keyboard"). Every letter game shares this one block so
+   keyboards look and feel identical everywhere. width: 100% is load-
+   bearing: keys are flex children with tiny intrinsic width, so inside a
+   centering parent a shrink-wrapped keyboard collapses to slivers. */
+.kbd {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.kbd-row {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.kbd-key {
+  flex: 1;
+  max-width: 44px;
+  min-width: 0;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 -3px 0 var(--edge);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
+}
+
+.kbd-key svg {
+  width: 18px;
+  height: 18px;
+}
+
+.kbd-key:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
+}
+
+.kbd-key-wide {
+  max-width: 66px;
+  flex: 1.6;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+
+/* per-letter knowledge states */
+.kbd-key.good {
+  background: var(--good-soft);
+  border-color: var(--good);
+  color: var(--good);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.14);
+}
+
+.kbd-key.bad {
+  background: var(--bad-soft);
+  border-color: color-mix(in srgb, var(--bad) 55%, var(--border));
+  color: var(--bad);
+  opacity: 0.72;
+  transform: translateY(1px);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.14);
+}
+
+.kbd-key.correct {
+  background: var(--good);
+  border-color: var(--good);
+  color: var(--ink);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.22);
+}
+
+.kbd-key.present {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.22);
+}
+
+.kbd-key.absent {
+  background: var(--surface);
+  color: var(--text-dim);
+  opacity: 0.5;
+  box-shadow: inset 0 -3px 0 var(--edge);
+}
+
+/* an armed action key (e.g. submit once a valid word is staged) */
+.kbd-key.ready {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.kbd-key.ready:active {
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.kbd-key.shake {
+  animation: kbd-shake 0.4s ease;
+}
+
+@keyframes kbd-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+@media (max-width: 700px) {
+  .kbd {
+    gap: 5px;
+  }
+
+  .kbd-row {
+    gap: 4px;
+  }
+
+  .kbd-key {
+    height: 42px;
+    font-size: 14px;
+    border-radius: 8px;
+  }
 }
 
 .sudoku-pad {
@@ -1960,41 +2286,6 @@ p {
 .cw-clue span {
   font-size: 14px;
   line-height: 1.35;
-}
-
-.cw-keyboard {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  user-select: none;
-}
-
-.cw-krow {
-  display: flex;
-  justify-content: center;
-  gap: 5px;
-}
-
-.cw-key {
-  flex: 1;
-  max-width: 44px;
-  min-width: 0;
-  padding: 13px 0;
-  border-radius: 8px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  font-size: 15px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.cw-key:active {
-  background: var(--accent-soft);
-}
-
-.cw-key-wide {
-  max-width: 66px;
-  flex: 1.5;
 }
 
 /* ===== memory match ===== */
@@ -9634,67 +9925,6 @@ button.bs-ship-row.dock.placed {
   gap: 8px;
 }
 
-.wg-keyboard {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  user-select: none;
-}
-
-.wg-krow {
-  display: flex;
-  justify-content: center;
-  gap: 5px;
-}
-
-.wg-key {
-  flex: 1;
-  max-width: 44px;
-  min-width: 0;
-  padding: 14px 0;
-  border-radius: 8px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  box-shadow: inset 0 -3px 0 var(--edge);
-  color: var(--text);
-  font-size: 15px;
-  font-weight: 700;
-  transition: transform 0.08s, box-shadow 0.08s;
-}
-
-.wg-key:active {
-  transform: translateY(2px);
-  box-shadow: inset 0 -1px 0 var(--edge);
-}
-
-.wg-key.correct {
-  background: var(--good);
-  border-color: var(--good);
-  color: var(--ink);
-  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.22);
-}
-
-.wg-key.present {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
-  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.22);
-}
-
-.wg-key.absent {
-  background: var(--surface);
-  color: var(--text-dim);
-  opacity: 0.5;
-  box-shadow: inset 0 -3px 0 var(--edge);
-}
-
-.wg-key-wide {
-  max-width: 66px;
-  flex: 1.7;
-  font-size: 12px;
-  letter-spacing: 0.03em;
-}
-
 .board-hidden .wg-board {
   visibility: hidden;
 }
@@ -9710,13 +9940,6 @@ button.bs-ship-row.dock.placed {
   .wg-tile,
   .wg-face {
     font-size: clamp(16px, 7.5vw, 26px);
-  }
-  .wg-key {
-    padding: 12px 0;
-    font-size: 14px;
-  }
-  .wg-key-wide {
-    font-size: 11px;
   }
 }
 
@@ -9994,74 +10217,11 @@ button.bs-ship-row.dock.placed {
   gap: 8px;
 }
 
-.wlad-keyboard {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  user-select: none;
-}
-
-.wlad-krow {
-  display: flex;
-  justify-content: center;
-  gap: 5px;
-}
-
-.wlad-key {
-  flex: 1;
-  max-width: 44px;
-  min-width: 0;
-  padding: 13px 0;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  box-shadow: inset 0 -3px 0 var(--edge);
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.wlad-key:active {
-  transform: translateY(2px);
-  box-shadow: inset 0 -1px 0 var(--edge);
-  background: var(--accent-soft);
-}
-
-.wlad-key-wide {
-  max-width: 62px;
-  flex: 1.4;
-  font-size: 17px;
-}
-
-/* submit turns solid accent once a valid one-letter edit is staged */
-.wlad-submit.ready {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
-  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
-}
-
-.wlad-submit.ready:active {
-  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
-}
-
-.wlad-submit svg {
-  width: 18px;
-  height: 18px;
-}
-
 /* --- phones: keep the docked card to roughly a third of the viewport --- */
 @media (max-width: 700px) {
   .wlad .game-tools {
     gap: 6px;
     padding: 10px;
-  }
-
-  .wlad-key {
-    padding: 10px 0;
-    font-size: 14px;
   }
 
   .wlad-ladder {
@@ -10343,9 +10503,9 @@ button.bs-ship-row.dock.placed {
 }
 
 /* sink lowers the whole balloon (separate `translate` so `transform` stays
-   free for the bob / wobble animations to compose on top) */
+   free for the bob / wobble / dip animations to compose on top) */
 .hng-lift {
-  translate: 0 calc(var(--sink, 0) * 42px);
+  translate: 0 calc(var(--sink, 0) * 62px);
   transition: translate 0.55s cubic-bezier(0.34, 1.1, 0.64, 1);
 }
 
@@ -10357,8 +10517,50 @@ button.bs-ship-row.dock.placed {
 .hng-envelope {
   transform-box: fill-box;
   transform-origin: bottom center;
-  transform: scaleY(calc(1 - var(--sink, 0) * 0.26)) scaleX(calc(1 - var(--sink, 0) * 0.06));
+  transform: scaleY(calc(1 - var(--sink, 0) * 0.32)) scaleX(calc(1 - var(--sink, 0) * 0.08));
   transition: transform 0.55s ease;
+}
+
+/* the life meter: each wrong guess kills one gore — it flashes, then sits
+   grey and clearly "dead" so remaining lives are countable at a glance */
+.hng-gore {
+  transition: fill 0.35s ease, opacity 0.35s ease;
+}
+
+.hng-gore.out {
+  fill: var(--text-dim);
+  opacity: 0.4;
+  animation: hng-gore-out 0.5s ease;
+}
+
+@keyframes hng-gore-out {
+  0% {
+    opacity: 1;
+  }
+  35% {
+    opacity: 0.15;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+/* every lost life drops the balloon a pronounced step (replaces the idle
+   bob for half a second, then the bob resumes) */
+.hng-scene.dip .hng-bob {
+  animation: hng-dip 0.55s cubic-bezier(0.3, 1.3, 0.45, 1);
+}
+
+@keyframes hng-dip {
+  0% {
+    transform: translateY(0) rotate(0);
+  }
+  35% {
+    transform: translateY(17px) rotate(-2.5deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0);
+  }
 }
 
 .hng-parachute {
@@ -10635,79 +10837,6 @@ button.bs-ship-row.dock.placed {
   gap: 8px;
 }
 
-.hng-keyboard {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  user-select: none;
-}
-
-.hng-krow {
-  display: flex;
-  justify-content: center;
-  gap: 5px;
-}
-
-.hng-key {
-  flex: 1;
-  max-width: 44px;
-  min-width: 0;
-  padding: 13px 0;
-  border-radius: 10px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  box-shadow: inset 0 -3px 0 var(--edge);
-  font-size: 15px;
-  font-weight: 700;
-  text-align: center;
-  color: var(--text);
-  transition: background 0.12s ease, color 0.12s ease, transform 0.08s ease;
-}
-
-.hng-key:active:not(.good):not(.bad) {
-  transform: translateY(2px);
-  box-shadow: inset 0 -1px 0 var(--edge);
-}
-
-.hng-key.good {
-  background: var(--good-soft);
-  border-color: var(--good);
-  color: var(--good);
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.14);
-}
-
-.hng-key.bad {
-  background: var(--bad-soft);
-  border-color: color-mix(in srgb, var(--bad) 55%, var(--border));
-  color: var(--bad);
-  opacity: 0.72;
-  transform: translateY(1px);
-  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.14);
-}
-
-.hng-key.shake {
-  animation: hng-shake 0.4s ease;
-}
-
-@keyframes hng-shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  20% {
-    transform: translateX(-4px);
-  }
-  40% {
-    transform: translateX(4px);
-  }
-  60% {
-    transform: translateX(-3px);
-  }
-  80% {
-    transform: translateX(3px);
-  }
-}
-
 /* ---- phones: keep the bottom card small, board keeps the screen ---- */
 @media (max-width: 700px) {
   .hangman {
@@ -10722,17 +10851,7 @@ button.bs-ship-row.dock.placed {
     gap: 6px 4px;
   }
 
-  .hng-key {
-    padding: 11px 0;
-    font-size: 14px;
-    border-radius: 8px;
-  }
-
-  .hng-keyboard {
-    gap: 5px;
-  }
-
-  .game-tools:has(.hng-keyboard) {
+  .hangman .game-tools {
     max-height: 34vh;
   }
 }
@@ -15899,23 +16018,56 @@ button.bs-ship-row.dock.placed {
   background: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
-/* the vertical rod */
+/* Bolt-and-nut art: each peg is a thick threaded steel bolt standing on
+   its hex head, and the discs are chunky hex nuts threaded onto it.
+   Steel greys are fixed content colors (documented token opt-out, like
+   Reversi's felt) so the metal reads the same in every theme. */
 .toh-post {
   position: absolute;
-  bottom: 0;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  width: 9px;
-  height: 100%;
-  border-radius: 6px 6px 0 0;
-  background: var(--surface-2);
-  box-shadow: inset -3px 0 0 var(--edge);
+  width: clamp(16px, 3.4vw, 22px);
+  height: calc(100% - 20px);
+  border-radius: 7px 7px 0 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15) 0 2.5px, transparent 2.5px 7px),
+    linear-gradient(90deg, #aeb4bd, #e8ebf0 42%, #cdd2d9 72%, #9aa0aa);
   z-index: 0;
 }
 
-/* the target peg's rod carries a persistent, subtle "bring it here" tint */
-.toh-peg.target .toh-post {
-  background: color-mix(in srgb, var(--good) 24%, var(--surface-2));
+/* chrome dome capping the shaft */
+.toh-post::before {
+  content: '';
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% + 8px);
+  height: 20px;
+  border-radius: 50% 50% 42% 42% / 74% 74% 30% 30%;
+  background: linear-gradient(180deg, #f4f6f9, #bfc5cd);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.16);
+}
+
+/* the hex bolt head every stack rests on */
+.toh-peg::after {
+  content: '';
+  position: absolute;
+  bottom: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(74px, 52%);
+  height: 27px;
+  clip-path: polygon(12% 0, 88% 0, 100% 50%, 88% 100%, 12% 100%, 0 50%);
+  background: linear-gradient(180deg, #eef1f5 0 42%, #c6cbd3 42% 82%, #a9aeb8 82% 100%);
+  z-index: 0;
+}
+
+/* the target bolt carries a persistent, subtle "bring it here" tint */
+.toh-peg.target .toh-post,
+.toh-peg.target .toh-post::before {
+  box-shadow: inset 0 0 0 100px color-mix(in srgb, var(--good) 20%, transparent);
 }
 
 .toh-stack {
@@ -15926,15 +16078,32 @@ button.bs-ship-row.dock.placed {
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
+  /* nuts sit on the bolt head, not the ground */
+  margin-bottom: 24px;
 }
 
-/* a graduated bar disc (width set inline per size, color per --toh-c) */
+/* a hex nut (width set inline per size, color per --toh-c): beveled sides
+   via clip-path, top-light / bottom-dark faces and side facets via
+   layered gradients */
 .toh-disc {
-  height: clamp(16px, 4.4vw, 26px);
-  border-radius: 8px;
-  background: var(--toh-c, var(--play-1));
-  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.22);
+  height: clamp(20px, 5vw, 30px);
+  clip-path: polygon(8% 0, 92% 0, 100% 30%, 100% 70%, 92% 100%, 8% 100%, 0 70%, 0 30%);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.25) 0 8%,
+      rgba(255, 255, 255, 0.16) 8% 19%,
+      transparent 19% 78%,
+      rgba(0, 0, 0, 0.12) 78% 92%,
+      rgba(0, 0, 0, 0.3) 92% 100%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--toh-c, var(--play-1)) 74%, #fff) 0 30%,
+      var(--toh-c, var(--play-1)) 30% 72%,
+      color-mix(in srgb, var(--toh-c, var(--play-1)) 76%, #000) 72% 100%
+    );
   flex: 0 0 auto;
 }
 
@@ -15964,12 +16133,13 @@ button.bs-ship-row.dock.placed {
   }
 }
 
-/* the disc you are holding, floating above the pegs */
+/* the nut you are holding, floating above the bolts (drop-shadow, not
+   box-shadow — the hex clip-path would cut a box shadow off) */
 .toh-lifted {
   position: absolute;
   z-index: 5;
   pointer-events: none;
-  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.22), 0 8px 16px rgba(0, 0, 0, 0.32);
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.35));
 }
 
 /* picked up with a spring settle */
@@ -16012,9 +16182,9 @@ button.bs-ship-row.dock.placed {
   }
 }
 
-/* hint: pulse the disc to lift, glow the peg to drop it on */
+/* hint: pulse the nut to lift, glow the peg to drop it on */
 .toh-peg.hint-from .toh-stack .toh-disc:first-child {
-  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.22), 0 0 0 3px var(--accent);
+  filter: drop-shadow(0 0 5px var(--accent));
   animation: toh-pulse 0.9s ease-in-out infinite;
 }
 
@@ -16678,30 +16848,20 @@ button.bs-ship-row.dock.placed {
   transition: fill 0.25s ease;
 }
 
-/* liquid layers: current streaks + drifting bubbles. Invisible while dry —
-   the animations only run on wet arms, so a resting board costs nothing */
+/* the single liquid layer: one slow, understated glint drifting with the
+   current. Invisible while dry — the animation only runs on wet arms, so a
+   resting board costs nothing */
 .pip-stream {
-  stroke: var(--pip-water-hi);
-  stroke-width: 8;
-  stroke-linecap: round;
-  stroke-dasharray: 11 15;
-  fill: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.pip-bubbles {
-  stroke: #ffffff;
+  stroke: color-mix(in srgb, #ffffff 55%, var(--pip-water-hi));
   stroke-width: 4.5;
   stroke-linecap: round;
-  stroke-dasharray: 0.1 12;
+  stroke-dasharray: 16 24;
   fill: none;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-/* wet: the bore fills — deep water walls, mid-water centre, then the moving
-   streak/bubble layers on top at two speeds so the liquid has parallax */
+/* wet: the bore fills — deep water walls, mid-water centre, glint on top */
 .pip-cell.wet .pip-tube {
   stroke: var(--pip-water-deep);
 }
@@ -16717,46 +16877,23 @@ button.bs-ship-row.dock.placed {
 
 .pip-cell.wet .pip-hub-core {
   fill: var(--pip-water-hi);
-  animation: pip-hub-shimmer 1.6s ease-in-out infinite;
 }
 
 .pip-cell.wet .pip-stream {
-  opacity: 0.85;
-  animation: pip-stream-flow 1.1s linear infinite;
-}
-
-.pip-cell.wet .pip-bubbles {
-  opacity: 0.55;
-  animation: pip-bubble-flow 1.7s linear infinite;
+  opacity: 0.45;
+  animation: pip-stream-flow 1.9s linear infinite;
 }
 
 /* the arm water ENTERS through runs edge→hub; the rest run hub→edge, so the
    current reads as one continuous run from the tank to the outlets */
-.pip-cell.wet .pip-stream.pip-in,
-.pip-cell.wet .pip-bubbles.pip-in {
+.pip-cell.wet .pip-stream.pip-in {
   animation-direction: reverse;
 }
 
-/* offsets are exact dash-period multiples (26 / 24.2) so the loops are seamless */
+/* offset is an exact dash-period multiple (16+24=40) so the loop is seamless */
 @keyframes pip-stream-flow {
   to {
-    stroke-dashoffset: -26;
-  }
-}
-
-@keyframes pip-bubble-flow {
-  to {
-    stroke-dashoffset: -24.2;
-  }
-}
-
-@keyframes pip-hub-shimmer {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
+    stroke-dashoffset: -40;
   }
 }
 
@@ -16775,38 +16912,36 @@ button.bs-ship-row.dock.placed {
   height: 46%;
 }
 
-.pip-badge .pip-badge-fill {
+.pip-badge .pip-badge-ring {
+  stroke: currentColor;
+}
+
+.pip-badge .pip-badge-dot {
   fill: currentColor;
 }
 
-.pip-badge .pip-badge-shine {
-  stroke: color-mix(in srgb, #ffffff 70%, transparent);
-}
-
-/* the tank glows — it is the water source, always live. Light drop with a
-   deep outline so it stays readable on top of a water-filled (deep blue) hub */
+/* the source valve is always live */
 .pip-source {
   color: var(--pip-water-hi);
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--pip-water) 55%, transparent));
 }
 
-.pip-source .pip-badge-fill {
-  stroke: var(--pip-water-deep);
-  stroke-width: 1.5;
-}
-
-.pip-source svg {
-  width: 52%;
-  height: 52%;
-}
-
-/* outlets stay grey until water reaches them, then match the flow colour */
+/* outlets stay grey until water reaches them, then match the flow colour;
+   their centre dot only appears once water arrives */
 .pip-drain {
   color: color-mix(in srgb, var(--text-dim) 62%, var(--surface-2));
 }
 
+.pip-drain .pip-badge-dot {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
 .pip-cell.wet .pip-drain {
   color: var(--pip-water-hi);
+}
+
+.pip-cell.wet .pip-drain .pip-badge-dot {
+  opacity: 1;
 }
 
 /* ---- solved-mark assist ---- */
@@ -16864,10 +16999,6 @@ button.bs-ship-row.dock.placed {
 }
 
 .pip-board.pip-won .pip-stream {
-  animation-duration: 0.55s;
-}
-
-.pip-board.pip-won .pip-bubbles {
   animation-duration: 0.85s;
 }
 
@@ -18436,6 +18567,9 @@ button.bs-ship-row.dock.placed {
   color: var(--good);
 }
 
+/* The board is a concrete parking lot: fixed asphalt greys + yellow lane
+   paint (game-content palette like Reversi's green felt — a documented
+   token opt-out that reads the same in every theme). */
 .grd-board {
   position: relative;
   display: grid;
@@ -18446,18 +18580,18 @@ button.bs-ship-row.dock.placed {
   max-width: 480px;
   margin-inline: auto;
   box-sizing: border-box;
-  border: 3px solid var(--text-dim);
+  border: 4px solid #565a61;
   border-radius: var(--radius-m);
-  background: var(--surface);
+  background: #757a83;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
 
-/* the parking-lot road: faint lattice, exit lane tinted so the goal reads */
+/* dashed yellow bay markings between cells; the exit lane reads brighter */
 .grd-cell {
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border-right: 2px dashed rgba(246, 205, 70, 0.5);
+  border-bottom: 2px dashed rgba(246, 205, 70, 0.5);
 }
 .grd-cell:nth-child(6n) {
   border-right: none;
@@ -18466,114 +18600,103 @@ button.bs-ship-row.dock.placed {
   border-bottom: none;
 }
 .grd-cell.exit-row {
-  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* the opening on the right edge of the exit row */
 .grd-exit {
   position: absolute;
-  right: -3px;
-  width: 18px;
+  right: -18px;
+  width: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1;
+  z-index: 3;
   pointer-events: none;
 }
 .grd-exit::before {
   /* a gap punched in the wall so the car can drive through */
   content: '';
   position: absolute;
-  right: 12px;
-  width: 5px;
-  top: 16%;
-  bottom: 16%;
+  right: 14px;
+  width: 6px;
+  top: 12%;
+  bottom: 12%;
   background: var(--bg);
 }
-.grd-exit::after {
-  /* chevron pointing out */
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-top: 3px solid var(--accent);
-  border-right: 3px solid var(--accent);
-  transform: rotate(45deg);
-  transition: border-color 0.15s ease;
+/* exit sign: a bold arrow badge sitting on the wall, green once the
+   red car's lane is clear */
+.grd-exit svg {
+  position: relative;
+  width: 27px;
+  height: 27px;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: #565a61;
+  color: #ffffff;
+  box-shadow:
+    0 0 0 2.5px var(--bg),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.28);
+  transition: background 0.2s ease;
 }
-.grd-exit.open::after {
-  border-color: var(--good);
+.grd-exit.open svg {
+  background: var(--good);
+  animation: grd-exit-nudge 1s ease-in-out infinite;
+}
+@keyframes grd-exit-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
+  }
 }
 
-/* ---- cars ---- */
+/* ---- cars: SVG top-down vehicle art (CarArt.tsx) ---- */
+/* the piece div is a transparent slide-hitbox; the palette class sets
+   `color`, which the SVG body picks up via currentColor */
 .grd-piece {
   position: absolute;
   z-index: 2;
-  border-radius: 9px;
   box-sizing: border-box;
-  color: var(--ink);
-  background: var(--play-14);
-  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.26);
+  color: var(--play-14);
   cursor: grab;
   touch-action: none;
-  /* NEVER transition transform — the drag drives transform imperatively and
-     must track the pointer 1:1; only paint eases */
-  transition: filter 0.12s ease, box-shadow 0.14s ease;
+  /* NEVER transition transform in this rule — the drag drives transform
+     imperatively and must track the pointer 1:1 (the release settle sets
+     its own inline transition); only paint eases */
+  transition: filter 0.12s ease;
 }
 .grd-piece:active {
   cursor: grabbing;
 }
 
-/* the red hero car */
-.grd-piece.target {
-  background: var(--play-2);
-  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.28);
-}
-
-/* windows */
-.grd-cabin {
+.grd-car {
   position: absolute;
-  background: rgba(255, 255, 255, 0.28);
-  border-radius: 4px;
-}
-.grd-piece.h .grd-cabin {
-  top: 24%;
-  bottom: 24%;
-  left: 32%;
-  right: 16%;
-}
-.grd-piece.v .grd-cabin {
-  left: 24%;
-  right: 24%;
-  top: 16%;
-  bottom: 32%;
-}
-.grd-piece.target .grd-cabin {
-  background: color-mix(in srgb, var(--play-6) 78%, #fff);
-}
-
-/* a soft gloss on the hero car (its single highlight) */
-.grd-shine {
-  position: absolute;
-  top: 12%;
-  left: 12%;
-  right: 12%;
-  height: 24%;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.22);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
   pointer-events: none;
 }
 
-/* lifted while dragging — floats, so a drop shadow is allowed */
+/* the red hero car */
+.grd-piece.target {
+  color: var(--play-2);
+}
+
+/* lifted while dragging — floats, so a (silhouette) drop shadow is allowed */
 .grd-piece.lift {
   z-index: 4;
-  filter: brightness(1.08);
-  box-shadow: 0 7px 16px rgba(0, 0, 0, 0.35), inset 0 -4px 0 rgba(0, 0, 0, 0.28);
+  filter: brightness(1.08) drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
 }
 
 /* the hinted car glows in the accent and softly pulses */
 .grd-piece.hinted {
   z-index: 3;
-  box-shadow: 0 0 0 3px var(--accent), inset 0 -4px 0 rgba(0, 0, 0, 0.28);
+  filter: drop-shadow(0 0 5px var(--accent));
   animation: grd-pulse 0.9s ease-in-out infinite;
 }
 @keyframes grd-pulse {
@@ -18617,19 +18740,19 @@ button.bs-ship-row.dock.placed {
 }
 
 /* colored traffic — content palette, skipping 2 (red hero) and 9 (white) */
-.grd-piece.grd-c1 { background: var(--play-1); }
-.grd-piece.grd-c4 { background: var(--play-4); }
-.grd-piece.grd-c5 { background: var(--play-5); }
-.grd-piece.grd-c6 { background: var(--play-6); }
-.grd-piece.grd-c7 { background: var(--play-7); }
-.grd-piece.grd-c8 { background: var(--play-8); }
-.grd-piece.grd-c10 { background: var(--play-10); }
-.grd-piece.grd-c11 { background: var(--play-11); }
-.grd-piece.grd-c12 { background: var(--play-12); }
-.grd-piece.grd-c13 { background: var(--play-13); }
-.grd-piece.grd-c14 { background: var(--play-14); }
-.grd-piece.grd-c15 { background: var(--play-15); }
-.grd-piece.grd-c16 { background: var(--play-16); }
+.grd-piece.grd-c1 { color: var(--play-1); }
+.grd-piece.grd-c4 { color: var(--play-4); }
+.grd-piece.grd-c5 { color: var(--play-5); }
+.grd-piece.grd-c6 { color: var(--play-6); }
+.grd-piece.grd-c7 { color: var(--play-7); }
+.grd-piece.grd-c8 { color: var(--play-8); }
+.grd-piece.grd-c10 { color: var(--play-10); }
+.grd-piece.grd-c11 { color: var(--play-11); }
+.grd-piece.grd-c12 { color: var(--play-12); }
+.grd-piece.grd-c13 { color: var(--play-13); }
+.grd-piece.grd-c14 { color: var(--play-14); }
+.grd-piece.grd-c15 { color: var(--play-15); }
+.grd-piece.grd-c16 { color: var(--play-16); }
 
 .board-hidden .grd-board {
   visibility: hidden;
@@ -18695,10 +18818,29 @@ button.bs-ship-row.dock.placed {
   stroke-linejoin: round;
 }
 
+/* half-unit dot lattice behind the play field */
+.tgr-dot {
+  fill: var(--border);
+}
+
 /* pieces — flat colored polygons with a darker inset bottom edge (extruded) */
 .tgr-piece {
   transform-box: fill-box;
   transform-origin: center;
+}
+
+/* the drop glides the final snap distance into place (--sx/--sy set inline;
+   1px = 1 world unit in SVG user space) */
+.tgr-piece.settling {
+  animation: tgr-settle 0.16s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes tgr-settle {
+  from {
+    transform: translate(var(--sx, 0), var(--sy, 0));
+  }
+  to {
+    transform: none;
+  }
 }
 .tgr-face {
   stroke: transparent;
@@ -18771,7 +18913,8 @@ button.bs-ship-row.dock.placed {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tgr-piece.won {
+  .tgr-piece.won,
+  .tgr-piece.settling {
     animation: none;
   }
 }
@@ -19051,53 +19194,72 @@ button.bs-ship-row.dock.placed {
   }
 }
 
-/* captured discs flip edge-on (scaleX → 0) and swap colour while invisible,
-   staggered outward from the placed disc for a 3D cascade. Fill mode `both`
-   holds the OLD colour during the per-disc animation-delay, so a disc keeps
-   its old colour until the ripple reaches it. */
+/* captured discs flip as real coins: perspective rotateY with a mid-flip
+   lift, darkening as they turn edge-on, colour swapping while edge-on —
+   staggered outward from the placed disc for a rippling cascade. Fill mode
+   `both` holds the OLD colour during the per-disc animation-delay, so a
+   disc keeps its old colour until the ripple reaches it. */
 .rev-disc.flipping.to-dark {
-  animation: rev-flip-to-dark var(--rev-flip-dur, 0.34s) ease both;
+  animation: rev-flip-to-dark var(--rev-flip-dur, 0.46s) both;
 }
 
 .rev-disc.flipping.to-light {
-  animation: rev-flip-to-light var(--rev-flip-dur, 0.34s) ease both;
+  animation: rev-flip-to-light var(--rev-flip-dur, 0.46s) both;
 }
 
 @keyframes rev-flip-to-dark {
   0% {
-    transform: scaleX(1);
+    transform: perspective(260px) translateZ(0) rotateY(0deg);
     background: var(--rev-light);
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.16);
+    animation-timing-function: ease-in;
   }
-  48% {
-    transform: scaleX(0.08);
+  49.9% {
+    transform: perspective(260px) translateZ(30px) rotateY(89deg);
     background: var(--rev-light);
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.16);
+    filter: brightness(0.68);
   }
-  52% {
-    transform: scaleX(0.08);
+  50.1% {
+    transform: perspective(260px) translateZ(30px) rotateY(91deg);
     background: var(--rev-dark);
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.42);
+    filter: brightness(0.68);
+    animation-timing-function: ease-out;
   }
   100% {
-    transform: scaleX(1);
+    transform: perspective(260px) translateZ(0) rotateY(180deg);
     background: var(--rev-dark);
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.42);
+    filter: brightness(1);
   }
 }
 
 @keyframes rev-flip-to-light {
   0% {
-    transform: scaleX(1);
+    transform: perspective(260px) translateZ(0) rotateY(0deg);
     background: var(--rev-dark);
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.42);
+    animation-timing-function: ease-in;
   }
-  48% {
-    transform: scaleX(0.08);
+  49.9% {
+    transform: perspective(260px) translateZ(30px) rotateY(89deg);
     background: var(--rev-dark);
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.42);
+    filter: brightness(0.68);
   }
-  52% {
-    transform: scaleX(0.08);
+  50.1% {
+    transform: perspective(260px) translateZ(30px) rotateY(91deg);
     background: var(--rev-light);
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.16);
+    filter: brightness(0.68);
+    animation-timing-function: ease-out;
   }
   100% {
-    transform: scaleX(1);
+    transform: perspective(260px) translateZ(0) rotateY(180deg);
     background: var(--rev-light);
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.16);
+    filter: brightness(1);
   }
 }
 

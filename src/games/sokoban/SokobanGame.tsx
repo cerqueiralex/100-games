@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
-import { BulbIcon, DpadArrowIcon, RestartIcon } from '../../platform/design/icons';
+import { BulbIcon, DpadArrowIcon, RestartIcon, UndoIcon } from '../../platform/design/icons';
 import { PadTool } from '../../platform/components/ui';
 import { DOWN, LEFT, RIGHT, UP, isSolved, tryMove, type SokobanPuzzle } from './logic/engine';
 import { generateSokoban } from './logic/generator';
@@ -29,26 +29,6 @@ interface SokSave {
 }
 
 /** A curved back-arrow — the platform has no dedicated "undo" glyph. */
-function UndoIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M9 7 4 12l5 5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M4 12h9a6 6 0 0 1 6 6v1"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 /** The pusher: a rounded character whose eyes look the way it last moved. */
 function Pusher({ dir }: { dir: number }) {

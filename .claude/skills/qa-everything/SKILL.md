@@ -1,6 +1,6 @@
 ---
 name: qa-everything
-description: Full quality-assurance sweep of the whole app — find and FIX bugs, loose ends, design/UX standard violations across all games, and stale docs. Use when the user asks to QA, audit, or health-check the app.
+description: Full quality-assurance sweep of the whole app — find and FIX bugs, loose ends, design/UX standard violations across all games, and stale docs; every finding is recorded in QA-LEDGER.md and evaluated for promotion into a standard. Use when the user asks to QA, audit, or health-check the app.
 ---
 
 # QA everything
@@ -10,8 +10,26 @@ not a report — it is fixes. Track findings in a checklist (TodoWrite),
 fix them, and re-verify. Only leave something unfixed if it needs a user
 decision; list those separately at the end.
 
+Every finding also feeds the institutional memory: `QA-LEDGER.md` at the
+repo root records what past sessions got wrong so a fresh session never
+re-commits the same mistake, and every finding is evaluated for promotion
+into an enforced standard (step 6).
+
 Environment: prefix every npm/node command with
 `export PATH="$HOME/.local/opt/node-v22.17.0-linux-x64/bin:$PATH"`.
+
+## 0. Read the QA ledger FIRST
+
+Read `QA-LEDGER.md` (repo root) before touching anything:
+
+- Every **watch item** in it becomes a checklist entry for this run —
+  re-check each one against the current code (they are the recurring
+  pitfall classes that are not yet machine-enforced).
+- The **promoted** section tells you which rules exist *because of past
+  bugs* — treat those rules as load-bearing; never relax one without
+  understanding the entry that created it.
+- If the ledger is missing, recreate it (sections: Promoted to
+  standards / Watch items) and note the gap as a finding.
 
 ## 1. Gates first
 
@@ -51,10 +69,14 @@ checks that catch most violations:
 
 - Hardcoded colors outside `tokens.css`:
   `grep -n "#[0-9a-fA-F]\{3,6\}\|rgba\?(" src/styles/global.css` — allowed
-  only for the sanctioned neutral white/black alphas in effects; everything
-  else must be a token.
+  only for the sanctioned neutral white/black alphas in effects and the
+  documented game-content opt-outs (see ledger); everything else must be
+  a token.
 - Hand-written tool buttons: `grep -rn 'className="pad-tool' src/games` —
   must be zero (use `PadTool`).
+- Hand-rolled keyboards: letter games must use the shared `Keyboard`
+  component (`.kbd` classes) — a game-local `*-krow` / `*-key` keyboard
+  is a violation.
 - Emojis in UI controls: scan game JSX for emoji in buttons/toolbars
   (emojis are allowed only as game content and celebration).
 - Icons: all from `design/icons.tsx`, monochrome `currentColor`.
@@ -102,13 +124,51 @@ mechanics one-liners, commands, standards). Update whatever drifted —
 especially game descriptions after overhauls and any new platform
 standard adopted since the last doc touch.
 
-## 6. Fix, re-verify, report
+## 6. Evaluate every finding — the promotion ladder
+
+A fix alone is not enough: each finding is a sample from a *class* of
+mistake, and the class must be blocked. For EVERY finding, walk down
+this ladder and stop at the first rung that fits:
+
+1. **Machine-enforceable?** Add or strengthen an `npm run validate`
+   check. This is the gold standard — and prefer asserting the
+   *player-facing invariant* ("the start is not already solved",
+   "extreme really has 8 colors") over internal soundness ("solvable by
+   construction"): internal checks have passed while the shipped game
+   was broken.
+2. **Architecture/design rule?** Write it into DESIGN.md (UI/UX
+   standards) or CLAUDE.md (architecture, content, workflow) so every
+   future session inherits it as a hard rule.
+3. **Platform-solvable?** If the bug came from per-game duplication,
+   fix the class by moving the capability into `src/platform/` (shared
+   component / CSS block / helper) and requiring its use — making the
+   bug structurally impossible beats N per-game patches.
+4. **Not (yet) enforceable** → record it as a **watch item** in
+   `QA-LEDGER.md` so every future QA re-checks it by hand.
+
+## 7. Update the ledger
+
+After fixing, update `QA-LEDGER.md`:
+
+- **Append** each new finding to the right section: `Promoted to
+  standards` (say WHERE it is now enforced: which validate check, which
+  DESIGN.md/CLAUDE.md rule, which platform component) or `Watch items`.
+- Entry format — one entry per mistake CLASS, a few lines each:
+  date · area · symptom · root cause · the rule that prevents it.
+- **Curate, don't log**: merge duplicates into the existing entry (bump
+  its date), move watch items to Promoted when they gain enforcement,
+  and delete entries made obsolete by code removal. The ledger's value
+  is that a fresh session can read ALL of it in one sitting.
+- The ledger is part of the fix — it gets committed with the code.
+
+## 8. Fix, re-verify, report
 
 - Fix every finding (code, CSS, content, docs). Re-run step 1 gates and
   re-test the affected flows in the browser.
 - Clean up: remove QA scripts from the repo, kill the dev server and the
   headless Chrome.
 - Report: findings found → fixed (grouped: bugs / standards / loose ends /
-  docs), anything intentionally left open and why, and whether the gates
-  pass. Do NOT commit — leave that to /commit-and-push unless the user
-  asks.
+  docs), what each finding was promoted to (validate gate / doc rule /
+  platform component / watch item), anything intentionally left open and
+  why, and whether the gates pass. Do NOT commit — leave that to
+  /commit-and-push unless the user asks.

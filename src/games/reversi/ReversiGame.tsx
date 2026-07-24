@@ -28,7 +28,8 @@ const HINT_PENALTY = 60;
 
 /** delay between successive discs flipping along a captured line (ms) */
 const FLIP_STAGGER = 60;
-const FLIP_DUR = 340;
+/** must match --rev-flip-dur's default in global.css */
+const FLIP_DUR = 460;
 const DROP_LEAD = 120;
 const THINK_MS = 460;
 

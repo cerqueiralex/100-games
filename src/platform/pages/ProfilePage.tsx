@@ -3,7 +3,7 @@ import { useAppState } from '../AppState';
 import { GAMES, getGame } from '../registry';
 import { activeCategories, categoryName, gameCategory } from '../categories';
 import { computeStats, formatDate, formatDuration } from '../stats';
-import { Chip, Dropdown, Modal, StatCard } from '../components/ui';
+import { CalendarPicker, Chip, Dropdown, Modal, StatCard } from '../components/ui';
 import { ActivityChart, CategoryBarChart, GamesPieChart, TrendChart } from '../components/charts';
 import type { CategoryId, GameResult } from '../types';
 
@@ -263,17 +263,11 @@ export function ProfilePage() {
         ) : (
           <>
             <div className="history-datebar">
-              <Dropdown
+              <CalendarPicker
                 value={effectiveDate}
                 onChange={setDateFilter}
                 ariaLabel="Filter history by date"
-                options={[
-                  { value: 'all', label: 'All dates' },
-                  ...dateOptions.map((d) => ({
-                    value: d.key,
-                    label: `${d.label} · ${d.count} game${d.count > 1 ? 's' : ''}`
-                  }))
-                ]}
+                days={new Map(dateOptions.map((d) => [d.key, d.count]))}
               />
             </div>
             {historyGroups.map(([key, rows]) => (
