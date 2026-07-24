@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { TargetNumberGame } from './TargetNumberGame';
 import { targetNumberTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const targetNumberDefinition: GameDefinition = {
   id: 'target-number',
@@ -11,6 +12,7 @@ export const targetNumberDefinition: GameDefinition = {
   icon: gameIcons['target-number'],
   component: TargetNumberGame,
   tutorial: targetNumberTutorial,
+  mastery,
   scoringNote:
     'Each round scores when you resolve it. An exact hit banks 100 × difficulty multiplier (1–5) plus a speed bonus of up to 30 × mult for a quick answer. Submitting a close value (within the tier tolerance) banks up to 60 × mult, scaled by how near you landed. Each Hint costs 6 × mult points; Reveal shows the full solution and forfeits that round. Finishing all rounds banks a win bonus of 120 × mult plus 15 × mult per exactly-solved round. Errors are dead-end resets and too-far submits. Play every round of the tier to win; a clean win uses no hints or assists.',
   assistFeatures: [

@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { Make24Game } from './Make24Game';
 import { make24Tutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const make24Definition: GameDefinition = {
   id: 'make-24',
@@ -11,6 +12,7 @@ export const make24Definition: GameDefinition = {
   icon: gameIcons['make-24'],
   component: Make24Game,
   tutorial: make24Tutorial,
+  mastery,
   scoringNote:
     'Each solved deal scores 100 × difficulty (×1 easy → ×5 extreme) plus a speed bonus (up to 40s under par × multiplier). Clearing every deal in the round adds a 150 × multiplier win bonus. Hints cost 25 points each; Reveal forfeits that deal’s points entirely. Dead-ends (a final card that isn’t the target) count as errors but don’t deduct points. A clean win uses no hints, reveals or the solvable badge.',
   assistFeatures: [

@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { WordLadderGame } from './WordLadderGame';
 import { wordLadderTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const wordLadderDefinition: GameDefinition = {
   id: 'word-ladder',
@@ -11,6 +12,7 @@ export const wordLadderDefinition: GameDefinition = {
   icon: gameIcons['word-ladder'],
   component: WordLadderGame,
   tutorial: wordLadderTutorial,
+  mastery,
   scoringNote:
     'Scoring (win): win bonus (120/240/360/480/600 by tier) + an efficiency bonus of up to 150/300/450/600/750 scaled by par ÷ your steps — solve in par for the full bonus. Each hint −60, each invalid submission (an error) −15. Give up reveals the optimal path and counts as a loss. Difficulty multiplies the base points earned per rung while in progress.',
   assistFeatures: [

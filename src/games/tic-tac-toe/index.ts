@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { TicTacToeGame } from './TicTacToeGame';
 import { ticTacToeTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const ticTacToeDefinition: GameDefinition = {
   id: 'tic-tac-toe',
@@ -11,6 +12,7 @@ export const ticTacToeDefinition: GameDefinition = {
   icon: gameIcons['tic-tac-toe'],
   component: TicTacToeGame,
   tutorial: ticTacToeTutorial,
+  mastery,
   scoringNote:
     'Pick your opponent (robot or a friend on this phone), your mark and the round count on the match menu. Most round wins takes the match; a tie goes to sudden death. +100 × difficulty per round win. The robot gets sharper with difficulty — pro is near-flawless, and on extreme it also opens every round.',
   assistFeatures: [

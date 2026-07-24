@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { SudokuGame } from './SudokuGame';
 import { sudokuTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const sudokuDefinition: GameDefinition = {
   id: 'sudoku',
@@ -11,6 +12,7 @@ export const sudokuDefinition: GameDefinition = {
   icon: gameIcons['sudoku'],
   component: SudokuGame,
   tutorial: sudokuTutorial,
+  mastery,
   scoringNote:
     'Scoring: +50/75/100/125/150 points per correct cell (easy → extreme), −50 per error, −25 per hint. Finish under par time (8/15/25/35/45 min) for a time bonus. Pro and extreme boards start with fewer clues.',
   assistFeatures: [

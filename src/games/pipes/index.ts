@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { PipesGame } from './PipesGame';
 import { pipesTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const pipesDefinition: GameDefinition = {
   id: 'pipes',
@@ -11,6 +12,7 @@ export const pipesDefinition: GameDefinition = {
   icon: gameIcons['pipes'],
   component: PipesGame,
   tutorial: pipesTutorial,
+  mastery,
   scoringNote:
     'Rotate every pipe to connect the tank to all outlets with no leaks. Win = 100 × difficulty multiplier (1–5), plus an efficiency bonus up to 300 × multiplier scaled by par ÷ your turns (match par for the full bonus), plus a time bonus for finishing under par time. Hints −30 each. errors are always 0; quitting counts as abandoned.',
   assistFeatures: [

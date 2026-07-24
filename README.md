@@ -79,6 +79,7 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 - **Five difficulty tiers** (easy / medium / hard / pro / extreme), pause, restart, quit — all via the standard game shell; after finishing you can close the results popup to review the solved board
 - **Save & resume**: a save button in every game's header snapshots the running game; a "Continue saved game" card on the start screen restores board, timer, score and assist usage — even after closing the app
 - **Illustrated tutorials**: every game ships a step-by-step "How to play" with theme-aware illustrations, on the game's start screen and behind the help button while playing
+- **Mastery guides**: every game also ships a "How to master" guide — the game's origins and history, in-depth strategies, named techniques, when-stuck advice and trusted further-reading links — behind a button right under "How to play"
 - **Assist / help tracking**: every assist is toggleable (some in-game); whatever you use is stored per game, so history and stats always distinguish **clean wins** from **wins with help**
 - **Statistics & history**: win rate, best/avg time, best/avg score, streaks, errors, hints, time played, high scores per difficulty, filterable per game, with a calendar to browse any day's games (Profile tab)
 - **Profile**: name + avatar, totals across games

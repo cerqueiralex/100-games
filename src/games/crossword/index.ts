@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { CrosswordGame } from './CrosswordGame';
 import { crosswordTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const crosswordDefinition: GameDefinition = {
   id: 'crossword',
@@ -11,6 +12,7 @@ export const crosswordDefinition: GameDefinition = {
   icon: gameIcons['crossword'],
   component: CrosswordGame,
   tutorial: crosswordTutorial,
+  mastery,
   scoringNote:
     'Scoring: +15/20/30/40/50 points per correct letter (easy → extreme), −10 per error, −25 per reveal. Finish under par time (6/12/20/28/36 min) for a time bonus. Grids grow up to 15×15 on extreme.',
   assistFeatures: [

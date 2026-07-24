@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { ImagePuzzleGame } from './ImagePuzzleGame';
 import { imagePuzzleTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const imagePuzzleDefinition: GameDefinition = {
   id: 'image-puzzle',
@@ -11,6 +12,7 @@ export const imagePuzzleDefinition: GameDefinition = {
   icon: gameIcons['image-puzzle'],
   component: ImagePuzzleGame,
   tutorial: imagePuzzleTutorial,
+  mastery,
   scoringNote:
     'A random photo is scrambled into sliding tiles from 3×3 up to 7×7 on extreme (always solvable). Score = 800 × difficulty − 2 per move, plus a time bonus under par (2/5/10/16/24 min). Add your own photos via public/puzzles/manifest.json.',
   assistFeatures: [

@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { KillerSudokuGame } from './KillerSudokuGame';
 import { killerSudokuTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const killerSudokuDefinition: GameDefinition = {
   id: 'killer-sudoku',
@@ -11,6 +12,7 @@ export const killerSudokuDefinition: GameDefinition = {
   icon: gameIcons['killer-sudoku'],
   component: KillerSudokuGame,
   tutorial: killerSudokuTutorial,
+  mastery,
   scoringNote:
     'Scoring: +30/60/90/120/150 points per correct cell (easy → extreme), −50 per error, −30 per hint. Finish under par time (10/20/30/40/50 min) for a time bonus. Hard starts with 8 givens; pro and extreme have none — the cage sums are everything.',
   assistFeatures: [

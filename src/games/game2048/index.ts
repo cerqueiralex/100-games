@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { Game2048Game } from './Game2048Game';
 import { game2048Tutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const game2048Definition: GameDefinition = {
   id: 'game2048',
@@ -11,6 +12,7 @@ export const game2048Definition: GameDefinition = {
   icon: gameIcons['game2048'],
   component: Game2048Game,
   tutorial: game2048Tutorial,
+  mastery,
   scoringNote:
     'Every merge scores the value of the tile it creates, multiplied by the difficulty (×1 easy → ×5 extreme). Reaching the target tile adds a win bonus (1000 × difficulty); each Hint used costs 50. Reach 1024 / 2048 / 2048 / 4096 / 4096 (easy → extreme) to win — you may keep going for a higher score. It is game over when the board fills with no merges left.',
   assistFeatures: [

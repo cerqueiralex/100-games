@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { NumberTrailGame } from './NumberTrailGame';
 import { numberTrailTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const numberTrailDefinition: GameDefinition = {
   id: 'number-trail',
@@ -11,6 +12,7 @@ export const numberTrailDefinition: GameDefinition = {
   icon: gameIcons['number-trail'],
   component: NumberTrailGame,
   tutorial: numberTrailTutorial,
+  mastery,
   scoringNote:
     'Scoring: each number tapped in the correct order scores round × multiplier × 5, plus a round-clear bonus of round × multiplier × 15. The multiplier runs 1 (easy) to 5 (extreme). A wrong tap costs 20 points and a life; each Peek costs 30. Winning adds (150 + 50 per life left) × multiplier. Clear the target rounds (6/7/8/8/9) to win; lose when lives run out.',
   assistFeatures: [

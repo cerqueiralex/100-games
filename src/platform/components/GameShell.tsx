@@ -5,9 +5,10 @@ import { useAppState } from '../AppState';
 import { deleteSave, loadSaves, putSave, resolveAssists } from '../storage';
 import { formatDate, formatDuration } from '../stats';
 import { sfx } from '../audio';
-import { BackIcon, Chip, HelpIcon, Modal, PauseIcon, PlayIcon, RestartIcon, SaveIcon, ShareIcon, Toggle } from './ui';
+import { BackIcon, Chip, HelpIcon, Modal, PauseIcon, PlayIcon, RestartIcon, SaveIcon, ShareIcon, StarIcon, Toggle } from './ui';
 import { ShareCardModal } from './ShareCard';
 import { TutorialModal } from './Tutorial';
+import { MasteryModal } from './Mastery';
 
 type Phase = 'setup' | 'playing' | 'finished';
 
@@ -42,6 +43,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showMastery, setShowMastery] = useState(false);
   const [resultsDismissed, setResultsDismissed] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [storedSave, setStoredSave] = useState<GameSave | null>(
@@ -212,6 +214,18 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           <span className="howto-go">›</span>
         </button>
 
+        <button
+          className="howto-btn mastery-btn"
+          onClick={() => {
+            sfx.tap();
+            setShowMastery(true);
+          }}
+        >
+          <StarIcon />
+          <span className="howto-text">How to master {game.name}</span>
+          <span className="howto-go">›</span>
+        </button>
+
         {storedSave && (
           <div className="resume-card fx-card">
             <div className="resume-info">
@@ -287,6 +301,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         </button>
 
         {showTutorial && <TutorialModal game={game} onClose={() => setShowTutorial(false)} />}
+        {showMastery && <MasteryModal game={game} onClose={() => setShowMastery(false)} />}
       </div>
     );
   }

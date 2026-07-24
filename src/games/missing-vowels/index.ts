@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { MissingVowelsGame } from './MissingVowelsGame';
 import { missingVowelsTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const missingVowelsDefinition: GameDefinition = {
   id: 'missing-vowels',
@@ -11,6 +12,7 @@ export const missingVowelsDefinition: GameDefinition = {
   icon: gameIcons['missing-vowels'],
   component: MissingVowelsGame,
   tutorial: missingVowelsTutorial,
+  mastery,
   scoringNote:
     'Scoring: +15 per vowel slot solved × difficulty multiplier (1/2/3/4/5), minus 20 per Reveal. Win to add a bonus (100–800) plus a time bonus for finishing under par. Errors are wrong submissions; on Pro/Extreme too many mistakes lose the round, and Extreme adds a 25s-per-phrase timer.',
   assistFeatures: [

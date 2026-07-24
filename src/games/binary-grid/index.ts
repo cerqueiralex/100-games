@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { BinaryGridGame } from './BinaryGridGame';
 import { binaryGridTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const binaryGridDefinition: GameDefinition = {
   id: 'binary-grid',
@@ -11,6 +12,7 @@ export const binaryGridDefinition: GameDefinition = {
   icon: gameIcons['binary-grid'],
   component: BinaryGridGame,
   tutorial: binaryGridTutorial,
+  mastery,
   scoringNote:
     'Fill boards from 6×6 up to 12×12 (hard and above add the no-identical-lines rule; every board has a single solution). +5 per placed cell × difficulty (1–5), −10 per rule break, −25 per hint, plus a time bonus under par (3/5/8/10/14 min).',
   assistFeatures: [

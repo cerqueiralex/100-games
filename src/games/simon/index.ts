@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { SimonGame } from './SimonGame';
 import { simonTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const simonDefinition: GameDefinition = {
   id: 'simon',
@@ -11,6 +12,7 @@ export const simonDefinition: GameDefinition = {
   icon: gameIcons['simon'],
   component: SimonGame,
   tutorial: simonTutorial,
+  mastery,
   scoringNote:
     'Scoring: round length × 10 × difficulty multiplier for every sequence you repeat. Reach round 8/12/16/20/24 (easy → extreme) to win — playback gets faster every tier. One wrong pad ends the game — unless Second chances is on.',
   assistFeatures: [

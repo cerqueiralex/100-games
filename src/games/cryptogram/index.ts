@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { CryptogramGame } from './CryptogramGame';
 import { cryptogramTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const cryptogramDefinition: GameDefinition = {
   id: 'cryptogram',
@@ -11,6 +12,7 @@ export const cryptogramDefinition: GameDefinition = {
   icon: gameIcons['cryptogram'],
   component: CryptogramGame,
   tutorial: cryptogramTutorial,
+  mastery,
   scoringNote:
     'Each word verified with Check earns 60/80/100/120/140 points (easy → extreme); a failed check costs −15, each hint −30. Solve every row under par time (6/9/12/15/18 min) for a time bonus. Longer hidden answers on pro and extreme.',
   assistFeatures: [

@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { KlondikeGame } from './KlondikeGame';
 import { klondikeTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const klondikeDefinition: GameDefinition = {
   id: 'klondike',
@@ -11,6 +12,7 @@ export const klondikeDefinition: GameDefinition = {
   icon: gameIcons['klondike'],
   component: KlondikeGame,
   tutorial: klondikeTutorial,
+  mastery,
   scoringNote:
     'Win bonus 1000 × difficulty (easy 1 → extreme 5), plus an efficiency bonus (350 × difficulty − 2 per move) and a time bonus of (par − your time) × difficulty; each hint costs 40. Illegal drops just bounce back, so errors are always 0. easy = draw-1 with unlimited redeals; medium = draw-1 with 3 redeals — both dealt from a bank of solver-verified WINNABLE layouts. hard = draw-3 unlimited redeals, pro = draw-3 with 2 redeals, extreme = draw-3 with a single redeal on a random deal. extra records moves and time.',
   assistFeatures: [

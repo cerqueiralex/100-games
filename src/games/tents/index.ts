@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { TentsGame } from './TentsGame';
 import { tentsTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const tentsDefinition: GameDefinition = {
   id: 'tents',
@@ -11,6 +12,7 @@ export const tentsDefinition: GameDefinition = {
   icon: gameIcons['tents'],
   component: TentsGame,
   tutorial: tentsTutorial,
+  mastery,
   scoringNote:
     'Pitch every tent on boards from 6×6 (8 tents) up to 12×12 (29 tents). +12 per tent × difficulty (1–5), −15 per misplaced tent, −40 per hint, plus 1 pt/sec under par (3/5/7/9/12 min) × difficulty on a win.',
   assistFeatures: [

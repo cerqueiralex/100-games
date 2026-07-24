@@ -238,6 +238,45 @@ Convention: a `tutorial.tsx` file in the game's folder exporting
   button on the game's setup screen and a help icon in the in-game header
   (which pauses the game). Games never render tutorials themselves.
 
+## Mastery guides (required for every game)
+
+Where the tutorial teaches the RULES, the mastery guide teaches how to
+WIN and keep improving. Every game declares `mastery: MasteryGuide` on
+its `GameDefinition` (a required field — a game without one won't
+compile). Convention: a `mastery.ts` file in the game's folder exporting
+`export const mastery: MasteryGuide`. The platform surfaces it as a
+"How to master {game}" button on the setup screen, directly under "How
+to play" and in the same button style, opening the `MasteryModal`
+long-form reader. `src/games/sudoku/mastery.ts` is the exemplar.
+
+- **`origins`** — 2–4 sentences of accurate history: who created the
+  game, when, where, and in what context. When our version is a variant,
+  describe the classic family it derives from and say so honestly.
+- **`intro`** — one paragraph defining what mastery of this game looks
+  like.
+- **`sections`** — 4–6 titled sections of strategy (never rule
+  re-explanations): what to scan for first, named techniques in learning
+  order, planning heuristics, when-stuck recovery, common traps, and a
+  closing "Improving further" section that ties advice to the platform
+  (difficulty tiers, assists, clean-win and error/hint statistics).
+  Bullets must be concrete and actionable — no filler.
+- **Every section ships an `art` illustration**, described as data and
+  drawn by the platform's MasteryArt renderer (theme-aware, tokens only
+  — never static images): `grid` (rows of single-char cell codes — see
+  the legend on `MasteryArt` in types.ts) for board concepts and
+  patterns, `row` (chips with `'>'` arrows) for ladders/sequences/
+  pipelines, `banner` (2–4 large emoji) only when nothing structural
+  fits. Prefer a diagram that teaches the section's core idea; captions
+  carry the explanation.
+- **Every bullet leads with an emoji marker** (`'🎯 Cross-hatch: …'`) —
+  the reader renders it as the list marker. This is sanctioned guide
+  CONTENT, like memory-card faces — the no-emoji rule for UI controls
+  stands untouched.
+- **`references`** — 2–4 further-reading links (open in a new tab).
+  Stability rule: prefer Wikipedia articles about the game or its
+  techniques; any other site must be a famous canonical resource with a
+  certain URL. Never invent deep links.
+
 ## Save & resume (required for every game)
 
 Every game must support mid-game saving via two `GameProps` members:

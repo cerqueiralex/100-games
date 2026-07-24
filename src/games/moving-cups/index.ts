@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { MovingCupsGame } from './MovingCupsGame';
 import { movingCupsTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const movingCupsDefinition: GameDefinition = {
   id: 'moving-cups',
@@ -11,6 +12,7 @@ export const movingCupsDefinition: GameDefinition = {
   icon: gameIcons['moving-cups'],
   component: MovingCupsGame,
   tutorial: movingCupsTutorial,
+  mastery,
   scoringNote:
     'Scoring: each correct guess adds (100 × round + 40) × difficulty multiplier (1–5). Winning the tier adds 300 × mult plus 60 × mult per life left. A wrong guess subtracts 60 × mult and costs a life; each Peek subtracts 25. Clear the target round (6/7/8/8/9 easy→extreme) to win — cups, swaps and speed rise every tier and every round.',
   assistFeatures: [

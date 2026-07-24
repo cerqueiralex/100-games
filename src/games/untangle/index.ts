@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { UntangleGame } from './UntangleGame';
 import { untangleTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const untangleDefinition: GameDefinition = {
   id: 'untangle',
@@ -11,6 +12,7 @@ export const untangleDefinition: GameDefinition = {
   icon: gameIcons['untangle'],
   component: UntangleGame,
   tutorial: untangleTutorial,
+  mastery,
   scoringNote:
     'A planar web of nodes starts scrambled with many crossings; drag nodes until zero lines cross. Score = 400 × difficulty (1–5) + a time bonus under par (1/2/3.5/5.5/9 min) + a fewer-moves bonus (150 × difficulty × nodes ÷ (nodes + moves)), minus 60 per Hint used. Graphs are freshly generated every game (6 nodes on easy up to 22 on extreme) and always solvable because a planar layout exists by construction.',
   assistFeatures: [

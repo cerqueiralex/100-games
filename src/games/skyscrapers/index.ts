@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { SkyscrapersGame } from './SkyscrapersGame';
 import { skyscrapersTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const skyscrapersDefinition: GameDefinition = {
   id: 'skyscrapers',
@@ -11,6 +12,7 @@ export const skyscrapersDefinition: GameDefinition = {
   icon: gameIcons['skyscrapers'],
   component: SkyscrapersGame,
   tutorial: skyscrapersTutorial,
+  mastery,
   scoringNote:
     'Scoring: every placed tower banks 20/40/60/80/100 points (easy → extreme) once the skyline is solved; −50 per flagged contradiction, −25 per hint. Finish under par time (4/9/15/22/32 min) for 1–5 bonus points per second saved. Boards grow from 4×4 to 7×7; hard strips the clues to the minimum.',
   assistFeatures: [

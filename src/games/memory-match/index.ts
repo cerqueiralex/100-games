@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { MemoryMatchGame } from './MemoryMatchGame';
 import { memoryMatchTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const memoryMatchDefinition: GameDefinition = {
   id: 'memory-match',
@@ -11,6 +12,7 @@ export const memoryMatchDefinition: GameDefinition = {
   icon: gameIcons['memory-match'],
   component: MemoryMatchGame,
   tutorial: memoryMatchTutorial,
+  mastery,
   scoringNote:
     'Scoring: +50/75/100/125/150 per pair (easy → extreme) plus streak bonuses for consecutive matches, −10 per miss, −25 per peek. Finish under par time for a bonus. Boards grow to 6×7 on pro and 7×8 on extreme.',
   assistFeatures: [

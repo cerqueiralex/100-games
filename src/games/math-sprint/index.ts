@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { MathSprintGame } from './MathSprintGame';
 import { mathSprintTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const mathSprintDefinition: GameDefinition = {
   id: 'math-sprint',
@@ -11,6 +12,7 @@ export const mathSprintDefinition: GameDefinition = {
   icon: gameIcons['math-sprint'],
   component: MathSprintGame,
   tutorial: mathSprintTutorial,
+  mastery,
   scoringNote:
     'Each correct answer scores 10 points × your streak multiplier × the difficulty multiplier (1/2/3/4/5 for easy→extreme), plus a speed bonus for answering before the per-problem timer empties. Three correct in a row earns ×1.5, six ×2, climbing to ×3. Wrong answers and per-problem timeouts reset the streak and cost 3 seconds; each solve gets harder as your streak grows. Reach the tier target before the overall clock runs out for a win bonus of 120 × difficulty plus 4 points per remaining second (× difficulty). Nudge costs 15 points.',
   assistFeatures: [

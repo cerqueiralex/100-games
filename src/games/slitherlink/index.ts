@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { SlitherlinkGame } from './SlitherlinkGame';
 import { slitherlinkTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const slitherlinkDefinition: GameDefinition = {
   id: 'slitherlink',
@@ -11,6 +12,7 @@ export const slitherlinkDefinition: GameDefinition = {
   icon: gameIcons['slitherlink'],
   component: SlitherlinkGame,
   tutorial: slitherlinkTutorial,
+  mastery,
   scoringNote:
     'Boards run 5×5 (most numbers kept) up to a sparse 10×10. +15 per satisfied clue × difficulty (1–5), −10 per error (a line that contradicts the unique solution), −30 per hint, plus a time bonus under par (3/5/8/12/18 min). One single closed loop that meets every number wins.',
   assistFeatures: [

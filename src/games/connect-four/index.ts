@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { ConnectFourGame } from './ConnectFourGame';
 import { connectFourTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const connectFourDefinition: GameDefinition = {
   id: 'connect-four',
@@ -11,6 +12,7 @@ export const connectFourDefinition: GameDefinition = {
   icon: gameIcons['connect-four'],
   component: ConnectFourGame,
   tutorial: connectFourTutorial,
+  mastery,
   scoringNote:
     'Pick your opponent (robot or a friend on this phone), your disc colour and the round count on the match menu. Most round wins takes the match; a tie goes to sudden death. +100 × difficulty per round win, plus a match-win bonus (150 × difficulty). Hints cost 30 points each. The robot searches deeper with difficulty — pro is near-flawless, and on extreme it also opens every round.',
   assistFeatures: [

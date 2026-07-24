@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { CodeBreakerGame } from './CodeBreakerGame';
 import { codeBreakerTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const codeBreakerDefinition: GameDefinition = {
   id: 'code-breaker',
@@ -11,6 +12,7 @@ export const codeBreakerDefinition: GameDefinition = {
   icon: gameIcons['code-breaker'],
   component: CodeBreakerGame,
   tutorial: codeBreakerTutorial,
+  mastery,
   scoringNote:
     'Crack codes of 3–6 pegs drawn from 5–9 colors (repeats appear from Hard up) within 8–12 guesses. Winning scores 150 × difficulty (1–5) plus 25 × difficulty per unused guess, −40 per hint; a lost game keeps 10 × difficulty per exact peg of your best guess. Guesses with no exact-position peg count as errors.',
   assistFeatures: [

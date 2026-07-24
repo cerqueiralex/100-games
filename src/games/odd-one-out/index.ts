@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { OddOneOutGame } from './OddOneOutGame';
 import { oddOneOutTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const oddOneOutDefinition: GameDefinition = {
   id: 'odd-one-out',
@@ -11,6 +12,7 @@ export const oddOneOutDefinition: GameDefinition = {
   icon: gameIcons['odd-one-out'],
   component: OddOneOutGame,
   tutorial: oddOneOutTutorial,
+  mastery,
   scoringNote:
     'Scoring: each cleared round pays round number × 12 × tier multiplier (1–5), plus a speed bonus (up to 40 × multiplier for the time you had left) and a 25 × multiplier round-clear bonus. A wrong tap or timeout costs 30 points and a life; each hint costs 20 points. Winning adds 200 × multiplier plus 40 × multiplier for every surviving life. Clear your tier’s target round to win; run out of lives to lose.',
   assistFeatures: [

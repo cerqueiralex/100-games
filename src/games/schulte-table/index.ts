@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { SchulteTableGame } from './SchulteTableGame';
 import { schulteTableTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const schulteTableDefinition: GameDefinition = {
   id: 'schulte-table',
@@ -11,6 +12,7 @@ export const schulteTableDefinition: GameDefinition = {
   icon: gameIcons['schulte-table'],
   component: SchulteTableGame,
   tutorial: schulteTableTutorial,
+  mastery,
   scoringNote:
     'Clear the whole grid in order: 3×3 (1–9) up to the classic 5×5 (1–25), with a descending 5×5 on pro and a two-colour interleaved 5×5 on extreme. Score = 200 × difficulty (×1–5) × (par ÷ your time), where finishing under par (8/22/40/48/70s) multiplies up to ×2.5 and slower runs scale down to ×0.25. Each wrong tap adds 1.5s to your effective time; each Peek costs a flat 25. Completing the grid wins — a generous time cap ends a stalled drill.',
   assistFeatures: [

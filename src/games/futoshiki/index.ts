@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { FutoshikiGame } from './FutoshikiGame';
 import { futoshikiTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const futoshikiDefinition: GameDefinition = {
   id: 'futoshiki',
@@ -11,6 +12,7 @@ export const futoshikiDefinition: GameDefinition = {
   icon: gameIcons['futoshiki'],
   component: FutoshikiGame,
   tutorial: futoshikiTutorial,
+  mastery,
   scoringNote:
     'Scoring: +40 points per correctly filled cell × difficulty multiplier (1–5), −40 per entry that breaks a rule, −30 per hint. Finish under par time (4/8/14/20/25 min) for a bonus per second saved. Boards grow from 4×4 to 7×7; pro is inequality-heavy with minimal givens.',
   assistFeatures: [

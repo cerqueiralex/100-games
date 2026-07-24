@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { HousePuzzlesGame } from './HousePuzzlesGame';
 import { housePuzzlesTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const housePuzzlesDefinition: GameDefinition = {
   id: 'house-puzzles',
@@ -11,6 +12,7 @@ export const housePuzzlesDefinition: GameDefinition = {
   icon: gameIcons['house-puzzles'],
   component: HousePuzzlesGame,
   tutorial: housePuzzlesTutorial,
+  mastery,
   scoringNote:
     'Scoring: +8 per correct ✓ × difficulty multiplier, −30 per hint, −10 per wrong mark found by Check; winning adds a bonus plus a time bonus under par (4–18 min by tier). Puzzles grow from 4 houses × 3 categories to 6 × 5 on extreme — always one unique, guess-free solution.',
   assistFeatures: [

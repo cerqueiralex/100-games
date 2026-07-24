@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { HashiGame } from './HashiGame';
 import { hashiTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const hashiDefinition: GameDefinition = {
   id: 'hashi',
@@ -11,6 +12,7 @@ export const hashiDefinition: GameDefinition = {
   icon: gameIcons['hashi'],
   component: HashiGame,
   tutorial: hashiTutorial,
+  mastery,
   scoringNote:
     'Every island bridged to its exact number scores 30 × difficulty (1–5) on the win, plus the seconds left under par (3/5/8/11/15 min) × difficulty. Over-filling an island costs 15, each hint costs 40. Boards grow from 7×7 with 8 islands to 13×13 with 26 — every puzzle has exactly one solution.',
   assistFeatures: [

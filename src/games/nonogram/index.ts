@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { NonogramGame } from './NonogramGame';
 import { nonogramTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const nonogramDefinition: GameDefinition = {
   id: 'nonogram',
@@ -11,6 +12,7 @@ export const nonogramDefinition: GameDefinition = {
   icon: gameIcons['nonogram'],
   component: NonogramGame,
   tutorial: nonogramTutorial,
+  mastery,
   scoringNote:
     'Boards from 5×5 up to 15×15, always solvable without guessing. +4 per cell of the finished picture × difficulty (1–5), −20 per flagged error, −30 per hint, plus a time bonus under par (2/4/6/9/13 min).',
   assistFeatures: [

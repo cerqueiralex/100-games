@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { TangramGame } from './TangramGame';
 import { tangramTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const tangramDefinition: GameDefinition = {
   id: 'tangram',
@@ -11,6 +12,7 @@ export const tangramDefinition: GameDefinition = {
   icon: gameIcons['tangram'],
   component: TangramGame,
   tutorial: tangramTutorial,
+  mastery,
   scoringNote:
     'Cover the target silhouette with all seven pieces to win. Score = 400 × difficulty (1–5) + a time bonus for finishing under par (2/3/4/5/6 min), minus 40 per Hint used. Errors are always 0. Figures get trickier by tier — easy starts pieces near their spots, harder tiers scatter and rotate them and tighten the snap; extreme adds the rotated "Gem" and heavy scatter.',
   assistFeatures: [

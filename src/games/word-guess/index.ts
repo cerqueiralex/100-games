@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { WordGuessGame } from './WordGuessGame';
 import { wordGuessTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const wordGuessDefinition: GameDefinition = {
   id: 'word-guess',
@@ -11,6 +12,7 @@ export const wordGuessDefinition: GameDefinition = {
   icon: gameIcons['word-guess'],
   component: WordGuessGame,
   tutorial: wordGuessTutorial,
+  mastery,
   scoringNote:
     'Win reward = (300 + 160 per unused try) × difficulty multiplier (×1 easy → ×5 extreme), minus 120 per hint used. Losing scores 0. Slips (errors) = invalid-word submissions plus any valid guess from the 4th row onward that reveals no green (right-place) letters. Difficulty: easy 4-letter words + 7 tries, medium 5-letter + 6, hard rarer 5-letter + 6, pro 6-letter + 6, extreme 7-letter + 6 with keyboard hints disabled.',
   assistFeatures: [

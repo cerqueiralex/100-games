@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { WordWheelGame } from './WordWheelGame';
 import { wordWheelTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const wordWheelDefinition: GameDefinition = {
   id: 'word-wheel',
@@ -11,6 +12,7 @@ export const wordWheelDefinition: GameDefinition = {
   icon: gameIcons['word-wheel'],
   component: WordWheelGame,
   tutorial: wordWheelTutorial,
+  mastery,
   scoringNote:
     'Two modes: fill the criss-cross grid, or hunt every hidden word on a random wheel (each uses the center letter; bigger wheels on higher difficulty). +20/30/40/50/60 points per letter of every word (easy → extreme), −5 per wrong guess, −15 per hint. Finish under par time (3/5/8/11/14 min) for a bonus.',
   assistFeatures: [

@@ -108,6 +108,65 @@ export interface TutorialStep {
   art: ReactNode;
 }
 
+/**
+ * A section illustration, described as DATA and drawn by the platform's
+ * MasteryArt renderer (theme-aware, tokens only — never static images).
+ *
+ * - `grid`: rows of single-char cell codes. Codes: '.' empty cell,
+ *   '#' dark cell, 'h' accent-soft highlight, 'a' accent fill,
+ *   'g' good/green fill, 'b' bad/red fill, 'y' yellow, 'u' blue,
+ *   'p' purple, 'o' orange fill, 'x' small ✕ mark, '·' small dot,
+ *   ' ' absent (transparent gap). ANY other character (digits,
+ *   uppercase letters, arrows, ●○★, emoji) renders as literal text
+ *   in the cell.
+ * - `row`: a horizontal strip of chips; a '>' item renders as an arrow
+ *   separator instead of a chip.
+ * - `banner`: 2–4 large emoji as a decorative scene (emoji are
+ *   sanctioned here as guide CONTENT — this is not a UI control).
+ */
+export type MasteryArt =
+  | { kind: 'grid'; rows: string[]; caption?: string }
+  | { kind: 'row'; items: string[]; caption?: string }
+  | { kind: 'banner'; emojis: string; caption?: string };
+
+/**
+ * One section of a game's mastery guide — structured text (paragraphs
+ * and/or tip bullets) plus an illustration, so guides are fast to
+ * author, consistent to render and readable on phones. Every bullet
+ * starts with an emoji that the reader renders as its list marker.
+ */
+export interface MasterySection {
+  title: string;
+  /** Required by the standard: every section ships an illustration. */
+  art?: MasteryArt;
+  paragraphs?: string[];
+  bullets?: string[];
+}
+
+/** A trustworthy further-reading reference (opens in a new tab). */
+export interface MasteryLink {
+  label: string;
+  url: string;
+  /** one line on why this source is worth reading */
+  note?: string;
+}
+
+/**
+ * The in-depth strategy guide behind the setup screen's "How to master"
+ * button (see DESIGN.md "Mastery guides"). Where the tutorial teaches
+ * the RULES, this teaches how to WIN and keep improving: what to scan
+ * for, how to plan, named techniques, tier-specific advice.
+ */
+export interface MasteryGuide {
+  /** How the game came to be: creator, era, country, context. */
+  origins: string;
+  /** One-paragraph framing: what mastery of this game looks like. */
+  intro: string;
+  sections: MasterySection[];
+  /** 2–4 stable, canonical further-reading links. */
+  references: MasteryLink[];
+}
+
 /** The contract each game folder exports to plug into the platform. */
 export interface GameDefinition {
   id: string;
@@ -122,6 +181,10 @@ export interface GameDefinition {
   scoringNote: string;
   /** Required: every game ships an illustrated how-to-play (3–6 steps). */
   tutorial: TutorialStep[];
+  /** Required: every game ships an in-depth strategy guide (origins,
+      4–7 sections, references) — convention: `mastery.ts` in the game
+      folder. */
+  mastery: MasteryGuide;
 }
 
 /** A finished (or abandoned) play, persisted in history. */

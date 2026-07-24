@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { HangmanGame } from './HangmanGame';
 import { hangmanTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const hangmanDefinition: GameDefinition = {
   id: 'hangman',
@@ -11,6 +12,7 @@ export const hangmanDefinition: GameDefinition = {
   icon: gameIcons['hangman'],
   component: HangmanGame,
   tutorial: hangmanTutorial,
+  mastery,
   scoringNote:
     'Scoring: +10 per revealed letter position × difficulty multiplier (×1 easy → ×5 extreme). Solve the word for a +50×mult win bonus plus +15×mult for each life still left. Vowel and Category peeks cost −25 each. Errors are your wrong letters; a clean win uses no assists or hints.',
   assistFeatures: [

@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { NumberMergeGame } from './NumberMergeGame';
 import { numberMergeTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const numberMergeDefinition: GameDefinition = {
   id: 'number-merge',
@@ -11,6 +12,7 @@ export const numberMergeDefinition: GameDefinition = {
   icon: gameIcons['number-merge'],
   component: NumberMergeGame,
   tutorial: numberMergeTutorial,
+  mastery,
   scoringNote:
     'Every merge scores its resulting tile. Chains start with two equal tiles and may continue onto equal-or-double values. Reach 256/512/1024/2048/4096 (easy → extreme) to win; run out of moves and it is game over.',
   assistFeatures: [

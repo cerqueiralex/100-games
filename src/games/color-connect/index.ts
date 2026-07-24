@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { ColorConnectGame } from './ColorConnectGame';
 import { colorConnectTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const colorConnectDefinition: GameDefinition = {
   id: 'color-connect',
@@ -11,6 +12,7 @@ export const colorConnectDefinition: GameDefinition = {
   icon: gameIcons['color-connect'],
   component: ColorConnectGame,
   tutorial: colorConnectTutorial,
+  mastery,
   scoringNote:
     'Connect every color pair and cover the whole board to win. Boards are freshly generated every game (5×5 up to 9×9 on extreme). Score starts at 500× difficulty, −2 per move, −50 per Solve-a-color assist used, plus a time bonus under par (2/4/6/8/10 min).',
   assistFeatures: [

@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { LetterHuntGame } from './LetterHuntGame';
 import { letterHuntTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const letterHuntDefinition: GameDefinition = {
   id: 'letter-hunt',
@@ -11,6 +12,7 @@ export const letterHuntDefinition: GameDefinition = {
   icon: gameIcons['letter-hunt'],
   component: LetterHuntGame,
   tutorial: letterHuntTutorial,
+  mastery,
   scoringNote:
     'Drag through adjacent letters to spell dictionary words (3+ letters, 4+ on pro/extreme). Each word scores by length — 10/20/40/70/110/160 for 3–8 letters — times the difficulty multiplier (1× easy → 5× extreme). Beat the target before the timer runs out to win (90/80/75/70/60s on 4×4 → 6×6 boards); every board is solver-checked so the target is always reachable. Winning adds a +100× bonus; each Reveal hint costs 40. Wrong words count as misses.',
   assistFeatures: [

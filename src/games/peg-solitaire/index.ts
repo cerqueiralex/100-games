@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { PegSolitaireGame } from './PegSolitaireGame';
 import { pegSolitaireTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const pegSolitaireDefinition: GameDefinition = {
   id: 'peg-solitaire',
@@ -11,6 +12,7 @@ export const pegSolitaireDefinition: GameDefinition = {
   icon: gameIcons['peg-solitaire'],
   component: PegSolitaireGame,
   tutorial: pegSolitaireTutorial,
+  mastery,
   scoringNote:
     'Each removed peg scores 8 × difficulty (1–5). Winning (one peg left) adds 300 × difficulty, a time bonus of (par − your time) × difficulty (par 3/5/8/8/10 min), and a 200 × difficulty centre-finish bonus when the last peg lands on the centre hole (required on extreme). Every hint costs 40. Boards: easy Triangle (15), medium English cross (33, centre start), hard European (37), pro English from a random solver-verified start, extreme English from a harder start that must finish on centre. Errors count illegal-jump attempts, plus leftover pegs on a stuck board you give up.',
   assistFeatures: [

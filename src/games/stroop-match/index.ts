@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { StroopMatchGame } from './StroopMatchGame';
 import { stroopMatchTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const stroopMatchDefinition: GameDefinition = {
   id: 'stroop-match',
@@ -11,6 +12,7 @@ export const stroopMatchDefinition: GameDefinition = {
   icon: gameIcons['stroop-match'],
   component: StroopMatchGame,
   tutorial: stroopMatchTutorial,
+  mastery,
   scoringNote:
     'Each correct tap scores (10 + up to 20 speed bonus) × streak multiplier (1.00→3.00 over nine in a row) × difficulty multiplier (1–5). Reach the target correct answers (12/15/18/20/22 easy→extreme) before your lives (4/3/3/2/2) run out to win, for a +100×difficulty bonus. Wrong taps and timeouts cost a life; 50/50 costs 15 points per use.',
   assistFeatures: [

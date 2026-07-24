@@ -2,6 +2,7 @@ import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { LightsOutGame } from './LightsOutGame';
 import { lightsOutTutorial } from './tutorial';
+import { mastery } from './mastery';
 
 export const lightsOutDefinition: GameDefinition = {
   id: 'lights-out',
@@ -11,6 +12,7 @@ export const lightsOutDefinition: GameDefinition = {
   icon: gameIcons['lights-out'],
   component: LightsOutGame,
   tutorial: lightsOutTutorial,
+  mastery,
   scoringNote:
     'Clear the board: +100 × difficulty multiplier (1–5), plus an efficiency bonus up to 300 × multiplier scaled by par ÷ your presses — match par (the true minimum, computed exactly) for the full bonus. Hints −25 each. Losing is impossible; quitting counts as abandoned.',
   assistFeatures: [
