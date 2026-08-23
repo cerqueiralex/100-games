@@ -171,27 +171,53 @@ p {
 
 /* ===== home ===== */
 
+/* greeting, streak and avatar read as ONE card — surface from .fx-card,
+   layout only here. The gap is what keeps the title off the streak pill
+   on phones (they used to collide at narrow widths). */
 .home-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 8px 0 24px;
+  gap: 14px;
+  border-radius: var(--radius-l);
+  padding: 15px 16px;
+  margin: 4px 0 18px;
+}
+
+.home-head-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .home-greeting {
   color: var(--text-dim);
-  font-size: 14px;
-  margin-bottom: 4px;
+  font-size: 13.5px;
+  margin-bottom: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .home-title {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.03em;
+  line-height: 1.15;
 }
 
+/* the avatar is a pushable token: circle plate + extruded bottom edge */
 .home-avatar {
-  font-size: 34px;
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 -3px 0 var(--edge);
+  font-size: 27px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .search-bar {
@@ -21826,13 +21852,18 @@ button.bs-ship-row.dock.placed {
   flex-shrink: 0;
 }
 
-/* compact streak card in the home header — surface from .fx-card */
+/* compact streak pill INSIDE the home header card — a nested token
+   (surface-2 + extruded edge), not a card of its own */
 .streak-chip {
   display: flex;
   align-items: center;
   gap: 7px;
   padding: 6px 12px 6px 8px;
   border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 -3px 0 var(--edge);
+  flex-shrink: 0;
 }
 
 .streak-chip-text {
@@ -21870,7 +21901,32 @@ button.bs-ship-row.dock.placed {
   color: var(--text-dim);
 }
 
+/* phones: the header card compacts so the title never crowds the streak
+   pill or the avatar (the streak label folds away to just flame + count) */
 @media (max-width: 480px) {
+  .home-header {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .home-title {
+    font-size: 21px;
+  }
+
+  .home-greeting {
+    font-size: 12.5px;
+  }
+
+  .home-avatar {
+    width: 46px;
+    height: 46px;
+    font-size: 24px;
+  }
+
+  .home-right {
+    gap: 8px;
+  }
+
   .streak-chip {
     gap: 6px;
     padding: 5px 10px 5px 7px;

@@ -54,7 +54,7 @@ export function FlameArt({
 export function StreakChip({ streak }: { streak: StreakInfo }) {
   return (
     <div
-      className={`streak-chip fx-card ${streak.playedToday ? '' : 'cold'}`}
+      className={`streak-chip ${streak.playedToday ? '' : 'cold'}`}
       title={streak.playedToday ? 'Streak extended today' : 'Play a game to extend your streak'}
       aria-label={`${streak.current} day play streak`}
     >

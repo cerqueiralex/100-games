@@ -111,8 +111,8 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
 
   return (
     <div className="screen">
-      <header className="home-header">
-        <div>
+      <header className="home-header fx-card">
+        <div className="home-head-text">
           <p className="home-greeting">
             {greeting}, {profile.name}
           </p>
