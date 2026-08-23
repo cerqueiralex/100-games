@@ -128,7 +128,9 @@ export function exportData(): string {
       exportedAt: new Date().toISOString(),
       settings: loadSettings(),
       profile: loadProfile(),
-      history: loadHistory()
+      history: loadHistory(),
+      // streak + landmark store (see platform/progress/progress.ts)
+      progress: readGameData('progress')
     },
     null,
     2

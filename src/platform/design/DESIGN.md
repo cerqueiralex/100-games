@@ -73,6 +73,57 @@ rendered on a neutral `--surface-2` plate on the home cards.
 - A new game adds one sticker here (reuse `C` colors so the set stays one
   family) and references it via `icon: gameIcons['<id>']`.
 
+### Streak & landmarks (profile trophies)
+
+The play-streak flame (`components/Streak.tsx`) and the landmark trophy
+art (`components/Landmarks.tsx`) are game CONTENT, like memory-card
+faces: sticker-style SVGs colored from the **content palette
+(`--play-*` tokens) with `--ink` outlines**, so they stay colorful and
+identical across accent themes — no opt-out needed, everything is
+tokens. Rules:
+
+- The streak's identity color is fixed `--play-7` orange; each landmark
+  carries a content-palette `slot` on its def (`--lm` on the card).
+- **Locked landmarks stay fully visible** — same art, same geometry —
+  rendered black & white at soft opacity via a CSS
+  `filter: grayscale(1)` on the art plate only, behind a `LockIcon`
+  badge; unlocking is a paint-only change (color returns, date replaces
+  the progress fraction). Never ship separate locked art.
+- "Cold" streak states (not yet played today / streak 0) reuse the same
+  grayscale treatment as a nudge.
+- Landmark cards and the streak hero are `.fx-card` surfaces (layout
+  only in their CSS); the shareable landmark card reuses the win card's
+  canvas chrome (`drawCardChrome` + `ShareImageModal` in ShareCard.tsx)
+  so every shared image stays one family.
+
+### Completion markers (beaten difficulties & swept games)
+
+"You beat this" is ONE visual language everywhere it appears, driven by
+the progress store (`beatenDifficulties` / `allDifficultiesBeaten`) —
+never recomputed from capped history:
+
+- **Beaten difficulty** = a 3px green ring + the `.beat-seal` pinned to
+  the element's top-left corner (green disc, gold `--warn` star, darker
+  green rim). Used on the setup screen's difficulty picker and the
+  profile's high-score tiles. Adding a third surface reuses these two
+  classes rather than inventing a variant.
+- **Green is semantic** (`--good`), never the accent — completion means
+  the same thing in every accent theme, and the green ring is declared
+  after `.active` so it still reads on the selected difficulty.
+- **The ring must not change geometry**: it is a 1px border plus a 2px
+  `inset 0 0 0 2px` ring, so an unbeaten and a beaten tile occupy exactly
+  the same box (see "Tile grids"). Never swap `border-width` between
+  states.
+- **All five tiers beaten** = the `.game-card-trophy` badge (green disc,
+  3px darker-green rim, flat solid gold `TrophyIcon`, extruded bottom
+  edge). It sits inline on the home card and absolutely in the top-right
+  corner of the profile's high-score card, where it floats above the
+  tiles' seals (`z-index: 2`) and therefore also carries a very soft
+  elevation shadow.
+- Badge glyphs are **flat solid silhouettes**, not linework: at ~16px a
+  2px stroke turns to mush, so `TrophyIcon` fills its shape and knocks
+  the check mark out of the cup (the same trick the cipher glyphs use).
+
 ## Components
 
 - **Touch targets**: minimum `44px` (`--touch`) in at least one dimension.

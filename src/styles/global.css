@@ -395,6 +395,22 @@ p {
   color: var(--text-dim);
 }
 
+/* all five difficulties beaten: check-marked trophy badge on the card —
+   green disc, gold trophy, thick darker-green rim, extruded 2.5D bottom
+   edge per the candy depth standard */
+.game-card-trophy {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--good);
+  border: 3px solid color-mix(in srgb, var(--good) 62%, var(--ink));
+  color: var(--warn);
+  flex-shrink: 0;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.28);
+}
+
 .fav-btn {
   display: grid;
   place-items: center;
@@ -465,6 +481,11 @@ p {
 }
 
 .difficulty-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 13px 0;
   border-radius: 14px;
   background: var(--surface);
@@ -485,6 +506,23 @@ p {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--text);
+}
+
+/* completed on this tier: 3px green ring (1px border + 2px inset ring so
+   geometry never changes between states) + the top-left star seal. Green
+   is semantic --good, never the accent, and beats the active accent
+   border — declared after .active on purpose. */
+.difficulty-btn.beaten {
+  border-color: var(--good);
+  box-shadow:
+    inset 0 0 0 2px var(--good),
+    inset 0 -3px 0 var(--edge);
+}
+
+.difficulty-btn.beaten:active {
+  box-shadow:
+    inset 0 0 0 2px var(--good),
+    inset 0 -1px 0 var(--edge);
 }
 
 .card-list {
@@ -1440,15 +1478,33 @@ p {
 
 .highscore-card {
   /* surface comes from .fx-card (effects.css) — layout only here */
+  position: relative;
   border-radius: 16px;
   padding: 14px 16px;
   margin-bottom: 8px;
+}
+
+/* the all-difficulties trophy sits in the card's top-right corner, above
+   the tiles' star seals (z 1); it floats over content, so it carries a
+   very soft elevation shadow (the floating-overlay exception) */
+.hs-trophy {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 2;
+  /* keeps the 2.5D inset edge and, as a floating element, a very soft
+     elevation shadow on top */
+  box-shadow:
+    inset 0 -2px 0 rgba(0, 0, 0, 0.28),
+    0 2px 7px rgba(0, 0, 0, 0.3);
 }
 
 .highscore-game {
   font-size: 14px;
   font-weight: 700;
   display: block;
+  /* leave room for the corner trophy so long names never run under it */
+  padding-right: 40px;
   margin-bottom: 10px;
 }
 
@@ -1459,13 +1515,41 @@ p {
 }
 
 .highscore-col {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 2px;
   text-align: center;
   background: var(--surface-2);
+  /* border always present so the beaten state swaps color only —
+     tile geometry never moves (see DESIGN.md "Tile grids") */
+  border: 1px solid transparent;
   border-radius: 12px;
   padding: 9px 4px;
+}
+
+/* difficulty beaten: the standard 3px green ring (1px border + 2px inset
+   ring, geometry-stable) + the shared top-left star seal */
+.highscore-col.beaten {
+  border-color: var(--good);
+  box-shadow: inset 0 0 0 2px var(--good);
+}
+
+/* THE completion seal — green disc, gold star, pinned on the top-left
+   corner of any beaten tile/button (difficulty picker + high scores) */
+.beat-seal {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  width: 19px;
+  height: 19px;
+  border-radius: 999px;
+  background: var(--good);
+  border: 2px solid color-mix(in srgb, var(--good) 62%, var(--ink));
+  color: var(--warn);
+  display: grid;
+  place-items: center;
+  z-index: 1;
 }
 
 .highscore-diff {
@@ -21731,4 +21815,298 @@ button.bs-ship-row.dock.placed {
   .pegsol-hint-text {
     font-size: 11px;
   }
+}
+
+/* ===== streak & landmarks (profile trophies — platform/progress) ===== */
+
+.home-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* compact streak card in the home header — surface from .fx-card */
+.streak-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px 6px 8px;
+  border-radius: 999px;
+}
+
+.streak-chip-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+
+.streak-chip-num {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--play-7);
+  font-variant-numeric: tabular-nums;
+}
+
+.streak-chip-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* cold = streak not extended today: the flame greys out as a nudge */
+.streak-chip.cold .streak-flame,
+.streak-hero.cold .streak-flame {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.streak-chip.cold .streak-chip-num,
+.streak-hero.cold .streak-hero-num {
+  color: var(--text-dim);
+}
+
+@media (max-width: 480px) {
+  .streak-chip {
+    gap: 6px;
+    padding: 5px 10px 5px 7px;
+  }
+
+  .streak-chip .streak-flame {
+    width: 26px;
+    height: 26px;
+  }
+
+  .streak-chip-num {
+    font-size: 15px;
+  }
+
+  .streak-chip-label {
+    display: none;
+  }
+}
+
+/* the big profile streak card */
+.streak-hero {
+  border-radius: var(--radius-l);
+  padding: 20px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.streak-hero-num {
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 1.05;
+  margin-top: 6px;
+  letter-spacing: -0.02em;
+  color: var(--play-7);
+  font-variant-numeric: tabular-nums;
+}
+
+.streak-hero-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.week-row {
+  display: flex;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.week-day-name {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.week-day.today .week-day-name {
+  color: var(--text);
+}
+
+.week-day-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 -2px 0 var(--edge);
+  display: grid;
+  place-items: center;
+  color: transparent;
+}
+
+.week-day.played .week-day-dot {
+  background: var(--play-7);
+  border-color: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.week-day.today:not(.played) .week-day-dot {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--play-7) 65%, var(--border));
+}
+
+.streak-hero-sub {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin-top: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.streak-hero-note {
+  font-size: 12px;
+  color: var(--text-dim);
+  opacity: 0.8;
+  margin-top: 3px;
+}
+
+/* ---- landmark gallery ---- */
+
+.lm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lm-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.lm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(102px, 1fr));
+  gap: 8px;
+}
+
+.lm-card {
+  /* surface from .fx-card — layout only here */
+  border-radius: 16px;
+  padding: 12px 6px 11px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  position: relative;
+  text-align: center;
+  color: var(--text);
+}
+
+.lm-card:active {
+  transform: translateY(2px);
+}
+
+/* the colored art plate; --lm is the landmark's content-palette color */
+.lm-plate {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--lm) 14%, transparent);
+}
+
+/* locked trophies: art goes black & white at soft opacity behind a padlock;
+   unlocking colors it in (paint-only change — geometry never moves) */
+.lm-card.locked .lm-plate,
+.lm-modal-art.locked {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.lm-card.locked .lm-title {
+  color: var(--text-dim);
+}
+
+.lm-lock {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  color: var(--text-dim);
+}
+
+.lm-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.lm-sub {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- landmark detail modal ---- */
+
+.lm-detail {
+  display: flex;
+  flex-direction: column;
+}
+
+.lm-modal-art {
+  margin: 2px auto 0;
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--lm) 14%, transparent);
+  display: grid;
+  place-items: center;
+}
+
+.lm-req {
+  text-align: center;
+  font-size: 14px;
+  margin-top: 12px;
+}
+
+.lm-meter {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+.lm-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--lm);
+}
+
+.lm-meter-text {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lm-status {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
 }

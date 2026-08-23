@@ -3,6 +3,10 @@ import { useAppState } from '../AppState';
 import { GAMES, getGame } from '../registry';
 import { activeCategories, categoryName, gameCategory } from '../categories';
 import { computeStats, formatDate, formatDuration } from '../stats';
+import { allDifficultiesBeaten, beatenDifficulties, computeStreak } from '../progress/progress';
+import { StarIcon, TrophyIcon } from '../design/icons';
+import { StreakHero } from '../components/Streak';
+import { LandmarksSection } from '../components/Landmarks';
 import { CalendarPicker, Chip, Dropdown, Modal, StatCard } from '../components/ui';
 import { ActivityChart, CategoryBarChart, GamesPieChart, TrendChart } from '../components/charts';
 import type { CategoryId, GameResult } from '../types';
@@ -56,10 +60,11 @@ function HistoryRow({ result }: { result: GameResult }) {
 }
 
 export function ProfilePage() {
-  const { profile, updateProfile, history } = useAppState();
+  const { profile, updateProfile, history, progress } = useAppState();
   const [filter, setFilter] = useState<string>('all');
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(profile.name);
+  const streak = useMemo(() => computeStreak(progress.days), [progress]);
 
   // scopes: everything, one category ('cat:<id>'), or a single game
   const catScope = filter.startsWith('cat:') ? (filter.slice(4) as CategoryId) : null;
@@ -153,6 +158,12 @@ export function ProfilePage() {
         </button>
       </header>
 
+      <section className="setup-section">
+        <StreakHero streak={streak} />
+      </section>
+
+      <LandmarksSection progress={progress} streak={streak} />
+
       <div className="filter-bar">
         <Dropdown
           value={filter}
@@ -233,12 +244,27 @@ export function ProfilePage() {
         <h3 className="section-title">High scores by difficulty</h3>
         {scopeGames.map((g) => {
           const gs = computeStats(history.filter((r) => r.gameId === g.id));
+          const beaten = beatenDifficulties(progress, g.id);
           return (
             <div key={g.id} className="highscore-card fx-card">
+              {allDifficultiesBeaten(progress, g.id) && (
+                <span
+                  className="game-card-trophy hs-trophy"
+                  title="Beaten on every difficulty"
+                  aria-label="Beaten on every difficulty"
+                >
+                  <TrophyIcon size={16} />
+                </span>
+              )}
               <span className="highscore-game">{g.name}</span>
               <div className="highscore-cols">
                 {(['easy', 'medium', 'hard', 'pro', 'extreme'] as const).map((d) => (
-                  <div key={d} className="highscore-col">
+                  <div key={d} className={`highscore-col ${beaten.includes(d) ? 'beaten' : ''}`}>
+                    {beaten.includes(d) && (
+                      <span className="beat-seal" aria-label="completed">
+                        <StarIcon size={10} filled />
+                      </span>
+                    )}
                     <span className="highscore-diff">{d}</span>
                     <span className="highscore-val">
                       {gs.perDifficulty[d].bestScore?.toLocaleString() ?? '—'}

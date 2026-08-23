@@ -310,6 +310,45 @@ export function ShareIcon({ size = 16 }: IconProps) {
   );
 }
 
+export function LockIcon({ size = 14 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <rect x="5" y="11" width="14" height="9" rx="2.5" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </Svg>
+  );
+}
+
+/** trophy cup with a check mark — "beaten on every difficulty".
+    Solid flat silhouette (like the cipher glyphs, a stroke would vanish at
+    badge size); the check is knocked out of the cup so the surface behind
+    shows through. Still monochrome currentColor. */
+export function TrophyIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      {/* handles */}
+      <path
+        d="M7 5H5a2 2 0 0 0 0 4h2M17 5h2a2 2 0 0 1 0 4h-2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* solid cup with the check knocked out */}
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M8.2 2h7.6A1.2 1.2 0 0 1 17 3.2V9a5 5 0 0 1-10 0V3.2A1.2 1.2 0 0 1 8.2 2Z M8.9 7.4 10.1 6.2 11.6 7.7 14.6 4.7 15.8 5.9 11.6 10.1Z"
+      />
+      {/* stem + foot, solid */}
+      <path fill="currentColor" d="M10.5 12.5h3V16h-3Z" />
+      <path fill="currentColor" d="M9.3 18.6c0-1.9 1.1-2.9 2.7-2.9s2.7 1 2.7 2.9Z" />
+      <rect fill="currentColor" x="7" y="18.4" width="10" height="2.6" rx="1.3" />
+    </svg>
+  );
+}
+
 /* ---------- cryptogram cipher glyphs ----------
    26 mini pictograms — the Cryptogram picture cipher assigns one to each
    letter of a puzzle. Same rules as every icon (monochrome, currentColor,

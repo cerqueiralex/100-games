@@ -12,10 +12,12 @@ export interface ShareData {
   playerEmoji: string;
 }
 
-const W = 1080;
-const H = 1350;
-const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-const EMOJI_FONT = '"Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", sans-serif';
+export const CARD_W = 1080;
+export const CARD_H = 1350;
+const W = CARD_W;
+const H = CARD_H;
+export const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+export const EMOJI_FONT = '"Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", sans-serif';
 const GREEN = '#30d158';
 
 /** The card follows the active accent theme (see design/tokens.css). */
@@ -24,11 +26,11 @@ function activeAccent(): string {
   return /^#[0-9a-fA-F]{6}$/.test(v) ? v : '#ff9f0a';
 }
 
-function hexToRgb(hex: string): string {
+export function hexToRgb(hex: string): string {
   return `${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)}`;
 }
 
-function roundRect(
+export function roundRect(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -45,7 +47,7 @@ function roundRect(
   ctx.closePath();
 }
 
-function pill(
+export function pill(
   ctx: CanvasRenderingContext2D,
   text: string,
   cx: number,
@@ -70,15 +72,9 @@ function pill(
   ctx.fillText(text, cx, cy + 2);
 }
 
-/** Draws the shareable win card and returns the canvas. */
-export function renderShareCard(d: ShareData): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
-  const ACCENT = activeAccent();
-  const ACCENT_RGB = hexToRgb(ACCENT);
-
+/** Shared share-card chrome: black base, faint board grid, colored glows
+    and the rounded frame — used by the win card and the landmark card. */
+export function drawCardChrome(ctx: CanvasRenderingContext2D, glowRgb: string, glow2Rgb: string) {
   // deep black base
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, W, H);
@@ -100,15 +96,14 @@ export function renderShareCard(d: ShareData): HTMLCanvasElement {
   }
 
   // glows
-  const glowColor = d.cleanWin ? '48,209,88' : ACCENT_RGB;
   let g = ctx.createRadialGradient(W / 2, 300, 0, W / 2, 300, 720);
-  g.addColorStop(0, `rgba(${glowColor},0.26)`);
-  g.addColorStop(1, `rgba(${glowColor},0)`);
+  g.addColorStop(0, `rgba(${glowRgb},0.26)`);
+  g.addColorStop(1, `rgba(${glowRgb},0)`);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
   g = ctx.createRadialGradient(W * 0.85, H * 0.92, 0, W * 0.85, H * 0.92, 560);
-  g.addColorStop(0, `rgba(${ACCENT_RGB},0.12)`);
-  g.addColorStop(1, `rgba(${ACCENT_RGB},0)`);
+  g.addColorStop(0, `rgba(${glow2Rgb},0.12)`);
+  g.addColorStop(1, `rgba(${glow2Rgb},0)`);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
@@ -127,6 +122,18 @@ export function renderShareCard(d: ShareData): HTMLCanvasElement {
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.font = `600 34px ${FONT}`;
   ctx.fillText('1 0 0   G A M E S', W / 2, 150);
+}
+
+/** Draws the shareable win card and returns the canvas. */
+export function renderShareCard(d: ShareData): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+  const ACCENT = activeAccent();
+  const ACCENT_RGB = hexToRgb(ACCENT);
+
+  drawCardChrome(ctx, d.cleanWin ? '48,209,88' : ACCENT_RGB, ACCENT_RGB);
 
   // trophy
   ctx.font = `150px ${EMOJI_FONT}`;
@@ -213,31 +220,45 @@ export function renderShareCard(d: ShareData): HTMLCanvasElement {
   return canvas;
 }
 
-export function ShareCardModal({ data, onClose }: { data: ShareData; onClose: () => void }) {
+/** Generic share-image viewer: renders a canvas once, then offers the
+    native share sheet (when files are shareable) and a download. */
+export function ShareImageModal({
+  render,
+  filename,
+  alt,
+  onClose
+}: {
+  render: () => HTMLCanvasElement;
+  filename: string;
+  alt: string;
+  onClose: () => void;
+}) {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [shareSupported, setShareSupported] = useState(false);
   const blobRef = useRef<Blob | null>(null);
 
   useEffect(() => {
     let url: string | null = null;
-    renderShareCard(data).toBlob((b) => {
+    render().toBlob((b) => {
       if (!b) return;
       blobRef.current = b;
       url = URL.createObjectURL(b);
       setImgUrl(url);
       if (typeof navigator.canShare === 'function') {
-        const file = new File([b], '100-games-win.png', { type: 'image/png' });
+        const file = new File([b], filename, { type: 'image/png' });
         setShareSupported(navigator.canShare({ files: [file] }));
       }
     }, 'image/png');
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
-  }, [data]);
+    // render once on mount — the modal is remounted per card
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const share = async () => {
     if (!blobRef.current) return;
-    const file = new File([blobRef.current], '100-games-win.png', { type: 'image/png' });
+    const file = new File([blobRef.current], filename, { type: 'image/png' });
     try {
       await navigator.share({ files: [file] });
     } catch {
@@ -249,7 +270,7 @@ export function ShareCardModal({ data, onClose }: { data: ShareData; onClose: ()
     if (!imgUrl) return;
     const a = document.createElement('a');
     a.href = imgUrl;
-    a.download = '100-games-win.png';
+    a.download = filename;
     a.click();
   };
 
@@ -257,7 +278,7 @@ export function ShareCardModal({ data, onClose }: { data: ShareData; onClose: ()
     <div className="share-backdrop" onClick={onClose}>
       <div className="share-panel" onClick={(e) => e.stopPropagation()}>
         {imgUrl ? (
-          <img className="share-img" src={imgUrl} alt="Your win card" />
+          <img className="share-img" src={imgUrl} alt={alt} />
         ) : (
           <div className="share-loading">Rendering…</div>
         )}
@@ -279,5 +300,16 @@ export function ShareCardModal({ data, onClose }: { data: ShareData; onClose: ()
         </div>
       </div>
     </div>
+  );
+}
+
+export function ShareCardModal({ data, onClose }: { data: ShareData; onClose: () => void }) {
+  return (
+    <ShareImageModal
+      render={() => renderShareCard(data)}
+      filename="100-games-win.png"
+      alt="Your win card"
+      onClose={onClose}
+    />
   );
 }

@@ -1,17 +1,20 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useAppState } from '../AppState';
 import { GAMES } from '../registry';
 import { activeCategories, categoryColor, categoryName } from '../categories';
 import { computeStats, formatDuration } from '../stats';
-import { SearchIcon, StarIcon } from '../design/icons';
+import { allDifficultiesBeaten, computeStreak } from '../progress/progress';
+import { StreakChip } from '../components/Streak';
+import { SearchIcon, StarIcon, TrophyIcon } from '../design/icons';
 import { sfx } from '../audio';
 import type { CategoryId, GameDefinition } from '../types';
 
 export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void }) {
-  const { profile, history, settings, updateSettings } = useAppState();
+  const { profile, history, settings, updateSettings, progress } = useAppState();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<CategoryId | null>(null);
+  const streak = useMemo(() => computeStreak(progress.days), [progress]);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -39,6 +42,7 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
   const renderCard = (game: GameDefinition) => {
     const stats = computeStats(history.filter((r) => r.gameId === game.id));
     const fav = favorites.includes(game.id);
+    const mastered = allDifficultiesBeaten(progress, game.id);
     return (
       <button key={game.id} className="game-card fx-card" onClick={() => onOpenGame(game.id)}>
         {/* info column (icon + name/tagline, stats pill below) fills the
@@ -72,6 +76,15 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
             </span>
           </span>
         </span>
+        {mastered && (
+          <span
+            className="game-card-trophy"
+            title="Beaten on every difficulty"
+            aria-label="Beaten on every difficulty"
+          >
+            <TrophyIcon size={16} />
+          </span>
+        )}
         <span
           role="button"
           tabIndex={0}
@@ -105,7 +118,10 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
           </p>
           <h1 className="home-title">What are we playing?</h1>
         </div>
-        <span className="home-avatar">{profile.emoji}</span>
+        <div className="home-right">
+          <StreakChip streak={streak} />
+          <span className="home-avatar">{profile.emoji}</span>
+        </div>
       </header>
 
       <div className="search-bar">

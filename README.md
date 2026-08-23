@@ -82,6 +82,9 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 - **Mastery guides**: every game also ships a "How to master" guide — the game's origins and history, in-depth strategies, named techniques, when-stuck advice and trusted further-reading links — behind a button right under "How to play"
 - **Assist / help tracking**: every assist is toggleable (some in-game); whatever you use is stored per game, so history and stats always distinguish **clean wins** from **wins with help**
 - **Statistics & history**: win rate, best/avg time, best/avg score, streaks, errors, hints, time played, high scores per difficulty, filterable per game, with a calendar to browse any day's games (Profile tab)
+- **Play streak**: playing on consecutive days builds a Duolingo-style day streak — a flame card on the profile with a Mo–Su week row (plus best-ever and total days played) and a compact flame counter next to your name on the home page; miss a full day and it resets. The flame greys out until you've played that day
+- **Completion markers**: every difficulty you've beaten gets a thick green ring and a gold-star seal on its top-left corner — on that game's difficulty picker and on the profile's high-score tiles alike; beat a game on all five tiers and it earns a green badge with a flat gold check-marked trophy, shown on its menu card and beside its name in the profile's high scores
+- **Landmarks**: a trophy collection on the profile — play your first game, streak milestones (1–3 weeks, 1 month, bimester, trimester, quadrimester, semester, a full year), play every game, beat every game on each difficulty, and master each category. Locked trophies show in black & white behind a padlock with live progress ("41/67"); unlocked ones color in with their date and can be shared as a designed 1080×1350 card. Trophies are permanent — once earned they're never taken back, and they survive a history wipe
 - **Profile**: name + avatar, totals across games
 - **Share cards**: on any win, generate a 1080×1350 PNG win card — native share sheet on iPhone (WhatsApp etc.), download or long-press-copy anywhere
 - **Themes**: 3 surface themes (pure black / dim / warm-paper light) × 6 accent colors (orange default, blue, green, red, purple, and a black & white monochrome) that recolor every tool in every game
@@ -133,13 +136,17 @@ src/
     registry.ts          ← the list of games (add new games here)
     storage.ts           ← on-device persistence (history, settings, profile)
     stats.ts             ← statistics engine (win rate, streaks, best times…)
+    progress/            ← play-streak + landmark (trophy) store — permanent,
+                            derived from the registry so new games auto-sync
     audio.ts             ← WebAudio sound effects and tones (no assets)
     AppState.tsx         ← app-wide state provider (settings/profile/history)
     components/
       GameShell.tsx      ← standard structure around every game: difficulty
                             selection, assist toggles, timer, pause, restart,
                             save/resume, result recording, completion + share
-      ShareCard.tsx      ← canvas-rendered shareable win card
+      ShareCard.tsx      ← canvas-rendered shareable win + landmark cards
+      Streak.tsx         ← streak flame, home chip, profile week-row hero
+      Landmarks.tsx      ← trophy gallery, detail modal, shareable trophy card
       Tutorial.tsx       ← illustrated how-to-play viewer (every game ships one)
       charts.tsx         ← dependency-free SVG charts (donut, stacked bars, trend)
     pages/               ← Home (+ search), Profile (stats + history), Settings
@@ -174,6 +181,15 @@ the platform. Two per-game requirements: an illustrated `tutorial.tsx`
 and save/resume support (hydrate from `savedState`, register a snapshot
 provider). Follow `src/platform/design/DESIGN.md` for all UI.
 
+Streaks and landmarks need **no per-game work**: the achievement
+catalogue (`src/platform/progress/`) is derived from the registry and the
+category vocabulary, so a new game automatically counts toward the
+Collector, difficulty-sweep and category-mastery trophies (and the first
+game of a new category creates that category's landmark). Never hardcode
+game counts or lists in landmark logic — `npm run validate` re-proves the
+catalogue is in sync with the library on every run, so run it after
+registering the game.
+
 ### Assist / help tracking
 
 Every game result stores `assistsEnabled`, `assistsUsed`, `hintsUsed` and a
@@ -195,9 +211,14 @@ banks — every deduction puzzle (Nonograms, Killer Sudoku, Kakuro,
 Skyscrapers, Futoshiki, Binary Grid, Aquarium, Tents & Trees, Bridges,
 Slitherlink, Nurikabe, Fleet Finder…) for a unique, guess-free solution,
 and the baked puzzle banks (Gridlock, Klondike, Peg Solitaire) for
-solvability. Run it after editing `src/games/crossword/logic/puzzles.ts`,
-`src/games/word-wheel/logic/levels.ts`, or
-`src/games/cryptogram/logic/words.ts`.
+solvability. It also re-proves the landmark/achievement catalogue stays
+derived from the game registry: library-wide trophies must cover the
+current game count, every non-empty category must have exactly one
+mastery landmark (empty categories none), a fresh profile must start
+fully locked, and the streak day-math is spot-checked. Run it after
+editing `src/games/crossword/logic/puzzles.ts`,
+`src/games/word-wheel/logic/levels.ts`,
+`src/games/cryptogram/logic/words.ts` — or after adding a game.
 
 ### Custom Image Puzzle photos
 

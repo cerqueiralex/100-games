@@ -11,11 +11,14 @@ import {
   saveSettings
 } from './storage';
 import { configureAudio } from './audio';
+import { loadProgress, recordProgress, type PlayerProgress } from './progress/progress';
 
 interface AppState {
   settings: PlatformSettings;
   profile: Profile;
   history: GameResult[];
+  /** streak + landmark store — permanent, survives the history cap */
+  progress: PlayerProgress;
   updateSettings: (patch: Partial<PlatformSettings>) => void;
   setGameAssist: (gameId: string, assistId: string, on: boolean) => void;
   updateProfile: (patch: Partial<Profile>) => void;
@@ -30,6 +33,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<PlatformSettings>(loadSettings);
   const [profile, setProfile] = useState<Profile>(loadProfile);
   const [history, setHistory] = useState<GameResult[]>(loadHistory);
+  const [progress, setProgress] = useState<PlayerProgress>(loadProgress);
 
   useEffect(() => {
     configureAudio(settings.soundEnabled, settings.volume);
@@ -45,6 +49,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       settings,
       profile,
       history,
+      progress,
       updateSettings: (patch) => {
         setSettings((prev) => {
           const next = { ...prev, ...patch };
@@ -74,8 +79,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       },
       recordResult: (result) => {
         setHistory(appendResult(result));
+        // fold the play into the permanent streak/landmark store
+        setProgress(recordProgress(result));
       },
       wipeHistory: () => {
+        // the game log clears; streaks and landmarks are trophies and persist
         clearHistory();
         setHistory([]);
       },
@@ -84,9 +92,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setSettings(loadSettings());
         setProfile(loadProfile());
         setHistory([]);
+        setProgress(loadProgress());
       }
     }),
-    [settings, profile, history]
+    [settings, profile, history, progress]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

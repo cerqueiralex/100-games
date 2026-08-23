@@ -6,6 +6,7 @@ import { deleteSave, loadSaves, putSave, resolveAssists } from '../storage';
 import { formatDate, formatDuration } from '../stats';
 import { sfx } from '../audio';
 import { BackIcon, Chip, HelpIcon, Modal, PauseIcon, PlayIcon, RestartIcon, SaveIcon, ShareIcon, StarIcon, Toggle } from './ui';
+import { beatenDifficulties } from '../progress/progress';
 import { ShareCardModal } from './ShareCard';
 import { TutorialModal } from './Tutorial';
 import { MasteryModal } from './Mastery';
@@ -27,7 +28,9 @@ const emptyStats: LiveStats = { score: 0, errors: 0, hintsUsed: 0, assistsUsed: 
  * timing, pause, quit, result recording and the completion screen.
  */
 export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () => void }) {
-  const { settings, updateSettings, setGameAssist, recordResult, profile } = useAppState();
+  const { settings, updateSettings, setGameAssist, recordResult, profile, progress } = useAppState();
+  // difficulties this game has been WON at — green star + border on the picker
+  const beaten = beatenDifficulties(progress, game.id);
 
   const [phase, setPhase] = useState<Phase>('setup');
   const [difficulty, setDifficulty] = useState<Difficulty>(
@@ -261,12 +264,18 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
             {DIFFICULTIES.map((d) => (
               <button
                 key={d}
-                className={`difficulty-btn ${difficulty === d ? 'active' : ''}`}
+                className={`difficulty-btn ${difficulty === d ? 'active' : ''} ${beaten.includes(d) ? 'beaten' : ''}`}
                 onClick={() => {
                   sfx.tap();
                   setDifficulty(d);
                 }}
+                aria-label={`${DIFFICULTY_LABEL[d]}${beaten.includes(d) ? ' — completed' : ''}`}
               >
+                {beaten.includes(d) && (
+                  <span className="beat-seal" aria-hidden>
+                    <StarIcon size={10} filled />
+                  </span>
+                )}
                 {DIFFICULTY_LABEL[d]}
               </button>
             ))}

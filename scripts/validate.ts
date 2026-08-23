@@ -3546,6 +3546,103 @@ console.log('— Peg Solitaire —');
     );
 }
 
+console.log('— Landmark catalogue (streaks & profile trophies) —');
+{
+  // THE SYNC RULE: the landmark catalogue must derive entirely from the
+  // registry + category vocabulary, so adding a game (or a first game of a
+  // new category) updates every trophy's coverage automatically. These
+  // checks re-prove that derivation on every run — if a landmark ever
+  // hardcodes a game count or misses a category, validate fails.
+  const { LANDMARKS, landmarkMeter, computeStreak } = await import(
+    '../src/platform/progress/progress'
+  );
+  const { GAMES } = await import('../src/platform/registry');
+  const { CATEGORIES } = await import('../src/platform/categories');
+  type Progress = import('../src/platform/progress/progress').PlayerProgress;
+
+  let ok = true;
+  const bad = (msg: string) => {
+    failed = true;
+    ok = false;
+    console.error(`✗ ${msg}`);
+  };
+
+  const fresh: Progress = { days: [], played: [], wins: {}, landmarks: {} };
+  const noStreak = computeStreak([], new Date());
+
+  // unique ids
+  const ids = new Set<string>();
+  for (const def of LANDMARKS) {
+    if (ids.has(def.id)) bad(`duplicate landmark id ${def.id}`);
+    ids.add(def.id);
+  }
+
+  // streak ladder is exactly the documented tiers, ascending
+  const tiers = LANDMARKS.filter((d) => d.kind === 'streak').map((d) => d.days);
+  const expectedTiers = [7, 14, 21, 30, 60, 90, 120, 180, 365];
+  if (JSON.stringify(tiers) !== JSON.stringify(expectedTiers))
+    bad(`streak tiers are [${tiers}], expected [${expectedTiers}]`);
+
+  // whole-library trophies cover the CURRENT registry size
+  for (const def of LANDMARKS.filter((d) => d.kind === 'all-played' || d.kind === 'difficulty')) {
+    const { total } = landmarkMeter(def, fresh, noStreak);
+    if (total !== GAMES.length)
+      bad(`${def.id} covers ${total} games, registry has ${GAMES.length}`);
+  }
+  const diffIds = LANDMARKS.filter((d) => d.kind === 'difficulty').map((d) => d.difficulty);
+  if (JSON.stringify(diffIds) !== JSON.stringify(['easy', 'medium', 'hard', 'pro', 'extreme']))
+    bad(`difficulty sweeps are [${diffIds}] — one per tier expected`);
+
+  // exactly one mastery per NON-EMPTY category (an empty category would
+  // unlock vacuously), each covering that category's full game list
+  for (const c of CATEGORIES) {
+    const games = GAMES.filter((g) => g.category === c.id);
+    const defs = LANDMARKS.filter((d) => d.kind === 'category' && d.category === c.id);
+    if (games.length === 0 && defs.length > 0)
+      bad(`empty category ${c.id} has a landmark (would unlock vacuously)`);
+    if (games.length > 0 && defs.length !== 1)
+      bad(`category ${c.id} has ${defs.length} landmarks, expected 1`);
+    if (defs.length === 1) {
+      const { total } = landmarkMeter(defs[0], fresh, noStreak);
+      if (total !== games.length)
+        bad(`${defs[0].id} covers ${total} games, category has ${games.length}`);
+    }
+  }
+
+  // a fresh profile starts fully locked with meaningful meters
+  for (const def of LANDMARKS) {
+    const { done, total } = landmarkMeter(def, fresh, noStreak);
+    if (total <= 0) bad(`${def.id} has an empty meter (total ${total})`);
+    if (done !== 0) bad(`${def.id} starts at ${done}/${total} on a fresh profile`);
+    if (def.slot < 1 || def.slot > 16 || def.slot === 9)
+      bad(`${def.id} uses content slot ${def.slot} (must be 1-16, never 9/white)`);
+  }
+
+  // streak day-math sanity — unlock evaluation depends on these runs
+  {
+    const day = (offset: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() - offset);
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      return `${d.getFullYear()}-${m}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    const s = computeStreak([day(0), day(1), day(2), day(10), day(11), day(12), day(13), day(14)]);
+    if (s.current !== 3) bad(`streak current=${s.current}, expected 3 (3-day run ending today)`);
+    if (s.best !== 5) bad(`streak best=${s.best}, expected 5 (old 5-day run)`);
+    if (!s.playedToday) bad('streak playedToday=false with today in the set');
+    const cold = computeStreak([day(1), day(2)]);
+    if (cold.current !== 2 || cold.playedToday)
+      bad(`yesterday-ending streak: current=${cold.current}/playedToday=${cold.playedToday}, expected 2/false`);
+    if (computeStreak([day(2), day(3)]).current !== 0)
+      bad('a streak broken 2 days ago still reports a current run');
+  }
+
+  if (ok)
+    console.log(
+      `  ✓ ${LANDMARKS.length} landmarks: streak ladder ${expectedTiers.length} tiers, library trophies cover all ${GAMES.length} games, 1 mastery per non-empty category, fresh profile fully locked, streak math sane`
+    );
+}
+
 if (failed) {
   console.error('\nValidation FAILED');
   throw new Error('validation failed');
