@@ -76,6 +76,20 @@ they gain enforcement, delete entries obsoleted by code removal.
 
 ## Watch items (re-check every QA — not yet machine-enforced)
 
+- **2026-08-23 · CI · `npm run validate` can flake on GitHub Actions.**
+  The deploy for 025f2eb failed at "Validate game content" with exit 1,
+  though validate's code and its whole import graph were unchanged from
+  the two green runs before it, and it then passed 10/10 consecutive
+  local runs and on the very next CI run. Most of validate's generator
+  checks (sudoku, cryptogram, word-wheel hunts, colour connect) draw
+  fresh `Math.random` every run, so a rare unlucky draw is the likely
+  cause. Practice: a single red deploy on unchanged validate code is
+  re-run first, not debugged blind — and note that Actions LOGS need an
+  authenticated `gh`/token, which this machine has no credentials for
+  (the check-annotations API only returns "Process completed with exit
+  code 1"). If it recurs, seed the offending generator check rather than
+  widening its tolerance.
+
 - **2026-08-23 · UX · state that must survive a screen change belongs to
   the parent.** Leaving a game dropped the player at the top of the
   67-game list (HomePage unmounts while playing, taking scroll, search
