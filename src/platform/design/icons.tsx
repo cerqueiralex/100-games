@@ -310,6 +310,15 @@ export function ShareIcon({ size = 16 }: IconProps) {
   );
 }
 
+/** plain chevron — scroll/step controls (see the category row) */
+export function ChevronIcon({ size = 16, dir = 'right' }: IconProps & { dir?: 'left' | 'right' }) {
+  return (
+    <Svg size={size}>
+      <path d={dir === 'left' ? 'M14.5 6l-6 6 6 6' : 'M9.5 6l6 6-6 6'} />
+    </Svg>
+  );
+}
+
 /* ---------- settings / data actions ---------- */
 
 /** arrow leaving a tray — export/download a backup */

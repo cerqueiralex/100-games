@@ -19,7 +19,9 @@ import { CheckIcon } from '../design/icons';
  *    mounts, so skipping/unmounting it can never lose data.
  */
 
-export const WIN_CELEBRATION_MS = 2200;
+/** Total celebration length. Every CSS animation in the `.win-fx` block is
+    pinned to this, so nothing is cut off mid-flight when it changes. */
+export const WIN_CELEBRATION_MS = 3500;
 
 /** deterministic confetti scatter — computed once at module load so the
     pieces never re-shuffle on a re-render */
@@ -28,10 +30,12 @@ const BITS = Array.from({ length: 18 }, (_, i) => {
     const v = Math.sin((i + 1) * 12.9898 + salt * 78.233) * 43758.5453;
     return v - Math.floor(v);
   };
+  // the latest piece lands at ~3.37s — inside WIN_CELEBRATION_MS, so no
+  // confetti is still mid-air when the layer unmounts
   return {
     left: 3 + rnd(1) * 94,
-    delay: 120 + rnd(2) * 620,
-    dur: 1250 + rnd(3) * 850,
+    delay: 120 + rnd(2) * 800,
+    dur: 1500 + rnd(3) * 950,
     size: 6 + rnd(4) * 5,
     spin: -420 + rnd(5) * 840,
     tone: i % 3

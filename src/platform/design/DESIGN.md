@@ -99,7 +99,7 @@ tokens. Rules:
 ### Win celebration (the payoff beat — every game, no exceptions)
 
 When a player wins, the shell plays ONE shared celebration
-(`components/WinCelebration.tsx`, ~2.2s) and only then opens the results
+(`components/WinCelebration.tsx`, `WIN_CELEBRATION_MS` = 3.5s) and only then opens the results
 modal. This exists because slamming the statistics over the board the
 instant `onFinish` fired **cut off each game's own payoff animation** —
 Pipes' water reaching the last tile, a beam landing, a card flipping —
@@ -165,6 +165,34 @@ never recomputed from capped history:
   height 46px, icon + short single-word label.
 - **Modals**: backdrop blur, `--radius-xl`, actions right-aligned; anything
   destructive or irreversible requires an explicit confirm step.
+
+## Horizontal scrollers (the category row pattern)
+
+A row that would wrap to several lines on a phone (the home category
+filter) becomes ONE sideways-scrolling line. Vertical space is the
+scarcest thing on a phone — three rows of chips pushed the game list a
+third of a screen down. The pattern, in `.cat-scroller` / `.cat-chips`:
+
+- **Bleed to the screen edges** (`margin: 0 -16px` + matching padding) so
+  items scroll out at the true edge instead of stopping short of it.
+- **Edge fades are class-driven from the scroll position**, shown only on
+  a side that really has more content. A permanent fade on both ends fakes
+  a cut-off at the extremes and stops meaning anything.
+- **Ship arrow controls on EVERY device.** A mouse wheel emits only
+  `deltaY`, which a horizontal container ignores — desktop is otherwise
+  completely stuck — and on touch the arrow is what tells the player there
+  is anything to swipe to. Gate visibility on scroll position, never on
+  `pointer:`/`hover:` media queries: a device reporting something
+  unexpected must keep a working control (fail open), not silently lose
+  the only way to scroll.
+- **Translate wheel to sideways scroll**, but release the gesture back to
+  the page at either end so hovering the row can never trap page scroll.
+- Hide the scrollbar (`scrollbar-width: none` + `::-webkit-scrollbar`),
+  set `overscroll-behavior-x: contain`, and give items `flex: 0 0 auto`.
+- Small overlay controls still owe the **44px touch target**: keep the
+  visible circle small and add an invisible `::after` cushion — and inset
+  it far enough that the cushion cannot hang past a full-bleed container
+  and add horizontal page overflow.
 
 ## Typography
 

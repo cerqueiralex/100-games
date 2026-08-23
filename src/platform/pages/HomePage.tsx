@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useAppState } from '../AppState';
 import { GAMES } from '../registry';
@@ -6,7 +6,7 @@ import { activeCategories, categoryColor, categoryName } from '../categories';
 import { computeStats, formatDuration } from '../stats';
 import { allDifficultiesBeaten, computeStreak } from '../progress/progress';
 import { StreakChip } from '../components/Streak';
-import { SearchIcon, StarIcon, TrophyIcon } from '../design/icons';
+import { ChevronIcon, SearchIcon, StarIcon, TrophyIcon } from '../design/icons';
 import { sfx } from '../audio';
 import type { CategoryId, GameDefinition } from '../types';
 
@@ -27,6 +27,59 @@ export function HomePage({
 }) {
   const { profile, history, settings, updateSettings, progress } = useAppState();
   const streak = useMemo(() => computeStreak(progress.days), [progress]);
+
+  /**
+   * The category row scrolls sideways so it costs ONE line of vertical
+   * space instead of wrapping to three on a phone. `edges` drives the
+   * fade on each side — shown only where there is actually more content,
+   * so the row reads as scrollable without faking a cut-off at the ends.
+   */
+  const chipsRef = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const syncEdges = useCallback(() => {
+    const el = chipsRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setEdges({ left: el.scrollLeft > 2, right: el.scrollLeft < max - 2 });
+  }, []);
+
+  useEffect(() => {
+    syncEdges();
+    const el = chipsRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', syncEdges, { passive: true });
+    // the row's overflow changes with the viewport, so re-measure on resize
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(syncEdges) : null;
+    ro?.observe(el);
+
+    /* A plain mouse wheel only emits deltaY, which a horizontal container
+       ignores — so on desktop the row looked stuck. Translate vertical
+       wheel into sideways scroll, but hand the gesture back to the page at
+       either end so hovering this row can never trap the page scroll. */
+    const onWheel = (e: WheelEvent) => {
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 0) return;
+      // trackpads send deltaX and already scroll it natively
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      if ((e.deltaY < 0 && el.scrollLeft <= 0) || (e.deltaY > 0 && el.scrollLeft >= max)) return;
+      e.preventDefault();
+      el.scrollLeft = Math.max(0, Math.min(max, el.scrollLeft + e.deltaY));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+
+    return () => {
+      el.removeEventListener('scroll', syncEdges);
+      el.removeEventListener('wheel', onWheel);
+      ro?.disconnect();
+    };
+  }, [syncEdges]);
+
+  const scrollChips = (dir: -1 | 1) => {
+    const el = chipsRef.current;
+    if (!el) return;
+    sfx.tap();
+    el.scrollBy({ left: dir * Math.max(160, el.clientWidth * 0.7), behavior: 'smooth' });
+  };
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -125,10 +178,8 @@ export function HomePage({
     <div className="screen">
       <header className="home-header fx-card">
         <div className="home-head-text">
-          <p className="home-greeting">
-            {greeting}, {profile.name}
-          </p>
-          <h1 className="home-title">What are we playing?</h1>
+          <p className="home-greeting">{greeting},</p>
+          <h1 className="home-title">{profile.name}</h1>
         </div>
         <div className="home-right">
           <StreakChip streak={streak} />
@@ -153,31 +204,53 @@ export function HomePage({
         )}
       </div>
 
-      {/* category filter — tap a tag to filter, tap again (or All) to clear */}
-      <div className="cat-chips">
+      {/* category filter — one sideways-scrolling line; tap a tag to filter,
+          tap again (or All) to clear */}
+      <div className={`cat-scroller ${edges.left ? 'fade-l' : ''} ${edges.right ? 'fade-r' : ''}`}>
+        {/* arrows on every device: a wheel alone can't scroll a horizontal
+            row on desktop, and on touch the arrow is what tells you there
+            is anything to swipe to — a fade alone doesn't read that way */}
         <button
-          className={`cat-chip ${category === null ? 'active' : ''}`}
-          onClick={() => {
-            sfx.tap();
-            onCategoryChange(null);
-          }}
+          className="cat-nav left"
+          onClick={() => scrollChips(-1)}
+          aria-label="Show previous categories"
+          tabIndex={-1}
         >
-          All
+          <ChevronIcon dir="left" />
         </button>
-        {activeCategories().map((c) => (
+        <button
+          className="cat-nav right"
+          onClick={() => scrollChips(1)}
+          aria-label="Show more categories"
+          tabIndex={-1}
+        >
+          <ChevronIcon dir="right" />
+        </button>
+        <div className="cat-chips" ref={chipsRef}>
           <button
-            key={c.id}
-            className={`cat-chip ${category === c.id ? 'active' : ''}`}
+            className={`cat-chip ${category === null ? 'active' : ''}`}
             onClick={() => {
               sfx.tap();
-              onCategoryChange(category === c.id ? null : c.id);
+              onCategoryChange(null);
             }}
-            aria-pressed={category === c.id}
           >
-            <span className="cat-dot" style={{ background: categoryColor(c.id) }} />
-            {c.name}
+            All
           </button>
-        ))}
+          {activeCategories().map((c) => (
+            <button
+              key={c.id}
+              className={`cat-chip ${category === c.id ? 'active' : ''}`}
+              onClick={() => {
+                sfx.tap();
+                onCategoryChange(category === c.id ? null : c.id);
+              }}
+              aria-pressed={category === c.id}
+            >
+              <span className="cat-dot" style={{ background: categoryColor(c.id) }} />
+              {c.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       {pinned.length > 0 && (

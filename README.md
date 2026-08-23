@@ -77,7 +77,7 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 ## Platform features (shared by every game)
 
 - **Five difficulty tiers** (easy / medium / hard / pro / extreme), pause, restart, quit — all via the standard game shell; after finishing you can close the results popup to review the solved board
-- **Win celebration**: every win plays the same ~2-second green celebration — confetti, a success ring and a "Complete!" badge — *over* the finished board (it never covers or tints it), and only then does the results popup appear, so you always see your puzzle finish before the statistics
+- **Win celebration**: every win plays the same ~3.5-second green celebration — confetti, a success ring and a "Complete!" badge — *over* the finished board (it never covers or tints it), and only then does the results popup appear, so you always see your puzzle finish before the statistics
 - **The list remembers where you were**: your search, category filter and scroll position survive a game, so trying game #40 doesn't send you back to the top of the list
 - **Save & resume**: a save button in every game's header snapshots the running game; a "Continue saved game" card on the start screen restores board, timer, score and assist usage — even after closing the app
 - **Illustrated tutorials**: every game ships a step-by-step "How to play" with theme-aware illustrations, on the game's start screen and behind the help button while playing
@@ -92,7 +92,7 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 - **Themes**: 3 surface themes (pure black / dim / warm-paper light) × 6 accent colors (orange default, blue, green, red, purple, and a black & white monochrome) that recolor every tool in every game
 - **Progress charts** on the profile: a most-played donut and a 30-day stacked activity timeline (both capped to the top games, tail folded into "Other"), and a per-game improvement trend (score / win time / win % / errors)
 - **Pinned favorites**: star any game to move it into a Pinned section at the top of the menu
-- **Search** on the home page to find games as the catalog grows
+- **Search** on the home page to find games as the catalog grows, plus a category filter that scrolls sideways on one line (arrows and edge fades show when there's more) so the list keeps the screen
 - **Backup & transfer**: export everything (profile, history, streak, landmarks, settings) to a single JSON file, and import it on another device — or share your profile with a friend. Importing previews what's in the file first and validates it, so a wrong or damaged file is refused instead of breaking the app
 - Sound effects synthesized with WebAudio (no assets), volume control, data reset
 

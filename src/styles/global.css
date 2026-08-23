@@ -198,11 +198,16 @@ p {
   white-space: nowrap;
 }
 
+/* the player's name is the headline; a long one ellipsizes rather than
+   pushing the streak pill and avatar out of the card */
 .home-title {
   font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* the avatar is a pushable token: circle plate + extruded bottom edge.
@@ -211,15 +216,16 @@ p {
 .home-avatar {
   display: grid;
   place-items: center;
-  width: 50px;
-  height: 50px;
+  width: var(--head-token);
+  height: var(--head-token);
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: inset 0 -3px 0 var(--edge);
-  font-size: 27px;
+  font-size: 26px;
   line-height: 1;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .search-bar {
@@ -229,7 +235,7 @@ p {
   border-radius: var(--radius-m);
   padding: 0 14px;
   height: 48px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: var(--text-dim);
   /* deliberately flat — opted out of the .fx-card glass surface (effects.css) */
   background: var(--surface);
@@ -265,19 +271,134 @@ p {
   line-height: 1;
 }
 
-/* category filter — toggle tags under the search bar; wraps so every
-   category is always visible (no hidden horizontal scroll) */
+/* The category filter is ONE sideways-scrolling line — wrapping cost three
+   rows of vertical space on a phone. The wrapper bleeds to the screen edges
+   (negative margin + matching padding) so chips scroll out under the fades
+   at the true edge, and the fades are class-driven from the scroll position
+   so a side only dims when there is really more to see. */
+.cat-scroller {
+  position: relative;
+  margin: 0 -16px 10px;
+}
+
+.cat-scroller::before,
+.cat-scroller::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* wide enough that the arrow button sits on clean background rather than
+     on top of a chip, which made the two read as one blob */
+  width: 52px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  z-index: 1;
+}
+
+.cat-scroller::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bg) 52%, transparent);
+}
+
+.cat-scroller::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bg) 52%, transparent);
+}
+
+.cat-scroller.fade-l::before,
+.cat-scroller.fade-r::after {
+  opacity: 1;
+}
+
+/* Scroll controls, on EVERY device. A mouse wheel cannot scroll a
+   horizontal container, so pointer devices need a real control — and on
+   touch, where swiping works, the arrow is still the thing that tells you
+   there is anything to swipe to. A fade alone does not read as "scroll me". */
+.cat-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  /* the --bg halo punches the button out of the chip row behind it */
+  box-shadow: 0 0 0 4px var(--bg), inset 0 -2px 0 var(--edge), 0 2px 8px rgba(0, 0, 0, 0.16);
+  color: var(--text-dim);
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, color 0.15s;
+}
+
+/* the visible circle stays small so it hides as little of the row as
+   possible; this invisible cushion brings the TAP area up to ~46px for
+   fingers (DESIGN.md touch-target rule) */
+.cat-nav::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: inherit;
+}
+
+/* inset by more than the cushion (8px): the scroller spans the full
+   viewport width, so a cushion hanging past its edge would add horizontal
+   page overflow */
+.cat-nav.left {
+  left: 10px;
+}
+
+.cat-nav.right {
+  right: 10px;
+}
+
+/* each arrow appears only while that direction has more to show */
+.cat-scroller.fade-l .cat-nav.left,
+.cat-scroller.fade-r .cat-nav.right {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: hover) {
+  .cat-nav:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
+}
+
+.cat-nav:active {
+  /* keep the centering transform while pressing down */
+  transform: translateY(-50%) translateY(1px);
+  box-shadow: 0 0 0 4px var(--bg), inset 0 -1px 0 var(--edge), 0 1px 4px rgba(0, 0, 0, 0.16);
+}
+
 .cat-chips {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
-  margin-bottom: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 3px 16px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* a horizontal swipe here must not fight the page's vertical scroll */
+  overscroll-behavior-x: contain;
+}
+
+.cat-chips::-webkit-scrollbar {
+  display: none;
 }
 
 .cat-chip {
   display: flex;
   align-items: center;
   gap: 7px;
+  /* never shrink or wrap — the row scrolls instead */
+  flex: 0 0 auto;
   padding: 9px 14px;
   border-radius: 999px;
   background: var(--surface);
@@ -288,6 +409,11 @@ p {
   white-space: nowrap;
   box-shadow: inset 0 -3px 0 var(--edge);
   transition: all 0.15s;
+}
+
+.cat-chip:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
 }
 
 .cat-chip.active {
@@ -467,7 +593,7 @@ p {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 20px 0 10px;
+  margin: 14px 0 10px;
 }
 
 .home-section svg {
@@ -21900,7 +22026,10 @@ button.bs-ship-row.dock.placed {
 
 /* ===== streak & landmarks (profile trophies — platform/progress) ===== */
 
+/* one token height for BOTH header controls, so the streak pill and the
+   avatar can never drift apart as their contents change */
 .home-right {
+  --head-token: 48px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -21914,12 +22043,14 @@ button.bs-ship-row.dock.placed {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 6px 12px 6px 8px;
+  height: var(--head-token);
+  padding: 0 13px 0 8px;
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: inset 0 -3px 0 var(--edge);
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .streak-chip-text {
@@ -22009,18 +22140,17 @@ button.bs-ship-row.dock.placed {
   }
 
   .home-avatar {
-    width: 46px;
-    height: 46px;
-    font-size: 24px;
+    font-size: 23px;
   }
 
   .home-right {
+    --head-token: 44px;
     gap: 8px;
   }
 
   .streak-chip {
     gap: 6px;
-    padding: 5px 10px 5px 7px;
+    padding: 0 11px 0 7px;
   }
 
   .streak-chip .streak-flame {
@@ -22283,14 +22413,16 @@ button.bs-ship-row.dock.placed {
     transparent 45%,
     color-mix(in srgb, var(--good) 30%, transparent) 100%
   );
-  animation: win-glow 2.2s ease-out both;
+  animation: win-glow 3.5s ease-out both;
 }
 
+/* percentages are tuned to WIN_CELEBRATION_MS (3.5s): the light still
+   arrives in ~0.3s, then holds and fades over the long tail */
 @keyframes win-glow {
   0% {
     opacity: 0;
   }
-  14% {
+  9% {
     opacity: 1;
   }
   60% {
@@ -22381,7 +22513,7 @@ button.bs-ship-row.dock.placed {
   background: var(--good);
   border: 3px solid color-mix(in srgb, var(--good) 62%, var(--ink));
   box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25), var(--shadow);
-  animation: win-pop 2.2s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  animation: win-pop 3.5s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
   animation-delay: 0.12s;
 }
 
@@ -22421,20 +22553,23 @@ button.bs-ship-row.dock.placed {
   margin-top: 2px;
 }
 
+/* the pop stays snappy (~0.2s in, settled by ~0.3s) and the extra time
+   goes into the HOLD — the pill lifts away at ~2.7s, leaving the last
+   stretch as board + confetti before the results modal */
 @keyframes win-pop {
   0% {
     transform: translateX(-50%) scale(0.4);
     opacity: 0;
   }
-  9% {
+  6% {
     transform: translateX(-50%) scale(1.09);
     opacity: 1;
   }
-  15% {
+  9% {
     transform: translateX(-50%) scale(1);
     opacity: 1;
   }
-  68% {
+  77% {
     transform: translateX(-50%) scale(1);
     opacity: 1;
   }
@@ -22464,7 +22599,7 @@ button.bs-ship-row.dock.placed {
   }
 
   .win-banner {
-    animation: win-fade 2.2s ease-out both;
+    animation: win-fade 3.5s ease-out both;
   }
 
   @keyframes win-fade {
@@ -22473,8 +22608,8 @@ button.bs-ship-row.dock.placed {
       transform: translateX(-50%);
       opacity: 0;
     }
-    10%,
-    70% {
+    6%,
+    77% {
       transform: translateX(-50%);
       opacity: 1;
     }

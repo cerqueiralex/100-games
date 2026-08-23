@@ -69,7 +69,7 @@ they gain enforcement, delete entries obsoleted by code removal.
   instant `onFinish` fired, cutting off the game's OWN win animation
   (Pipes' water reaching the last tile most painfully — a playtester read
   it as "deu errado", the game feeling broken rather than won). Rule: the
-  shell plays one shared ~2.2s `WinCelebration` over the finished board —
+  shell plays one shared `WinCelebration` (3.5s) over the finished board —
   never covering or tinting it — and only then opens the results. Games
   must not delay `onFinish` or roll their own win animation. Enforced:
   `celebrating` gate in GameShell + DESIGN.md "Win celebration".
