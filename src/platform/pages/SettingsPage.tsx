@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useAppState } from '../AppState';
 import { Modal, Toggle } from '../components/ui';
-import { exportData } from '../storage';
+import { applyBackup, exportBackup, parseBackup, type ParseResult } from '../backup';
+import { ExportIcon, ImportIcon, TrashIcon, WarnIcon } from '../design/icons';
 import { sfx } from '../audio';
 import type { AccentId, ThemeId } from '../types';
 
@@ -22,17 +23,30 @@ const ACCENTS: { id: AccentId; name: string; color: string }[] = [
 ];
 
 export function SettingsPage() {
-  const { settings, updateSettings, profile, wipeHistory, wipeEverything } = useAppState();
+  const { settings, updateSettings, profile, wipeHistory, wipeEverything, reloadFromStorage } =
+    useAppState();
   const [confirm, setConfirm] = useState<'history' | 'all' | null>(null);
+  /** the picked file, validated and awaiting the player's go-ahead */
+  const [pending, setPending] = useState<ParseResult | null>(null);
+  const [imported, setImported] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const download = () => {
-    const blob = new Blob([exportData()], { type: 'application/json' });
+    const blob = new Blob([exportBackup()], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = '100games-data.json';
+    a.download = `100games-${profile.name.toLowerCase().replace(/\s+/g, '-') || 'data'}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const pickFile = async (file: File) => {
+    try {
+      setPending(parseBackup(await file.text()));
+    } catch {
+      setPending({ ok: false, error: "That file couldn't be read. Try exporting it again." });
+    }
   };
 
   return (
@@ -130,15 +144,45 @@ export function SettingsPage() {
 
       <section className="setup-section">
         <h3 className="section-title">Data</h3>
+        <p className="section-note">
+          Your profile, history, streak and landmarks live only on this device. Export a backup to
+          move them to another device — or to share your profile with a friend.
+        </p>
         <div className="card-list">
           <button className="settings-action" onClick={download}>
-            Export my data (JSON)
+            <ExportIcon />
+            <span>Export my data (JSON)</span>
           </button>
+          <button
+            className="settings-action"
+            onClick={() => {
+              sfx.tap();
+              fileRef.current?.click();
+            }}
+          >
+            <ImportIcon />
+            <span>Import data (JSON)</span>
+          </button>
+          {/* the picker itself stays hidden — the styled button drives it */}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              // reset so re-picking the SAME file fires change again
+              e.target.value = '';
+              if (file) void pickFile(file);
+            }}
+          />
           <button className="settings-action warn" onClick={() => setConfirm('history')}>
-            Clear game history
+            <TrashIcon />
+            <span>Clear game history</span>
           </button>
           <button className="settings-action warn" onClick={() => setConfirm('all')}>
-            Reset everything
+            <WarnIcon />
+            <span>Reset everything</span>
           </button>
         </div>
       </section>
@@ -168,6 +212,70 @@ export function SettingsPage() {
             }}
           >
             Delete
+          </button>
+        </div>
+      </Modal>
+
+      {/* import: always preview what's in the file, then confirm — it
+          replaces what's on this device, so it needs the same explicit
+          step as the destructive actions above */}
+      <Modal
+        open={pending !== null}
+        onClose={() => setPending(null)}
+        title={pending?.ok ? 'Import this backup?' : "That file didn't work"}
+      >
+        {pending?.ok === false && <p className="modal-text">{pending.error}</p>}
+        {pending?.ok && (
+          <>
+            <div className="import-preview">
+              <span className="import-avatar">{pending.summary.playerEmoji}</span>
+              <span className="import-who">
+                <strong>{pending.summary.playerName}</strong>
+                <span className="toggle-desc">
+                  {pending.summary.games} {pending.summary.games === 1 ? 'game' : 'games'} ·{' '}
+                  {pending.summary.days} {pending.summary.days === 1 ? 'day' : 'days'} played ·{' '}
+                  {pending.summary.landmarks}{' '}
+                  {pending.summary.landmarks === 1 ? 'landmark' : 'landmarks'}
+                </span>
+                {pending.summary.exportedAt && (
+                  <span className="toggle-desc">Exported {pending.summary.exportedAt}</span>
+                )}
+              </span>
+            </div>
+            <p className="modal-text">
+              This replaces the {pending.summary.sections.join(', ')} on this device. Export your own
+              data first if you want to keep it.
+            </p>
+          </>
+        )}
+        <div className="modal-actions">
+          <button className="ghost-btn" onClick={() => setPending(null)}>
+            {pending?.ok ? 'Cancel' : 'Close'}
+          </button>
+          {pending?.ok && (
+            <button
+              className="primary-btn"
+              onClick={() => {
+                applyBackup(pending.payload);
+                reloadFromStorage();
+                setPending(null);
+                setImported(true);
+                sfx.win();
+              }}
+            >
+              Import
+            </button>
+          )}
+        </div>
+      </Modal>
+
+      <Modal open={imported} onClose={() => setImported(false)} title="Data imported">
+        <p className="modal-text">
+          Your profile, history, streak and landmarks are now on this device.
+        </p>
+        <div className="modal-actions">
+          <button className="primary-btn" onClick={() => setImported(false)}>
+            Done
           </button>
         </div>
       </Modal>

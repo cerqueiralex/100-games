@@ -310,6 +310,53 @@ export function ShareIcon({ size = 16 }: IconProps) {
   );
 }
 
+/* ---------- settings / data actions ---------- */
+
+/** arrow leaving a tray — export/download a backup */
+export function ExportIcon({ size = 18 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M12 3v11" />
+      <path d="M8 7l4-4 4 4" />
+      <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+    </Svg>
+  );
+}
+
+/** arrow dropping into a tray — import/restore a backup */
+export function ImportIcon({ size = 18 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M12 14V3" />
+      <path d="M8 10l4 4 4-4" />
+      <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+    </Svg>
+  );
+}
+
+/** trash can — clear the game history */
+export function TrashIcon({ size = 18 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M4 7h16" />
+      <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+      <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+      <path d="M10 11v6M14 11v6" />
+    </Svg>
+  );
+}
+
+/** warning triangle — the nuclear "reset everything" */
+export function WarnIcon({ size = 18 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M12 4.5 3 20h18L12 4.5Z" />
+      <path d="M12 10v4.5" />
+      <path d="M12 17.6v.01" />
+    </Svg>
+  );
+}
+
 export function LockIcon({ size = 14 }: IconProps) {
   return (
     <Svg size={size}>

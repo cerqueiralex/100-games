@@ -122,19 +122,9 @@ export function resetAll(): void {
   }
 }
 
-export function exportData(): string {
-  return JSON.stringify(
-    {
-      exportedAt: new Date().toISOString(),
-      settings: loadSettings(),
-      profile: loadProfile(),
-      history: loadHistory(),
-      // streak + landmark store (see platform/progress/progress.ts)
-      progress: readGameData('progress')
-    },
-    null,
-    2
-  );
+/** Overwrite the whole history log (used by backup import). */
+export function replaceHistory(results: GameResult[]): void {
+  write(KEYS.history, results.slice(0, HISTORY_LIMIT));
 }
 
 export function resolveAssists(

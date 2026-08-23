@@ -25,6 +25,8 @@ interface AppState {
   recordResult: (result: GameResult) => void;
   wipeHistory: () => void;
   wipeEverything: () => void;
+  /** re-read every store — used after a backup import replaces them */
+  reloadFromStorage: () => void;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -92,6 +94,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setSettings(loadSettings());
         setProfile(loadProfile());
         setHistory([]);
+        setProgress(loadProgress());
+      },
+      reloadFromStorage: () => {
+        setSettings(loadSettings());
+        setProfile(loadProfile());
+        setHistory(loadHistory());
         setProgress(loadProgress());
       }
     }),

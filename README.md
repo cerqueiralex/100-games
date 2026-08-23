@@ -93,7 +93,8 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 - **Progress charts** on the profile: a most-played donut and a 30-day stacked activity timeline (both capped to the top games, tail folded into "Other"), and a per-game improvement trend (score / win time / win % / errors)
 - **Pinned favorites**: star any game to move it into a Pinned section at the top of the menu
 - **Search** on the home page to find games as the catalog grows
-- Sound effects synthesized with WebAudio (no assets), volume control, data export/reset
+- **Backup & transfer**: export everything (profile, history, streak, landmarks, settings) to a single JSON file, and import it on another device — or share your profile with a friend. Importing previews what's in the file first and validates it, so a wrong or damaged file is refused instead of breaking the app
+- Sound effects synthesized with WebAudio (no assets), volume control, data reset
 
 ## Running it
 
@@ -137,6 +138,8 @@ src/
     types.ts             ← GameDefinition contract, GameProps, GameResult
     registry.ts          ← the list of games (add new games here)
     storage.ts           ← on-device persistence (history, settings, profile)
+    backup.ts            ← export/import one JSON backup (validates untrusted
+                            files before replacing anything)
     stats.ts             ← statistics engine (win rate, streaks, best times…)
     progress/            ← play-streak + landmark (trophy) store — permanent,
                             derived from the registry so new games auto-sync

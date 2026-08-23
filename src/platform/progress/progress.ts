@@ -306,7 +306,12 @@ function seedFromHistory(): PlayerProgress {
 }
 
 /** shape-guard: a stale/foreign store falls back to a history reseed
-    instead of crashing (see QA ledger, save/resume rule) */
+    instead of crashing (see QA ledger, save/resume rule). Exported so
+    backup import can validate an untrusted file with the same rules. */
+export function normalizeProgress(raw: unknown): PlayerProgress | null {
+  return normalize(raw);
+}
+
 function normalize(raw: unknown): PlayerProgress | null {
   if (!raw || typeof raw !== 'object') return null;
   const p = raw as Partial<PlayerProgress>;
