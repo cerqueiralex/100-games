@@ -74,21 +74,26 @@ they gain enforcement, delete entries obsoleted by code removal.
   must not delay `onFinish` or roll their own win animation. Enforced:
   `celebrating` gate in GameShell + DESIGN.md "Win celebration".
 
-## Watch items (re-check every QA — not yet machine-enforced)
+- **2026-08-23 · CI · a gate that re-rolls the dice is not a gate.**
+  Most generator checks in validate called `Math.random` fresh every run,
+  so an unlucky draw failed the whole gate and blocked the deploy with
+  nothing actually broken — it killed two deploys (025f2eb, e3d8c48),
+  never reproduced in ~20 consecutive local runs, and could not be
+  diagnosed because Actions logs need an authenticated `gh`/token this
+  machine does not have (the public check-annotations API only says
+  "Process completed with exit code 1"). Hammering the prime suspects
+  (colour connect, word-wheel hunts, cryptogram, sudoku) at 2000
+  iterations each found nothing, so the culprit is elsewhere and rare.
+  Rule: **validate is deterministic** — `Math.random` is seeded at the
+  top of `scripts/validate.ts` (`VALIDATE_SEED`, default fixed), so every
+  run exercises the same cases and a red validate means a real
+  regression. Fuzzing is now deliberate: `VALIDATE_SEED=<n> npm run
+  validate` sweeps other draws, and a failing seed reproduces exactly,
+  which is also how to finally pin the original flake. Never "fix" a
+  flaky check by widening its tolerance. Enforced: the seed block in
+  scripts/validate.ts.
 
-- **2026-08-23 · CI · `npm run validate` can flake on GitHub Actions.**
-  The deploy for 025f2eb failed at "Validate game content" with exit 1,
-  though validate's code and its whole import graph were unchanged from
-  the two green runs before it, and it then passed 10/10 consecutive
-  local runs and on the very next CI run. Most of validate's generator
-  checks (sudoku, cryptogram, word-wheel hunts, colour connect) draw
-  fresh `Math.random` every run, so a rare unlucky draw is the likely
-  cause. Practice: a single red deploy on unchanged validate code is
-  re-run first, not debugged blind — and note that Actions LOGS need an
-  authenticated `gh`/token, which this machine has no credentials for
-  (the check-annotations API only returns "Process completed with exit
-  code 1"). If it recurs, seed the offending generator check rather than
-  widening its tolerance.
+## Watch items (re-check every QA — not yet machine-enforced)
 
 - **2026-08-23 · UX · state that must survive a screen change belongs to
   the parent.** Leaving a game dropped the player at the top of the

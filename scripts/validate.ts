@@ -9,6 +9,35 @@ import { generatePuzzle } from '../src/games/sudoku/logic/generator';
 import { LEVELS, validateWheelLevel } from '../src/games/word-wheel/logic/levels';
 import { generateFlowLevel, FLOW_CONFIG } from '../src/games/color-connect/logic/generator';
 
+/**
+ * DETERMINISTIC BY DEFAULT.
+ *
+ * Most generator checks below re-roll `Math.random` on every run, so an
+ * unlucky draw could fail the gate and block a deploy even though nothing
+ * had changed — which happened twice on CI, unreproducible locally. A gate
+ * that fails on a dice roll teaches everyone to ignore it, so `Math.random`
+ * is seeded here: every run exercises the SAME cases and a red validate now
+ * means a real regression.
+ *
+ * The fuzzing is not lost, just made deliberate: sweep other draws with
+ *   VALIDATE_SEED=<n> npm run validate
+ * (and see the QA-LEDGER entry for hunting a suspected generator flake).
+ */
+// this script only ever runs under tsx/node; the repo has no @types/node
+declare const process: { env: Record<string, string | undefined> };
+const VALIDATE_SEED = Number(process.env.VALIDATE_SEED ?? 20260823);
+{
+  let s = VALIDATE_SEED >>> 0;
+  Math.random = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+console.log(`(seed ${VALIDATE_SEED} — set VALIDATE_SEED to sweep other draws)`);
+
 let failed = false;
 
 console.log('— Crossword puzzles —');
