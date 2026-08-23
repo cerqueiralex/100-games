@@ -162,8 +162,6 @@ export function ProfilePage() {
         <StreakHero streak={streak} />
       </section>
 
-      <LandmarksSection progress={progress} streak={streak} />
-
       <div className="filter-bar">
         <Dropdown
           value={filter}
@@ -239,6 +237,8 @@ export function ProfilePage() {
           <StatCard label="Time played" value={formatDuration(stats.totalTimeSec)} />
         </div>
       </section>
+
+      <LandmarksSection progress={progress} streak={streak} />
 
       <section className="setup-section">
         <h3 className="section-title">High scores by difficulty</h3>

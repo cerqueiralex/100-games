@@ -8,6 +8,7 @@ import { sfx } from '../audio';
 import { BackIcon, Chip, HelpIcon, Modal, PauseIcon, PlayIcon, RestartIcon, SaveIcon, ShareIcon, StarIcon, Toggle } from './ui';
 import { beatenDifficulties } from '../progress/progress';
 import { ShareCardModal } from './ShareCard';
+import { WinCelebration, WIN_CELEBRATION_MS } from './WinCelebration';
 import { TutorialModal } from './Tutorial';
 import { MasteryModal } from './Mastery';
 
@@ -48,6 +49,9 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   const [showTutorial, setShowTutorial] = useState(false);
   const [showMastery, setShowMastery] = useState(false);
   const [resultsDismissed, setResultsDismissed] = useState(false);
+  /** the win animation is playing — results wait for it so the player
+      actually sees the board they just finished (see WinCelebration) */
+  const [celebrating, setCelebrating] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [storedSave, setStoredSave] = useState<GameSave | null>(
     () => loadSaves()[game.id] ?? null
@@ -81,6 +85,13 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
     elapsedRef.current = elapsedSec;
   }, [elapsedSec]);
 
+  // hand over to the results modal when the win animation finishes
+  useEffect(() => {
+    if (!celebrating) return;
+    const t = setTimeout(() => setCelebrating(false), WIN_CELEBRATION_MS);
+    return () => clearTimeout(t);
+  }, [celebrating]);
+
   const holdClock = useCallback((hold: boolean) => {
     // re-anchor so held time never counts toward the recorded duration
     startedAt.current = Date.now() - elapsedRef.current * 1000;
@@ -103,6 +114,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
     setFinish(null);
     setShowShare(false);
     setResultsDismissed(false);
+    setCelebrating(false);
     setShowSaveModal(false);
     setSession((s) => s + 1);
     setPhase('playing');
@@ -165,8 +177,11 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         }
         setFinish(payload);
         setPhase('finished');
-        if (payload.outcome === 'won') sfx.win();
-        else sfx.lose();
+        if (payload.outcome === 'won') {
+          // celebrate first, THEN show the statistics
+          setCelebrating(true);
+          sfx.win();
+        } else sfx.lose();
       }
     }),
     [buildResult, recordResult, game.id]
@@ -410,6 +425,18 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         )}
       </div>
 
+      {/* plays over the finished board — never hides it (see WinCelebration) */}
+      {celebrating && finish && (
+        <WinCelebration
+          label={finish.hideStats ? 'You win!' : 'Complete!'}
+          subline={
+            !finish.hideStats && finish.hintsUsed === 0 && finish.assistsUsed.length === 0
+              ? 'Clean win'
+              : undefined
+          }
+        />
+      )}
+
       <Modal open={showSaveModal} onClose={() => setShowSaveModal(false)} title="Game saved">
         <p className="modal-text">
           Pick it up any time from this game's start screen — even after closing the app.
@@ -452,7 +479,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
       </Modal>
 
       <Modal
-        open={phase === 'finished' && finish !== null && !resultsDismissed}
+        open={phase === 'finished' && finish !== null && !resultsDismissed && !celebrating}
         onClose={() => setResultsDismissed(true)}
       >
         {finish && (

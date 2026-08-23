@@ -96,6 +96,32 @@ tokens. Rules:
   canvas chrome (`drawCardChrome` + `ShareImageModal` in ShareCard.tsx)
   so every shared image stays one family.
 
+### Win celebration (the payoff beat — every game, no exceptions)
+
+When a player wins, the shell plays ONE shared celebration
+(`components/WinCelebration.tsx`, ~2.2s) and only then opens the results
+modal. This exists because slamming the statistics over the board the
+instant `onFinish` fired **cut off each game's own payoff animation** —
+Pipes' water reaching the last tile, a beam landing, a card flipping —
+which players read as "something broke", not "I won". The rules:
+
+- **It must never hide the board.** The layer is `pointer-events: none`,
+  the green light is a radial gradient that is fully transparent in the
+  middle (edges only — an inset shadow tints the whole board and is
+  wrong), confetti is thin, and the banner lifts away before the modal
+  opens. Whatever the game is still drawing underneath plays in full view.
+- **The shell owns the timing, games cooperate in no way.** A game that
+  fires `onFinish` mid-transition still gets its moment, so all 67 games
+  (and every future one) inherit this for free — never re-implement a
+  per-game win animation or delay `onFinish` to fake one.
+- **Purely decorative**: the result is already recorded when it mounts, so
+  unmounting it early (quit, restart) can never lose data.
+- Green is `--good` and the pill reuses the completion-marker family
+  (green fill, darker rim, extruded edge, gold/white accents).
+- Losses skip it — the results modal opens immediately, as before.
+- `prefers-reduced-motion` drops the confetti and rings but keeps the
+  same duration, so the delayed results stay consistent for everyone.
+
 ### Completion markers (beaten difficulties & swept games)
 
 "You beat this" is ONE visual language everywhere it appears, driven by

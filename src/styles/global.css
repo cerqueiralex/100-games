@@ -21889,11 +21889,46 @@ button.bs-ship-row.dock.placed {
   margin-top: 2px;
 }
 
-/* cold = streak not extended today: the flame greys out as a nudge */
+/* a lit streak flickers — a soft, slow flame dance anchored at its base.
+   Scoped to the live streak surfaces so the 9 streak LANDMARK cards stay
+   still (a grid of dancing flames would be noise, not delight). */
+.streak-chip .streak-flame,
+.streak-hero .streak-flame {
+  transform-origin: 50% 84%;
+  animation: flame-dance 2.9s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes flame-dance {
+  0%,
+  100% {
+    transform: scale(1, 1) rotate(0deg);
+  }
+  22% {
+    transform: scale(1.035, 0.975) rotate(-1.4deg);
+  }
+  48% {
+    transform: scale(0.975, 1.04) rotate(0.7deg);
+  }
+  74% {
+    transform: scale(1.025, 0.99) rotate(1.5deg);
+  }
+}
+
+/* cold = streak not extended today: the flame greys out as a nudge —
+   and stops dancing, because a dead streak shouldn't look alive */
 .streak-chip.cold .streak-flame,
 .streak-hero.cold .streak-flame {
   filter: grayscale(1);
   opacity: 0.55;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streak-chip .streak-flame,
+  .streak-hero .streak-flame {
+    animation: none;
+  }
 }
 
 .streak-chip.cold .streak-chip-num,
@@ -22165,4 +22200,227 @@ button.bs-ship-row.dock.placed {
   display: flex;
   justify-content: center;
   margin-top: 10px;
+}
+
+/* ===== win celebration — the standard "you did it" beat, shared by every
+   game (platform/components/WinCelebration.tsx). It plays BEFORE the
+   results modal so the player actually sees the board they finished:
+   the layer never blocks input, the glow lights only the frame, and the
+   banner lifts away before the statistics appear. ===== */
+
+.win-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 60; /* over the docked tools (30), under every modal (100) */
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* green light around the edges. A radial gradient (not an inset shadow)
+   keeps the CENTRE fully transparent, so the finished board — Pipes' blue
+   water, a photo, a colored board — is never tinted by the celebration */
+.win-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 45%,
+    color-mix(in srgb, var(--good) 30%, transparent) 100%
+  );
+  animation: win-glow 2.2s ease-out both;
+}
+
+@keyframes win-glow {
+  0% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* success rings — outlines only, so nothing underneath is obscured */
+.win-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 130px;
+  height: 130px;
+  margin: -65px 0 0 -65px;
+  border-radius: 50%;
+  border: 3px solid var(--good);
+  animation: win-ring 1.15s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+.win-ring.two {
+  animation-delay: 0.24s;
+}
+
+@keyframes win-ring {
+  0% {
+    transform: scale(0.28);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(3.4);
+    opacity: 0;
+  }
+}
+
+/* thin confetti — falls past the board without covering it */
+.win-bit {
+  position: absolute;
+  top: -30px;
+  border-radius: 2px;
+  background: var(--good);
+  animation-name: win-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+.win-bit.tone-1 {
+  background: var(--warn);
+}
+
+.win-bit.tone-2 {
+  background: var(--play-9);
+}
+
+@keyframes win-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(102vh) rotate(var(--spin, 360deg));
+    opacity: 0;
+  }
+}
+
+/* the wordmark: green candy pill in the completion-marker family
+   (green fill, darker rim, gold accents), parked near the top of the
+   board and gone well before the results modal opens */
+.win-banner {
+  position: absolute;
+  left: 50%;
+  top: 15%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(88vw, 420px);
+  padding: 12px 22px 12px 14px;
+  border-radius: 999px;
+  background: var(--good);
+  border: 3px solid color-mix(in srgb, var(--good) 62%, var(--ink));
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25), var(--shadow);
+  animation: win-pop 2.2s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  animation-delay: 0.12s;
+}
+
+.win-check {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--play-9);
+  color: var(--good);
+  flex-shrink: 0;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.win-words {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.win-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.win-sub {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink) 72%, var(--good));
+  margin-top: 2px;
+}
+
+@keyframes win-pop {
+  0% {
+    transform: translateX(-50%) scale(0.4);
+    opacity: 0;
+  }
+  9% {
+    transform: translateX(-50%) scale(1.09);
+    opacity: 1;
+  }
+  15% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+  68% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) translateY(-16px) scale(0.95);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .win-banner {
+    top: 13%;
+    padding: 10px 18px 10px 12px;
+  }
+
+  .win-title {
+    font-size: 18px;
+  }
+}
+
+/* motion-sensitive players still get the beat, just without the flying
+   pieces — the timing (and therefore the delayed results) is unchanged */
+@media (prefers-reduced-motion: reduce) {
+  .win-bit,
+  .win-ring {
+    display: none;
+  }
+
+  .win-banner {
+    animation: win-fade 2.2s ease-out both;
+  }
+
+  @keyframes win-fade {
+    0%,
+    100% {
+      transform: translateX(-50%);
+      opacity: 0;
+    }
+    10%,
+    70% {
+      transform: translateX(-50%);
+      opacity: 1;
+    }
+  }
 }

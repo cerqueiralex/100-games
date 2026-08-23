@@ -77,6 +77,8 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 ## Platform features (shared by every game)
 
 - **Five difficulty tiers** (easy / medium / hard / pro / extreme), pause, restart, quit — all via the standard game shell; after finishing you can close the results popup to review the solved board
+- **Win celebration**: every win plays the same ~2-second green celebration — confetti, a success ring and a "Complete!" badge — *over* the finished board (it never covers or tints it), and only then does the results popup appear, so you always see your puzzle finish before the statistics
+- **The list remembers where you were**: your search, category filter and scroll position survive a game, so trying game #40 doesn't send you back to the top of the list
 - **Save & resume**: a save button in every game's header snapshots the running game; a "Continue saved game" card on the start screen restores board, timer, score and assist usage — even after closing the app
 - **Illustrated tutorials**: every game ships a step-by-step "How to play" with theme-aware illustrations, on the game's start screen and behind the help button while playing
 - **Mastery guides**: every game also ships a "How to master" guide — the game's origins and history, in-depth strategies, named techniques, when-stuck advice and trusted further-reading links — behind a button right under "How to play"
@@ -145,6 +147,8 @@ src/
                             selection, assist toggles, timer, pause, restart,
                             save/resume, result recording, completion + share
       ShareCard.tsx      ← canvas-rendered shareable win + landmark cards
+      WinCelebration.tsx ← the shared win animation (plays over the board,
+                            before the results modal — every game)
       Streak.tsx         ← streak flame, home chip, profile week-row hero
       Landmarks.tsx      ← trophy gallery, detail modal, shareable trophy card
       Tutorial.tsx       ← illustrated how-to-play viewer (every game ships one)

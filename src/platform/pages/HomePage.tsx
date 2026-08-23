@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import { useAppState } from '../AppState';
 import { GAMES } from '../registry';
@@ -10,10 +10,22 @@ import { SearchIcon, StarIcon, TrophyIcon } from '../design/icons';
 import { sfx } from '../audio';
 import type { CategoryId, GameDefinition } from '../types';
 
-export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void }) {
+/** Search text and the category filter are owned by App so they survive a
+    game visit along with the list's scroll position (see App.tsx). */
+export function HomePage({
+  onOpenGame,
+  query,
+  onQueryChange,
+  category,
+  onCategoryChange
+}: {
+  onOpenGame: (gameId: string) => void;
+  query: string;
+  onQueryChange: (q: string) => void;
+  category: CategoryId | null;
+  onCategoryChange: (c: CategoryId | null) => void;
+}) {
   const { profile, history, settings, updateSettings, progress } = useAppState();
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<CategoryId | null>(null);
   const streak = useMemo(() => computeStreak(progress.days), [progress]);
 
   const hour = new Date().getHours();
@@ -131,11 +143,11 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
           className="search-input"
           placeholder="Search games…"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => onQueryChange(e.target.value)}
           aria-label="Search games"
         />
         {query && (
-          <button className="search-clear" onClick={() => setQuery('')} aria-label="Clear search">
+          <button className="search-clear" onClick={() => onQueryChange('')} aria-label="Clear search">
             ×
           </button>
         )}
@@ -147,7 +159,7 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
           className={`cat-chip ${category === null ? 'active' : ''}`}
           onClick={() => {
             sfx.tap();
-            setCategory(null);
+            onCategoryChange(null);
           }}
         >
           All
@@ -158,7 +170,7 @@ export function HomePage({ onOpenGame }: { onOpenGame: (gameId: string) => void 
             className={`cat-chip ${category === c.id ? 'active' : ''}`}
             onClick={() => {
               sfx.tap();
-              setCategory(category === c.id ? null : c.id);
+              onCategoryChange(category === c.id ? null : c.id);
             }}
             aria-pressed={category === c.id}
           >

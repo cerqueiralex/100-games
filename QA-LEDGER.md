@@ -64,7 +64,25 @@ they gain enforcement, delete entries obsoleted by code removal.
   and fall back to a fresh game on mismatch. Enforced: DESIGN.md
   "Save & resume" shape-guard bullet; all 67 games audited compliant.
 
+- **2026-08-23 · UX · a modal that fires on the winning move steals the
+  payoff.** Every game slammed the results modal over the board the
+  instant `onFinish` fired, cutting off the game's OWN win animation
+  (Pipes' water reaching the last tile most painfully — a playtester read
+  it as "deu errado", the game feeling broken rather than won). Rule: the
+  shell plays one shared ~2.2s `WinCelebration` over the finished board —
+  never covering or tinting it — and only then opens the results. Games
+  must not delay `onFinish` or roll their own win animation. Enforced:
+  `celebrating` gate in GameShell + DESIGN.md "Win celebration".
+
 ## Watch items (re-check every QA — not yet machine-enforced)
+
+- **2026-08-23 · UX · state that must survive a screen change belongs to
+  the parent.** Leaving a game dropped the player at the top of the
+  67-game list (HomePage unmounts while playing, taking scroll, search
+  and filter with it) — a playtester had to re-scroll after every game
+  they sampled. Rule: browsing state (scroll offset, query, category)
+  lives in `App.tsx`'s `Shell`. Re-check whenever a page gains state a
+  user would expect to find again on return.
 
 - **2026-07-23 · CSS · `clip-path` silently clips `box-shadow`.** Any
   element with a clip-path silhouette (Tower of Hanoi hex nuts) loses
