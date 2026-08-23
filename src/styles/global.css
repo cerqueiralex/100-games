@@ -205,14 +205,16 @@ p {
   line-height: 1.15;
 }
 
-/* the avatar is a pushable token: circle plate + extruded bottom edge */
+/* the avatar is a pushable token: circle plate + extruded bottom edge.
+   Uses --surface (not --surface-2) so it reads as bright as the other
+   2.5D controls, e.g. the difficulty buttons */
 .home-avatar {
   display: grid;
   place-items: center;
   width: 50px;
   height: 50px;
   border-radius: 999px;
-  background: var(--surface-2);
+  background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: inset 0 -3px 0 var(--edge);
   font-size: 27px;
@@ -1851,7 +1853,9 @@ p {
 }
 
 .settings-action {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   text-align: left;
   border-radius: 16px;
@@ -1860,8 +1864,59 @@ p {
   font-weight: 600;
 }
 
-.settings-action.warn {
+/* icons inherit the row's color, so the destructive rows turn theirs red */
+.settings-action svg {
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
+
+.settings-action.warn,
+.settings-action.warn svg {
   color: var(--bad);
+}
+
+.settings-action:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
+}
+
+/* who/what is inside the picked backup file, shown before importing */
+.import-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-m);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 -3px 0 var(--edge);
+  margin-bottom: 14px;
+}
+
+.import-avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 -3px 0 var(--edge);
+  font-size: 24px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.import-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.import-who strong {
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .about-note {
@@ -21852,15 +21907,16 @@ button.bs-ship-row.dock.placed {
   flex-shrink: 0;
 }
 
-/* compact streak pill INSIDE the home header card — a nested token
-   (surface-2 + extruded edge), not a card of its own */
+/* compact streak pill INSIDE the home header card — a nested token, not a
+   card of its own. Same bright --surface + extruded edge as the difficulty
+   buttons so every 2.5D control in the app reads at one lightness */
 .streak-chip {
   display: flex;
   align-items: center;
   gap: 7px;
   padding: 6px 12px 6px 8px;
   border-radius: 999px;
-  background: var(--surface-2);
+  background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: inset 0 -3px 0 var(--edge);
   flex-shrink: 0;
