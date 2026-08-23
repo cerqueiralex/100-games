@@ -49,6 +49,16 @@ export function BackIcon() {
   );
 }
 
+export function HomeIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3.6 10.4L12 3.6l8.4 6.8" />
+      <path d="M5.6 12v7.4a1 1 0 0 0 1 1h10.8a1 1 0 0 0 1-1V12" />
+      <path d="M9.9 20.4v-5.2h4.2v5.2" />
+    </Svg>
+  );
+}
+
 export function PauseIcon() {
   return (
     <Svg size={18} fill>

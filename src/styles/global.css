@@ -897,18 +897,29 @@ p {
 }
 
 /* perfect squares (width = height), 15% up from the 44px standard for
-   comfortable mobile taps */
+   comfortable mobile taps. Six controls at a fixed 51px + 12px gaps are
+   wider than a phone viewport, so the row SHRINKS instead of overflowing
+   (the `1fr` toolbar overflow class, QA ledger): the gap tightens with the
+   viewport and the squares flex down, staying at/above the 44px touch
+   target down to a 360px screen. */
 .game-header-actions {
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: clamp(7px, 2.2vw, 12px);
+  /* the header is a CENTERED column, so a row of shrinkable children would
+     shrink-wrap to its min-content width and collapse the squares to icon
+     size — this is what gives them a width to share */
+  width: 100%;
 }
 
 .game-header-actions .icon-btn {
-  width: 51px;
-  height: 51px;
+  flex: 0 1 51px;
+  min-width: 0;
+  width: auto;
+  height: auto;
+  aspect-ratio: 1;
   border-radius: 16px;
-  flex: 0 0 auto;
 }
 
 /* every game renders inside the same centered column */

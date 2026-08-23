@@ -5,7 +5,7 @@ import { useAppState } from '../AppState';
 import { deleteSave, loadSaves, putSave, resolveAssists } from '../storage';
 import { formatDate, formatDuration } from '../stats';
 import { sfx } from '../audio';
-import { BackIcon, Chip, HelpIcon, Modal, PauseIcon, PlayIcon, RestartIcon, SaveIcon, ShareIcon, StarIcon, Toggle } from './ui';
+import { BackIcon, Chip, HelpIcon, HomeIcon, Modal, PauseIcon, PlayIcon, RestartIcon, SaveIcon, ShareIcon, StarIcon, Toggle } from './ui';
 import { beatenDifficulties } from '../progress/progress';
 import { ShareCardModal } from './ShareCard';
 import { WinCelebration, WIN_CELEBRATION_MS } from './WinCelebration';
@@ -23,6 +23,14 @@ const DIFFICULTY_LABEL: Record<Difficulty, string> = {
 };
 
 const emptyStats: LiveStats = { score: 0, errors: 0, hintsUsed: 0, assistsUsed: [] };
+
+/** Where leaving a running game lands: this game's setup screen, or the home list. */
+type LeaveTo = 'setup' | 'home';
+
+const LEAVE_COPY: Record<LeaveTo, { title: string; confirm: string }> = {
+  setup: { title: 'Back to game options?', confirm: 'Leave' },
+  home: { title: 'Quit this game?', confirm: 'Quit' }
+};
 
 /**
  * Standard wrapper around every game: difficulty selection, assist toggles,
@@ -43,7 +51,8 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   const [clockHeld, setClockHeld] = useState(false);
   const [session, setSession] = useState(0);
   const [finish, setFinish] = useState<FinishPayload | null>(null);
-  const [confirmQuit, setConfirmQuit] = useState(false);
+  /** a pending leave waiting on confirmation — null when nothing is asked */
+  const [confirmLeave, setConfirmLeave] = useState<LeaveTo | null>(null);
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -187,11 +196,32 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
     [buildResult, recordResult, game.id]
   );
 
-  const quit = (recordAbandon: boolean) => {
+  /**
+   * Leave the running game for `to`. Both exits abandon the same way — the
+   * only difference is where the player lands, so back-to-options can never
+   * become a way to drop a losing game without it reaching history.
+   */
+  const leave = (to: LeaveTo, recordAbandon: boolean) => {
     if (recordAbandon && phase === 'playing' && !finished.current) {
       recordResult(buildResult('abandoned', liveStats.current));
     }
-    onExit();
+    setConfirmLeave(null);
+    if (to === 'home') onExit();
+    else {
+      // the setup screen must not inherit a mid-game pause or stale results
+      setPaused(false);
+      setResultsDismissed(false);
+      setCelebrating(false);
+      setPhase('setup');
+    }
+  };
+
+  /** header back/home: ask first only when a real game would be abandoned */
+  const requestLeave = (to: LeaveTo) => {
+    sfx.tap();
+    // finished games and saved sessions exit directly — nothing to abandon
+    if (phase === 'finished' || sessionHasSave.current) leave(to, false);
+    else setConfirmLeave(to);
   };
 
   const restart = () => {
@@ -343,17 +373,20 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           </div>
         </div>
         <div className="game-header-actions">
+          {/* back = one step out (this game's options); home = all the way out */}
           <button
             className="icon-btn"
-            onClick={() => {
-              sfx.tap();
-              // finished games and saved sessions exit directly — nothing to abandon
-              if (phase === 'finished' || sessionHasSave.current) quit(false);
-              else setConfirmQuit(true);
-            }}
-            aria-label={phase === 'finished' ? 'Back to menu' : 'Quit game'}
+            onClick={() => requestLeave('setup')}
+            aria-label="Back to game options"
           >
             <BackIcon />
+          </button>
+          <button
+            className="icon-btn"
+            onClick={() => requestLeave('home')}
+            aria-label="Back to the game list"
+          >
+            <HomeIcon />
           </button>
           <button
             className="icon-btn"
@@ -466,17 +499,19 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         </div>
       </Modal>
 
-      <Modal open={confirmQuit} onClose={() => setConfirmQuit(false)} title="Quit this game?">
-        <p className="modal-text">It will be saved in your history as abandoned.</p>
-        <div className="modal-actions">
-          <button className="ghost-btn" onClick={() => setConfirmQuit(false)}>
-            Keep playing
-          </button>
-          <button className="danger-btn" onClick={() => quit(true)}>
-            Quit
-          </button>
-        </div>
-      </Modal>
+      {confirmLeave && (
+        <Modal open onClose={() => setConfirmLeave(null)} title={LEAVE_COPY[confirmLeave].title}>
+          <p className="modal-text">It will be saved in your history as abandoned.</p>
+          <div className="modal-actions">
+            <button className="ghost-btn" onClick={() => setConfirmLeave(null)}>
+              Keep playing
+            </button>
+            <button className="danger-btn" onClick={() => leave(confirmLeave, true)}>
+              {LEAVE_COPY[confirmLeave].confirm}
+            </button>
+          </div>
+        </Modal>
+      )}
 
       <Modal
         open={phase === 'finished' && finish !== null && !resultsDismissed && !celebrating}
@@ -547,10 +582,10 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
               </>
             )}
             <div className="modal-actions">
-              <button className="ghost-btn" onClick={() => quit(false)}>
+              <button className="ghost-btn" onClick={() => leave('home', false)}>
                 Home
               </button>
-              <button className="ghost-btn" onClick={() => setPhase('setup')}>
+              <button className="ghost-btn" onClick={() => leave('setup', false)}>
                 Options
               </button>
               <button className="primary-btn" onClick={() => start()}>

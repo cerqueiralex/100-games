@@ -157,14 +157,41 @@ never recomputed from capped history:
   cards/inputs · 20 (`--radius-l`) game cards · 24 (`--radius-xl`) modals.
 - **Buttons**: `primary-btn` (filled, one per screen max), `ghost-btn`
   (neutral), `danger-btn` (destructive, always behind a confirm),
-  `icon-btn` (44×44 chrome; the in-game header action row uses 51×51 —
-  perfect squares, never stretched), `pad-tool` (in-game toolbar).
+  `icon-btn` (44×44 chrome; the in-game header action row targets 51×51 —
+  perfect squares, never stretched, and flex-shrinking together when the
+  row would outgrow the viewport), `pad-tool` (in-game toolbar).
 - **Toolbars**: rows of `pad-tool` buttons must use the equal-width grid
   (`.sudoku-controls` / `.cw-tools` pattern: `grid-auto-flow: column;
   grid-auto-columns: 1fr`) so buttons align in width and height. Fixed
   height 46px, icon + short single-word label.
 - **Modals**: backdrop blur, `--radius-xl`, actions right-aligned; anything
   destructive or irreversible requires an explicit confirm step.
+
+### Leaving a game (back ≠ home)
+
+The in-game header owns TWO exits, and they are not interchangeable:
+
+- **Back** (`BackIcon`) goes one step out — to this game's own setup screen
+  (difficulty, assists, tutorial, Continue card). Wanting a different
+  difficulty is the common case; it must not cost a trip through the
+  67-game list.
+- **Home** (`HomeIcon`) leaves the game entirely for the game list.
+
+Both run the same `leave(to, recordAbandon)` path in `GameShell`, so the
+short exit can never become a way to drop a losing game without it
+reaching history: an unfinished, unsaved game confirms first and is
+recorded as `abandoned` either way; finished games and saved/resumed
+sessions leave straight away with nothing to abandon. Only the copy and
+the destination differ. Returning to setup clears pause, dismissed-results
+and celebration state — a setup screen must never inherit mid-game state.
+
+Header action rows shrink rather than overflow. Six 51px squares plus
+12px gaps are wider than a phone viewport, so the gap tightens with the
+viewport (`clamp`) and the squares flex down together, holding the 44px
+touch target to a 360px screen. The row needs an explicit `width: 100%`:
+the header is a centered column, and a row of shrinkable children would
+otherwise shrink-wrap to min-content and collapse the squares to icon size
+(see QA-LEDGER, same class as `.game-tools`).
 
 ## Horizontal scrollers (the category row pattern)
 

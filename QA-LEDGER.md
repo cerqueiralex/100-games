@@ -29,13 +29,20 @@ they gain enforcement, delete entries obsoleted by code removal.
   on screen" — not only internal consistency. Enforced: laser-mirrors
   `starts already solved` check; promotion-ladder rung 1 in the QA
   skill.
-- **2026-07-23 · CSS layout · shrink-wrapped bottom card collapses
-  flexible content.** Game roots with `align-items: center` shrink-wrapped
+- **2026-07-23 · CSS layout · shrink-wrapped container collapses flexible
+  content.** Game roots with `align-items: center` shrink-wrapped
   `.game-tools`, and flex children with tiny intrinsic width (keyboards:
   `flex: 1; min-width: 0` keys) collapsed to slivers (Hangman, then Word
-  Guess — same bug twice). Rule: `.game-tools` carries `width: 100%` in
-  its base rule. Enforced: global.css base rule + DESIGN.md bottom-menu
-  bullet.
+  Guess — same bug twice). Struck a THIRD time 2026-08-23: giving
+  `.game-header-actions` shrinkable buttons (`flex: 0 1 51px`) so six
+  controls fit a phone made the row shrink-wrap inside the centered header
+  column — every square collapsed to the 20px icon. Rule: **the moment a
+  child of a centered flex column is given shrinkable content, it needs an
+  explicit `width: 100%`.** Enforced: `width: 100%` in the `.game-tools`
+  and `.game-header-actions` base rules + DESIGN.md bottom-menu bullet and
+  "Leaving a game" section. Caught by measuring rendered button boxes in
+  the headless pass — screenshots alone at one viewport would have looked
+  merely "compact".
 - **2026-07-23 · CSS layout · `1fr` toolbar tracks overflow the phone
   viewport.** `grid-auto-columns: 1fr` tracks have `min-width: auto`, so
   nowrap labels (Battleship's "To battle") pushed the row off-screen.

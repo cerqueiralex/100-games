@@ -77,6 +77,7 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 ## Platform features (shared by every game)
 
 - **Five difficulty tiers** (easy / medium / hard / pro / extreme), pause, restart, quit — all via the standard game shell; after finishing you can close the results popup to review the solved board
+- **Two ways out of a game**: the back arrow steps back to that game's own start screen (to switch difficulty or re-read the rules), the home button leaves for the game list — so changing difficulty never means a round trip through all 67 games
 - **Win celebration**: every win plays the same ~3.5-second green celebration — confetti, a success ring and a "Complete!" badge — *over* the finished board (it never covers or tints it), and only then does the results popup appear, so you always see your puzzle finish before the statistics
 - **The list remembers where you were**: your search, category filter and scroll position survive a game, so trying game #40 doesn't send you back to the top of the list
 - **Save & resume**: a save button in every game's header snapshots the running game; a "Continue saved game" card on the start screen restores board, timer, score and assist usage — even after closing the app
@@ -148,7 +149,8 @@ src/
     components/
       GameShell.tsx      ← standard structure around every game: difficulty
                             selection, assist toggles, timer, pause, restart,
-                            save/resume, result recording, completion + share
+                            back-to-options / home exits, save/resume,
+                            result recording, completion + share
       ShareCard.tsx      ← canvas-rendered shareable win + landmark cards
       WinCelebration.tsx ← the shared win animation (plays over the board,
                             before the results modal — every game)
@@ -184,9 +186,10 @@ src/
 
 Difficulty selection, timing, pause/restart, scoring history, statistics,
 assist tracking, share cards, themes and settings all come for free from
-the platform. Two per-game requirements: an illustrated `tutorial.tsx`
-and save/resume support (hydrate from `savedState`, register a snapshot
-provider). Follow `src/platform/design/DESIGN.md` for all UI.
+the platform. Three per-game requirements: an illustrated `tutorial.tsx`,
+a `mastery.ts` strategy guide, and save/resume support (hydrate from
+`savedState`, register a snapshot provider). Follow
+`src/platform/design/DESIGN.md` for all UI.
 
 Streaks and landmarks need **no per-game work**: the achievement
 catalogue (`src/platform/progress/`) is derived from the registry and the
