@@ -2041,6 +2041,13 @@ p {
   font-weight: 600;
 }
 
+/* the row also ships as an outbound link (Settings → About). An anchor
+   brings its own color and underline, which would break the row language */
+a.settings-action {
+  color: var(--text);
+  text-decoration: none;
+}
+
 /* icons inherit the row's color, so the destructive rows turn theirs red */
 .settings-action svg {
   flex-shrink: 0;

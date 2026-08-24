@@ -132,6 +132,10 @@ from git history at build time:
 The trailing `-prod` / `-dev` says which channel the build came from, so a
 locally built bundle is never mistaken for the deployed one.
 
+Directly above it, **Settings → About → Updates and patches** opens the
+commit log this version is derived from — every change ever shipped,
+newest first.
+
 **How MINOR bumps itself.** A commit that launches a new game or a
 user-facing feature is prefixed `feat:` ([Conventional
 Commits](https://www.conventionalcommits.org)):

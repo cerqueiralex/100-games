@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useAppState } from '../AppState';
 import { Modal, Toggle } from '../components/ui';
 import { applyBackup, exportBackup, parseBackup, type ParseResult } from '../backup';
-import { ExportIcon, ImportIcon, TrashIcon, WarnIcon } from '../design/icons';
+import { ExportIcon, ExternalLinkIcon, ImportIcon, TrashIcon, WarnIcon } from '../design/icons';
 import { sfx } from '../audio';
 import { buildLine, VERSION_LABEL } from '../version';
 import type { ThemeId } from '../types';
@@ -156,6 +156,28 @@ export function SettingsPage() {
             <WarnIcon />
             <span>Reset everything</span>
           </button>
+        </div>
+      </section>
+
+      <section className="setup-section">
+        <h3 className="section-title">About</h3>
+        <p className="section-note">
+          Every change ever shipped to the app, newest first — the build number below is this
+          list&rsquo;s length.
+        </p>
+        <div className="card-list">
+          {/* opens the source repository in a new tab; the row wears the same
+              plate as the actions above, minus an anchor's own link styling */}
+          <a
+            className="settings-action"
+            href="https://github.com/cerqueiralex/100-games/commits/main/"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => sfx.tap()}
+          >
+            <ExternalLinkIcon />
+            <span>Updates and patches</span>
+          </a>
         </div>
       </section>
 

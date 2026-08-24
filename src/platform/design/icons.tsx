@@ -362,6 +362,17 @@ export function ImportIcon({ size = 18 }: IconProps) {
   );
 }
 
+/** box with an arrow leaving it — this row opens something outside the app */
+export function ExternalLinkIcon({ size = 18 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M10 5H5.6A1.6 1.6 0 0 0 4 6.6v11.8A1.6 1.6 0 0 0 5.6 20h11.8a1.6 1.6 0 0 0 1.6-1.6V14" />
+      <path d="M14 4h6v6" />
+      <path d="M20 4l-9 9" />
+    </Svg>
+  );
+}
+
 /** trash can — clear the game history */
 export function TrashIcon({ size = 18 }: IconProps) {
   return (
