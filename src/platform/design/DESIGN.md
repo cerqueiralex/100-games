@@ -190,15 +190,18 @@ never recomputed from capped history:
   `inset 0 0 0 2px` ring, so an unbeaten and a beaten tile occupy exactly
   the same box (see "Tile grids"). Never swap `border-width` between
   states.
-- **All five tiers beaten** = the `.game-card-trophy` badge (green disc,
-  3px darker-green rim, flat solid gold `TrophyIcon`, extruded bottom
-  edge). It sits inline on the home card and absolutely in the top-right
-  corner of the profile's high-score card, where it floats above the
-  tiles' seals (`z-index: 2`) and therefore also carries a very soft
-  elevation shadow.
-- Badge glyphs are **flat solid silhouettes**, not linework: at ~16px a
-  2px stroke turns to mush, so `TrophyIcon` fills its shape and knocks
-  the check mark out of the cup (the same trick the cipher glyphs use).
+- **All five tiers beaten** = the `.game-card-trophy` badge: a white
+  three-pointed `CrownIcon` on a `--xp` orange disc with a 3px darker-orange
+  rim and the extruded bottom edge. A swept game is the top of the
+  progression ladder, so it wears the progression color rather than the
+  green of a single beaten tier — the star seals stay green, and the two
+  never get confused for one another. It sits inline on the home card and
+  absolutely in the top-right corner of the profile's high-score card,
+  where it floats above the tiles' seals (`z-index: 2`) and therefore also
+  carries a very soft elevation shadow.
+- Badge glyphs are **flat solid silhouettes**, not linework: at ~18px a
+  2px stroke turns to mush, so `CrownIcon` fills its shape (the same trick
+  the cipher glyphs use).
 
 ## Components
 

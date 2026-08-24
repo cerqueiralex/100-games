@@ -7,7 +7,7 @@ import { computeStats, formatDuration } from '../stats';
 import { allDifficultiesBeaten, computeStreak } from '../progress/progress';
 import { StreakChip } from '../components/Streak';
 import { LevelChip } from '../components/Level';
-import { ChevronIcon, SearchIcon, StarIcon, TrophyIcon } from '../design/icons';
+import { ChevronIcon, CrownIcon, SearchIcon, StarIcon } from '../design/icons';
 import { sfx } from '../audio';
 import type { CategoryId, GameDefinition } from '../types';
 
@@ -148,7 +148,7 @@ export function HomePage({
             title="Beaten on every difficulty"
             aria-label="Beaten on every difficulty"
           >
-            <TrophyIcon size={16} />
+            <CrownIcon size={18} />
           </span>
         )}
         <span

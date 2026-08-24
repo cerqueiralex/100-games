@@ -385,32 +385,25 @@ export function LockIcon({ size = 14 }: IconProps) {
   );
 }
 
-/** trophy cup with a check mark — "beaten on every difficulty".
-    Solid flat silhouette (like the cipher glyphs, a stroke would vanish at
-    badge size); the check is knocked out of the cup so the surface behind
-    shows through. Still monochrome currentColor. */
-export function TrophyIcon({ size = 16 }: IconProps) {
+/** three-pointed crown — "beaten on every difficulty".
+    Solid flat silhouette for the same reason as the trophy above: at badge
+    size a 2px stroke turns to mush. The balls sit ON the points and the
+    base is a separate bar, so the silhouette still reads as a crown when
+    it is only ~18px wide. Monochrome currentColor. */
+export function CrownIcon({ size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
-      {/* handles */}
-      <path
-        d="M7 5H5a2 2 0 0 0 0 4h2M17 5h2a2 2 0 0 1 0 4h-2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* solid cup with the check knocked out */}
+      {/* body: outer point, dip, tall middle point, dip, outer point */}
       <path
         fill="currentColor"
-        fillRule="evenodd"
-        d="M8.2 2h7.6A1.2 1.2 0 0 1 17 3.2V9a5 5 0 0 1-10 0V3.2A1.2 1.2 0 0 1 8.2 2Z M8.9 7.4 10.1 6.2 11.6 7.7 14.6 4.7 15.8 5.9 11.6 10.1Z"
+        d="M3.6 8.4 8.5 12.2 12 5.9 15.5 12.2 20.4 8.4 18.6 17.4 5.4 17.4Z"
       />
-      {/* stem + foot, solid */}
-      <path fill="currentColor" d="M10.5 12.5h3V16h-3Z" />
-      <path fill="currentColor" d="M9.3 18.6c0-1.9 1.1-2.9 2.7-2.9s2.7 1 2.7 2.9Z" />
-      <rect fill="currentColor" x="7" y="18.4" width="10" height="2.6" rx="1.3" />
+      {/* balls on the three tips */}
+      <circle fill="currentColor" cx="3.6" cy="8.4" r="2.1" />
+      <circle fill="currentColor" cx="12" cy="5.9" r="2.3" />
+      <circle fill="currentColor" cx="20.4" cy="8.4" r="2.1" />
+      {/* base bar */}
+      <rect fill="currentColor" x="5.4" y="18.6" width="13.2" height="2.8" rx="0.7" />
     </svg>
   );
 }

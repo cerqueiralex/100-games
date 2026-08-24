@@ -552,15 +552,17 @@ p {
 /* all five difficulties beaten: check-marked trophy badge on the card —
    green disc, gold trophy, thick darker-green rim, extruded 2.5D bottom
    edge per the candy depth standard */
+/* "beaten on every difficulty" — a white crown on the progression orange,
+   rimmed in a darker orange. 35px is the 32px badge grown 10%. */
 .game-card-trophy {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 35px;
+  height: 35px;
   border-radius: 999px;
-  background: var(--good);
-  border: 3px solid color-mix(in srgb, var(--good) 62%, var(--ink));
-  color: var(--warn);
+  background: var(--xp);
+  border: 3px solid color-mix(in srgb, var(--xp) 58%, #6b3200);
+  color: #fff;
   flex-shrink: 0;
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.28);
 }
