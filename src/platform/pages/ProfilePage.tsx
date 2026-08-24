@@ -6,6 +6,7 @@ import { computeStats, formatDate, formatDuration } from '../stats';
 import { allDifficultiesBeaten, beatenDifficulties, computeStreak } from '../progress/progress';
 import { StarIcon, TrophyIcon } from '../design/icons';
 import { StreakHero } from '../components/Streak';
+import { LevelHero } from '../components/Level';
 import { LandmarksSection } from '../components/Landmarks';
 import { CalendarPicker, Chip, Dropdown, Modal, StatCard } from '../components/ui';
 import { ActivityChart, CategoryBarChart, GamesPieChart, TrendChart } from '../components/charts';
@@ -157,6 +158,11 @@ export function ProfilePage() {
           Edit
         </button>
       </header>
+
+      {/* level is the first section: it summarises everything below it */}
+      <section className="setup-section">
+        <LevelHero xp={progress.xp} />
+      </section>
 
       <section className="setup-section">
         <StreakHero streak={streak} />

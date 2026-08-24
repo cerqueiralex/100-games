@@ -3,6 +3,7 @@ import { DIFFICULTIES } from '../types';
 import { GAMES } from '../registry';
 import { CATEGORIES } from '../categories';
 import { loadHistory, readGameData, writeGameData } from '../storage';
+import { levelFromXp, XP_AWARDS, type XpAward, type XpEntry, type XpSource } from './xp';
 
 /**
  * Player progress — the streak + landmark (trophy) database, kept in its own
@@ -25,6 +26,12 @@ export interface LandmarkUnlock {
   at: number;
 }
 
+/** best time (seconds, lower wins) and best score (higher wins) for one tier */
+export interface PersonalBest {
+  time: number;
+  score: number;
+}
+
 export interface PlayerProgress {
   /** local calendar days ('YYYY-MM-DD') with at least one recorded play */
   days: string[];
@@ -34,6 +41,15 @@ export interface PlayerProgress {
   wins: Record<string, Difficulty[]>;
   /** landmarkId -> unlock info; never removed once earned */
   landmarks: Record<string, LandmarkUnlock>;
+  /** total XP ever earned — drives the player level (see ./xp.ts) */
+  xp: number;
+  /**
+   * gameId -> difficulty -> personal best. Lives HERE rather than being
+   * read from history because the XP award for beating your own record must
+   * not re-fire after the 1000-entry cap drops the old run, or after
+   * "Clear history" — progress is the permanent side of the store.
+   */
+  records: Record<string, Partial<Record<Difficulty, PersonalBest>>>;
 }
 
 /* ---------- day math (local-time calendar days, DST-safe) ---------- */
@@ -285,7 +301,7 @@ function evaluateLandmarks(p: PlayerProgress, atMs: number): boolean {
 /* ---------- persistence ---------- */
 
 function emptyProgress(): PlayerProgress {
-  return { days: [], played: [], wins: {}, landmarks: {} };
+  return { days: [], played: [], wins: {}, landmarks: {}, xp: 0, records: {} };
 }
 
 function applyResult(p: PlayerProgress, r: GameResult): void {
@@ -298,10 +314,53 @@ function applyResult(p: PlayerProgress, r: GameResult): void {
   }
 }
 
+/**
+ * Folds a win into the personal-best table and reports whether it BEAT the
+ * previous best (faster time or higher score). The first win at a tier only
+ * sets the bar — there was no record to beat, so it earns no record XP.
+ */
+function updateRecord(p: PlayerProgress, r: GameResult): boolean {
+  if (r.outcome !== 'won') return false;
+  const perGame = p.records[r.gameId] ?? (p.records[r.gameId] = {});
+  const prev = perGame[r.difficulty];
+  if (!prev) {
+    perGame[r.difficulty] = { time: r.durationSec, score: r.score };
+    return false;
+  }
+  const beat = r.durationSec < prev.time || r.score > prev.score;
+  perGame[r.difficulty] = {
+    time: Math.min(prev.time, r.durationSec),
+    score: Math.max(prev.score, r.score)
+  };
+  return beat;
+}
+
+/**
+ * Retroactive XP for a store that predates levels (or one just reseeded
+ * from history), so an existing player is not knocked back to level 1.
+ * Only what the permanent store can prove is counted: days, unlocked
+ * landmarks, swept games, and the plays still in the (capped) history.
+ * Records are not reconstructable and are simply not awarded.
+ */
+function seedXp(p: PlayerProgress, history: GameResult[]): number {
+  const plays = history.filter((r) => r.outcome !== 'abandoned').length;
+  const swept = GAMES.filter((g) => allDifficultiesBeaten(p, g.id)).length;
+  return (
+    p.days.length * XP_AWARDS.day +
+    plays * XP_AWARDS.play +
+    Object.keys(p.landmarks).length * XP_AWARDS.landmark +
+    swept * XP_AWARDS.sweep
+  );
+}
+
 function seedFromHistory(): PlayerProgress {
   const p = emptyProgress();
-  for (const r of loadHistory()) applyResult(p, r);
+  const history = loadHistory();
+  for (const r of history) applyResult(p, r);
   p.days.sort();
+  for (const r of history) updateRecord(p, r);
+  evaluateLandmarks(p, Date.now());
+  p.xp = seedXp(p, history);
   return p;
 }
 
@@ -312,37 +371,128 @@ export function normalizeProgress(raw: unknown): PlayerProgress | null {
   return normalize(raw);
 }
 
+/**
+ * XP from a stored — and after a backup import, UNTRUSTED — file. A NaN,
+ * an Infinity or a negative would spread to every level readout and to the
+ * bar width, so anything that is not a sane whole number becomes 0 rather
+ * than poisoning the UI. `null` means "no XP field at all" (a store written
+ * before levels existed), which the caller backfills retroactively.
+ */
+function cleanXp(raw: unknown): number | null {
+  if (raw === undefined || raw === null) return null;
+  if (typeof raw !== 'number' || !Number.isFinite(raw) || raw < 0) return 0;
+  return Math.floor(raw);
+}
+
+function cleanRecords(raw: unknown): PlayerProgress['records'] {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: PlayerProgress['records'] = {};
+  for (const [gameId, perGame] of Object.entries(raw as Record<string, unknown>)) {
+    if (!perGame || typeof perGame !== 'object' || Array.isArray(perGame)) continue;
+    const tiers: Partial<Record<Difficulty, PersonalBest>> = {};
+    for (const [diff, best] of Object.entries(perGame as Record<string, unknown>)) {
+      if (!DIFFICULTIES.includes(diff as Difficulty)) continue;
+      const b = best as Partial<PersonalBest> | null;
+      if (!b || typeof b !== 'object') continue;
+      if (!Number.isFinite(b.time) || !Number.isFinite(b.score)) continue;
+      tiers[diff as Difficulty] = { time: Number(b.time), score: Number(b.score) };
+    }
+    if (Object.keys(tiers).length) out[gameId] = tiers;
+  }
+  return out;
+}
+
 function normalize(raw: unknown): PlayerProgress | null {
   if (!raw || typeof raw !== 'object') return null;
   const p = raw as Partial<PlayerProgress>;
   if (!Array.isArray(p.days) || !Array.isArray(p.played)) return null;
   if (!p.wins || typeof p.wins !== 'object' || Array.isArray(p.wins)) return null;
   if (!p.landmarks || typeof p.landmarks !== 'object' || Array.isArray(p.landmarks)) return null;
-  return {
+  const xp = cleanXp(p.xp);
+  const out: PlayerProgress = {
     days: p.days.filter((d): d is string => typeof d === 'string'),
     played: p.played.filter((g): g is string => typeof g === 'string'),
     wins: p.wins as Record<string, Difficulty[]>,
-    landmarks: p.landmarks as Record<string, LandmarkUnlock>
+    landmarks: p.landmarks as Record<string, LandmarkUnlock>,
+    xp: xp ?? 0,
+    records: cleanRecords(p.records)
   };
+  // a pre-levels store: backfill XP from what the store already proves,
+  // so an existing player keeps the level their play has earned
+  if (xp === null) out.xp = seedXp(out, loadHistory());
+  return out;
 }
 
 /** Loads (or reseeds) progress and re-evaluates landmarks — cheap, runs at
     app start so retroactive/registry-driven unlocks appear without a play. */
 export function loadProgress(): PlayerProgress {
-  const stored = normalize(readGameData<PlayerProgress>(PROGRESS_KEY));
+  const raw = readGameData<PlayerProgress>(PROGRESS_KEY);
+  /**
+   * A store written before levels existed. Its retroactive XP MUST be
+   * seeded and persisted here, at load — recordProgress runs after the new
+   * result is already in history, so seeding there would count that game
+   * once in the backfill and again in its award (and could skip the
+   * level-up card by inflating the "before" level past a boundary).
+   */
+  const needsXpSeed = !!raw && typeof raw === 'object' && typeof raw.xp !== 'number';
+  const stored = normalize(raw);
   const p = stored ?? seedFromHistory();
   const changed = evaluateLandmarks(p, Date.now());
-  if (!stored || changed) writeGameData(PROGRESS_KEY, p);
+  if (!stored || changed || needsXpSeed) writeGameData(PROGRESS_KEY, p);
   return p;
 }
 
-/** The single write path: fold one finished/abandoned session in, unlock
-    anything newly earned, persist. Returns a fresh object (React state). */
-export function recordProgress(result: GameResult): PlayerProgress {
-  const p = normalize(readGameData<PlayerProgress>(PROGRESS_KEY)) ?? seedFromHistory();
-  applyResult(p, result);
+/**
+ * Grants XP for whatever this result made NEW, then folds it in. Each award
+ * is keyed to a state change (first play of a day, a landmark that was not
+ * unlocked, a game that was not yet swept, a record that stood), so the same
+ * moment can never pay twice.
+ *
+ * Abandoned sessions earn no `play` XP on purpose: quitting from the game
+ * screen takes a couple of seconds, so paying for it would let a player
+ * level up without playing anything, and a level nobody earned is worth
+ * nothing. They still count for the streak day, which is a real play day.
+ */
+function awardXp(p: PlayerProgress, r: GameResult): XpAward {
+  const entries: XpEntry[] = [];
+  const add = (source: XpSource, detail?: string) =>
+    entries.push({ source, xp: XP_AWARDS[source], detail });
+
+  const isNewDay = !p.days.includes(dayKey(r.finishedAt));
+  const sweptBefore = allDifficultiesBeaten(p, r.gameId);
+  const landmarksBefore = new Set(Object.keys(p.landmarks));
+
+  applyResult(p, r);
   p.days.sort();
-  evaluateLandmarks(p, result.finishedAt);
+  const brokeRecord = updateRecord(p, r);
+  evaluateLandmarks(p, r.finishedAt);
+
+  if (isNewDay) add('day');
+  if (r.outcome !== 'abandoned') add('play');
+  if (brokeRecord) add('record');
+  if (!sweptBefore && allDifficultiesBeaten(p, r.gameId)) add('sweep');
+  for (const id of Object.keys(p.landmarks)) {
+    if (!landmarksBefore.has(id)) add('landmark', getLandmark(id)?.title);
+  }
+
+  const total = entries.reduce((sum, e) => sum + e.xp, 0);
+  const levelBefore = levelFromXp(p.xp);
+  p.xp += total;
+  const levelAfter = levelFromXp(p.xp);
+  return { total, entries, levelBefore, levelAfter, leveledUp: levelAfter > levelBefore };
+}
+
+export interface ProgressUpdate {
+  progress: PlayerProgress;
+  award: XpAward;
+}
+
+/** The single write path: fold one finished/abandoned session in, unlock
+    anything newly earned, grant XP, persist. Returns a fresh object
+    (React state) plus what this result earned, for the results modal. */
+export function recordProgress(result: GameResult): ProgressUpdate {
+  const p = normalize(readGameData<PlayerProgress>(PROGRESS_KEY)) ?? seedFromHistory();
+  const award = awardXp(p, result);
   writeGameData(PROGRESS_KEY, p);
-  return p;
+  return { progress: p, award };
 }

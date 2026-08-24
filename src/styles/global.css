@@ -22289,6 +22289,323 @@ button.bs-ship-row.dock.placed {
   margin-top: 3px;
 }
 
+/* ---- player level & XP ----
+   All XP chrome paints with --xp (the streak orange), a SEMANTIC token that
+   never follows the accent — see DESIGN.md "Player level & XP". */
+
+/* home-header token: same height/edge language as the streak pill so the
+   two read as one pair of controls */
+.level-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: var(--head-token);
+  padding: 0 12px 0 7px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 -3px 0 var(--edge);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.level-chip-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+
+.level-chip-num {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--xp);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.level-chip-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* the ring fills as XP accrues; the transition makes a fresh award visibly
+   sweep round rather than teleport */
+.level-ring {
+  flex-shrink: 0;
+}
+
+.level-ring-arc {
+  transition: stroke-dasharray 0.6s ease;
+}
+
+/* ---- profile hero ---- */
+
+.level-hero {
+  border-radius: var(--radius-l);
+  padding: 20px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* caption under the dial — the level ITSELF is the number in the ring */
+.level-hero-num {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 8px 0 14px;
+}
+
+.level-hero-sub {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin: 10px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.level-hero-note {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  opacity: 0.8;
+  margin: 4px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.xp-strong {
+  color: var(--xp);
+  font-weight: 800;
+}
+
+/* ---- the XP bar ---- */
+
+.xp-bar {
+  width: 100%;
+  max-width: 300px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  /* the track is carved IN, so the fill reads as sitting inside it */
+  box-shadow: inset 0 2px 0 var(--edge);
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--xp);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+  transition: width 0.6s ease;
+}
+
+/* ---- XP earned (results modal) ---- */
+
+.xp-earned {
+  margin: 14px 0 4px;
+  padding: 12px;
+  border-radius: var(--radius-m);
+  background: var(--xp-soft);
+  border: 1px solid color-mix(in srgb, var(--xp) 38%, transparent);
+}
+
+.xp-earned-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+}
+
+.xp-earned-num {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--xp);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.xp-earned-unit {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--xp);
+  letter-spacing: 0.04em;
+}
+
+.xp-earned-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.xp-earned-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.xp-earned-src {
+  text-align: left;
+}
+
+.xp-earned-detail {
+  opacity: 0.75;
+}
+
+.xp-earned-amt {
+  font-weight: 800;
+  color: var(--xp);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ---- level-up card ---- */
+
+.level-up-card {
+  text-align: center;
+  animation: level-pop 0.42s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+.level-up-burst {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin: 4px auto 2px;
+  display: grid;
+  place-items: center;
+}
+
+.level-up-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  animation: level-ring-in 0.5s ease-out both;
+}
+
+/* rays fan out from behind the ring — the only motion that says "up" */
+.level-up-ray {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--xp);
+  transform-origin: 50% 50%;
+  animation: level-ray 0.85s ease-out both;
+}
+
+.level-up-ray.r0 { --ang: 0deg; }
+.level-up-ray.r1 { --ang: 36deg; }
+.level-up-ray.r2 { --ang: 72deg; }
+.level-up-ray.r3 { --ang: 108deg; }
+.level-up-ray.r4 { --ang: 144deg; }
+.level-up-ray.r5 { --ang: 180deg; }
+.level-up-ray.r6 { --ang: 216deg; }
+.level-up-ray.r7 { --ang: 252deg; }
+.level-up-ray.r8 { --ang: 288deg; }
+.level-up-ray.r9 { --ang: 324deg; }
+
+.level-up-title {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 6px 0 2px;
+  color: var(--xp);
+}
+
+.level-up-sub {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin: 0 0 4px;
+}
+
+@keyframes level-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes level-ring-in {
+  from {
+    transform: scale(0.5) rotate(-25deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08) rotate(4deg);
+    opacity: 1;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes level-ray {
+  from {
+    transform: rotate(var(--ang)) translateY(-34px) scaleY(0.3);
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  to {
+    transform: rotate(var(--ang)) translateY(-64px) scaleY(1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .level-up-card,
+  .level-up-ring,
+  .level-up-ray {
+    animation: none;
+  }
+
+  .level-ring-arc,
+  .xp-bar-fill {
+    transition: none;
+  }
+}
+
+/* phone: mirror the streak pill exactly — smaller art, no caption, so the
+   two header tokens stay a matched pair as the header tightens */
+@media (max-width: 700px) {
+  .level-chip {
+    gap: 6px;
+    padding: 0 11px 0 7px;
+  }
+
+  .level-chip .level-ring {
+    width: 26px;
+    height: 26px;
+  }
+
+  .level-chip-num {
+    font-size: 15px;
+  }
+
+  .level-chip-label {
+    display: none;
+  }
+}
+
 /* ---- landmark gallery ---- */
 
 .lm-head {

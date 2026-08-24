@@ -3596,7 +3596,7 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
     console.error(`✗ ${msg}`);
   };
 
-  const fresh: Progress = { days: [], played: [], wins: {}, landmarks: {} };
+  const fresh: Progress = { days: [], played: [], wins: {}, landmarks: {}, xp: 0, records: {} };
   const noStreak = computeStreak([], new Date());
 
   // unique ids
@@ -3669,6 +3669,105 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
   if (ok)
     console.log(
       `  ✓ ${LANDMARKS.length} landmarks: streak ladder ${expectedTiers.length} tiers, library trophies cover all ${GAMES.length} games, 1 mastery per non-empty category, fresh profile fully locked, streak math sane`
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Player XP & levels (see src/platform/progress/xp.ts)
+// ---------------------------------------------------------------------------
+console.log('— Player XP & levels —');
+{
+  const { levelFromXp, xpMeter, XP_AWARDS, XP_PER_LEVEL, XP_SOURCE_LABEL } = await import(
+    '../src/platform/progress/xp'
+  );
+  const { normalizeProgress } = await import('../src/platform/progress/progress');
+
+  let ok = true;
+  const bad = (msg: string) => {
+    failed = true;
+    ok = false;
+    console.error(`✗ ${msg}`);
+  };
+
+  // 1. level boundaries are exact — an off-by-one here means a player is
+  //    told they levelled up a game early or late, forever
+  const levels: [number, number][] = [
+    [0, 1],
+    [1, 1],
+    [99, 1],
+    [100, 2],
+    [199, 2],
+    [200, 3],
+    [1000, 11]
+  ];
+  for (const [xp, want] of levels) {
+    const got = levelFromXp(xp);
+    if (got !== want) bad(`levelFromXp(${xp}) = ${got}, expected ${want}`);
+  }
+
+  // 2. the meter must stay internally consistent at every point in a level
+  for (let xp = 0; xp <= 350; xp++) {
+    const m = xpMeter(xp);
+    if (m.into + m.remaining !== XP_PER_LEVEL) bad(`xpMeter(${xp}): into+remaining != ${XP_PER_LEVEL}`);
+    if (m.percent < 0 || m.percent >= 100) bad(`xpMeter(${xp}): percent ${m.percent} out of range`);
+    if (m.level !== levelFromXp(xp)) bad(`xpMeter(${xp}).level disagrees with levelFromXp`);
+    if (m.total !== xp) bad(`xpMeter(${xp}).total = ${m.total}`);
+  }
+
+  // 3. hostile/garbage XP must never reach the UI. A backup file is
+  //    untrusted input, and a NaN level or an Infinity bar width would
+  //    corrupt every progression surface at once.
+  const hostile: unknown[] = [NaN, Infinity, -Infinity, -5, 'abc', null, {}, 1.9];
+  for (const xp of hostile) {
+    const p = normalizeProgress({ days: [], played: [], wins: {}, landmarks: {}, xp, records: {} });
+    if (!p) {
+      bad(`normalizeProgress rejected a whole store over xp=${String(xp)}`);
+      continue;
+    }
+    if (!Number.isFinite(p.xp) || p.xp < 0 || !Number.isInteger(p.xp)) {
+      bad(`hostile xp ${String(xp)} normalized to ${p.xp}`);
+    }
+    if (!Number.isFinite(levelFromXp(p.xp)) || levelFromXp(p.xp) < 1) {
+      bad(`hostile xp ${String(xp)} produced level ${levelFromXp(p.xp)}`);
+    }
+  }
+
+  // 4. malformed personal-best records are dropped, not trusted
+  const withJunk = normalizeProgress({
+    days: [],
+    played: [],
+    wins: {},
+    landmarks: {},
+    xp: 0,
+    records: {
+      sudoku: { easy: { time: 10, score: 5 }, nope: { time: 1, score: 1 }, hard: 'bad' },
+      broken: 'not-an-object'
+    }
+  });
+  if (!withJunk) bad('normalizeProgress rejected a store over malformed records');
+  else {
+    if (withJunk.records.broken) bad('a non-object record survived normalization');
+    if (withJunk.records.sudoku?.easy?.time !== 10) bad('a sound record was dropped');
+    if ((withJunk.records.sudoku as Record<string, unknown>)?.nope)
+      bad('a record under an unknown difficulty survived normalization');
+    if (withJunk.records.sudoku?.hard) bad('a malformed record survived normalization');
+  }
+
+  // 5. every award source is a real, positive, labelled award
+  for (const [source, amount] of Object.entries(XP_AWARDS)) {
+    if (!Number.isInteger(amount) || amount <= 0) bad(`XP award "${source}" is ${amount}`);
+    if (!XP_SOURCE_LABEL[source as keyof typeof XP_SOURCE_LABEL])
+      bad(`XP award "${source}" has no player-facing label`);
+  }
+
+  // 6. a fresh profile starts at level 1 with an empty bar
+  const fresh = xpMeter(0);
+  if (fresh.level !== 1 || fresh.into !== 0 || fresh.percent !== 0)
+    bad(`a fresh profile is level ${fresh.level} at ${fresh.percent}%`);
+
+  if (ok)
+    console.log(
+      `  ✓ ${XP_PER_LEVEL} XP per level, boundaries exact over 0–350, ${Object.keys(XP_AWARDS).length} labelled awards, hostile XP and malformed records normalized`
     );
 }
 

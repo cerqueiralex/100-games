@@ -101,5 +101,15 @@ export const sfx = {
     tone(330, 200, 'triangle');
     tone(262, 260, 'triangle', 1, 180);
     tone(196, 380, 'triangle', 1, 360);
+  },
+  /** level up — a rising fanfare, deliberately brighter and longer than
+      win() so the two never sound like the same event */
+  levelUp: () => {
+    sweep(420, 1100, 240, 'sine', 0.4);
+    tone(523, 90, 'triangle');
+    tone(659, 90, 'triangle', 1, 80);
+    tone(784, 90, 'triangle', 1, 160);
+    tone(1047, 110, 'triangle', 1, 240);
+    tone(1319, 340, 'triangle', 1, 350);
   }
 };

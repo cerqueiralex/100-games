@@ -35,8 +35,10 @@ interactive state and game assists so it always means something.
    word highlight, difficulty pills, share button.
    Both attributes live on `<html>` and are set by `AppState` from settings.
 4. **Semantic colors are fixed**: `--good` (green) = success/clean win,
-   `--bad` (red) = errors/danger, `--warn` (yellow). They never follow the
-   accent, so an error is red in every theme.
+   `--bad` (red) = errors/danger, `--warn` (yellow), `--xp` (orange) =
+   progression — player level, XP and streak, the app's secondary color.
+   They never follow the accent, so an error is red and a level is orange
+   in every theme.
 5. Derived tints (`--accent-soft`, `--cell-same`) are computed in
    `tokens.css` via `color-mix` — use them, don't re-mix inline.
 
@@ -121,6 +123,42 @@ which players read as "something broke", not "I won". The rules:
 - Losses skip it — the results modal opens immediately, as before.
 - `prefers-reduced-motion` drops the confetti and rings but keeps the
   same duration, so the delayed results stay consistent for everyone.
+
+### Player level & XP (the progression surfaces)
+
+Progression has ONE color: `--xp`, the streak orange (`--play-7`). It is a
+**semantic** token, so like `--good`/`--bad` it never follows the accent —
+a level must read the same whichever theme color the player picked, and it
+sits beside the streak flame, which is that same orange. Use `--xp` for
+every XP number, ring, bar and highlight; `--xp-soft` for the tinted panel
+behind an award. Never re-mix the orange inline.
+
+Three surfaces, and they mirror the streak's shapes on purpose (they are
+neighbours in the header and on the profile):
+
+- **`LevelChip`** — home header, immediately left of the streak pill. Same
+  height token (`--head-token`), same pill/edge treatment. Ring + number +
+  caption, and on phones (`max-width: 700px`) the caption hides and the art
+  shrinks to 26px, exactly as the streak pill does, so the pair stays
+  matched as the header tightens.
+- **`LevelHero`** — the profile's FIRST section, above the streak. The
+  level is the number inside the dial (centred on top), then the XP bar,
+  then the numbers. The level is printed once: a dial that shows "7" over a
+  caption reading "Level 7" is a duplicated readout, not emphasis.
+- **`XpEarned`** — the block inside the results modal. Total in `--xp` with
+  one line per source, because an unexplained "+100 XP" reads as a bug
+  while "+80 Landmark earned" reads as a reward.
+
+`LevelRing` is dependency-free SVG (`stroke-dasharray` arc), like the
+profile charts — never a conic-gradient, which would break the no-gradient
+surface rule and the theme tokens with it.
+
+**Level-up card**: opens BETWEEN the win celebration and the results modal
+(GameShell gates the results on it), so a new level gets its own moment
+instead of competing with a statistics table — the same reasoning as the
+win celebration below. It plays `sfx.levelUp()`, deliberately brighter and
+longer than `sfx.win()` so the two events never sound alike, and all of its
+motion is disabled under `prefers-reduced-motion`.
 
 ### Completion markers (beaten difficulties & swept games)
 

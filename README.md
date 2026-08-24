@@ -78,6 +78,7 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 
 - **Five difficulty tiers** (easy / medium / hard / pro / extreme), pause, restart, quit — all via the standard game shell; after finishing you can close the results popup to review the solved board
 - **Two ways out of a game**: the back arrow steps back to that game's own start screen (to switch difficulty or re-read the rules), the home button leaves for the game list — so changing difficulty never means a round trip through all 67 games
+- **Player level & XP**: every 100 XP is a level. You earn 10 XP for a game played, 10 for extending your daily streak, 10 for beating your own record on a game+difficulty, 80 for beating a game on all five difficulties, and 80 for each landmark earned. A win shows exactly what it earned, and a new level gets its own card (with a sound) before the results appear. The level dial sits in the home header next to your streak and heads the profile
 - **Win celebration**: every win plays the same ~3.5-second green celebration — confetti, a success ring and a "Complete!" badge — *over* the finished board (it never covers or tints it), and only then does the results popup appear, so you always see your puzzle finish before the statistics
 - **The list remembers where you were**: your search, category filter and scroll position survive a game, so trying game #40 doesn't send you back to the top of the list
 - **Save & resume**: a save button in every game's header snapshots the running game; a "Continue saved game" card on the start screen restores board, timer, score and assist usage — even after closing the app
@@ -186,8 +187,9 @@ src/
     backup.ts            ← export/import one JSON backup (validates untrusted
                             files before replacing anything)
     stats.ts             ← statistics engine (win rate, streaks, best times…)
-    progress/            ← play-streak + landmark (trophy) store — permanent,
-                            derived from the registry so new games auto-sync
+    progress/            ← play-streak + landmark (trophy) + XP/level store —
+                            permanent, derived from the registry so new games
+                            auto-sync; xp.ts holds the level rules
     version.ts           ← the build stamp shown in Settings (MAJOR from
                             package.json, MINOR = `feat:` commits, PATCH =
                             commit count — see Versioning above)

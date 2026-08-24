@@ -9,6 +9,8 @@ import { BackIcon, Chip, HelpIcon, HomeIcon, Modal, PauseIcon, PlayIcon, Restart
 import { beatenDifficulties } from '../progress/progress';
 import { ShareCardModal } from './ShareCard';
 import { WinCelebration, WIN_CELEBRATION_MS } from './WinCelebration';
+import { LevelUpModal, XpEarned } from './Level';
+import { NO_AWARD, type XpAward } from '../progress/xp';
 import { TutorialModal } from './Tutorial';
 import { MasteryModal } from './Mastery';
 
@@ -61,6 +63,10 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   /** the win animation is playing — results wait for it so the player
       actually sees the board they just finished (see WinCelebration) */
   const [celebrating, setCelebrating] = useState(false);
+  /** XP this session earned, shown in the results modal */
+  const [award, setAward] = useState<XpAward>(NO_AWARD);
+  /** a level reached by this result — its card opens before the results */
+  const [levelUp, setLevelUp] = useState<number | null>(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [storedSave, setStoredSave] = useState<GameSave | null>(
     () => loadSaves()[game.id] ?? null
@@ -124,6 +130,8 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
     setShowShare(false);
     setResultsDismissed(false);
     setCelebrating(false);
+    setAward(NO_AWARD);
+    setLevelUp(null);
     setShowSaveModal(false);
     setSession((s) => s + 1);
     setPhase('playing');
@@ -177,7 +185,10 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         if (finished.current) return;
         finished.current = true;
         liveStats.current = payload;
-        recordResult(buildResult(payload.outcome, payload));
+        const earned = recordResult(buildResult(payload.outcome, payload));
+        setAward(earned);
+        // the level card opens before the results (see the modal gate below)
+        if (earned.leveledUp) setLevelUp(earned.levelAfter);
         // a finished game's save is obsolete — but only touch the stored
         // save if this session owned it (saved or resumed)
         if (sessionHasSave.current) {
@@ -513,8 +524,16 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         </Modal>
       )}
 
+      {/* the level card gets the moment to itself: celebration → level up →
+          results, so a new level never competes with a statistics table */}
+      {levelUp !== null && !celebrating && (
+        <LevelUpModal level={levelUp} onClose={() => setLevelUp(null)} />
+      )}
+
       <Modal
-        open={phase === 'finished' && finish !== null && !resultsDismissed && !celebrating}
+        open={
+          phase === 'finished' && finish !== null && !resultsDismissed && !celebrating && levelUp === null
+        }
         onClose={() => setResultsDismissed(true)}
       >
         {finish && (
@@ -581,6 +600,9 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
                 )}
               </>
             )}
+            {/* XP is the player's own progression, so it shows even for
+                local-multiplayer finishes that hide game statistics */}
+            <XpEarned award={award} />
             <div className="modal-actions">
               <button className="ghost-btn" onClick={() => leave('home', false)}>
                 Home

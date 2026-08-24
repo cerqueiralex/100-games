@@ -94,6 +94,13 @@
   --bad-soft: rgba(255, 69, 58, 0.14);
   --warn: #ffd60a;
 
+  /* THE secondary color: progression (player level, XP, streak). Fixed
+     across accent themes exactly like --good/--bad — a level must read the
+     same whichever theme color the player picked, and it sits next to the
+     streak flame, which is this same orange (--play-7). */
+  --xp: var(--play-7);
+  --xp-soft: color-mix(in srgb, var(--play-7) 16%, transparent);
+
   /* fixed near-black ink for glyphs sitting on colored fills (e.g. the
      mine on a --bad cell) — deliberately does NOT follow the theme. */
   --ink: #1c1c1e;

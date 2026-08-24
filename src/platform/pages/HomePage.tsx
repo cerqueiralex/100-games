@@ -6,6 +6,7 @@ import { activeCategories, categoryColor, categoryName } from '../categories';
 import { computeStats, formatDuration } from '../stats';
 import { allDifficultiesBeaten, computeStreak } from '../progress/progress';
 import { StreakChip } from '../components/Streak';
+import { LevelChip } from '../components/Level';
 import { ChevronIcon, SearchIcon, StarIcon, TrophyIcon } from '../design/icons';
 import { sfx } from '../audio';
 import type { CategoryId, GameDefinition } from '../types';
@@ -182,6 +183,7 @@ export function HomePage({
           <h1 className="home-title">{profile.name}</h1>
         </div>
         <div className="home-right">
+          <LevelChip xp={progress.xp} />
           <StreakChip streak={streak} />
           <span className="home-avatar">{profile.emoji}</span>
         </div>
