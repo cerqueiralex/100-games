@@ -3,3 +3,6 @@ dist/
 dev-dist/
 *.local
 .DS_Store
+
+# personal scratch file — never commit it (see CLAUDE.md)
+backlog.txt

@@ -178,6 +178,11 @@ never recomputed from capped history:
   green rim). Used on the setup screen's difficulty picker and the
   profile's high-score tiles. Adding a third surface reuses these two
   classes rather than inventing a variant.
+- **Only a clean win earns a marker.** The green ring, the star seal and
+  the game trophy appear only for a win with no hints and no assists (see
+  `countsAsBeaten`), so a marker never means "I got there with help". The
+  setup screen's assist note says so out loud, and the sweep/mastery
+  landmarks spell it out in their requirement line.
 - **Green is semantic** (`--good`), never the accent — completion means
   the same thing on every theme, and the green ring is declared
   after `.active` so it still reads on the selected difficulty.

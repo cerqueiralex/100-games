@@ -37,7 +37,7 @@ export interface PlayerProgress {
   days: string[];
   /** game ids ever played (any outcome, including abandoned) */
   played: string[];
-  /** gameId -> difficulties this game has been WON at */
+  /** gameId -> difficulties CLEANLY beaten (see countsAsBeaten) */
   wins: Record<string, Difficulty[]>;
   /** landmarkId -> unlock info; never removed once earned */
   landmarks: Record<string, LandmarkUnlock>;
@@ -207,7 +207,7 @@ export const LANDMARKS: LandmarkDef[] = [
     (d): LandmarkDef => ({
       id: `all-${d}`,
       title: `${d[0].toUpperCase()}${d.slice(1)} Sweep`,
-      requirement: `Beat every game on ${d}`,
+      requirement: `Beat every game on ${d} with no help`,
       kind: 'difficulty',
       difficulty: d,
       slot: DIFFICULTY_TIERS[d].slot,
@@ -218,7 +218,7 @@ export const LANDMARKS: LandmarkDef[] = [
     (c): LandmarkDef => ({
       id: `master-${c.id}`,
       title: `${c.name} Master`,
-      requirement: `Beat every ${c.name} game`,
+      requirement: `Beat every ${c.name} game with no help`,
       kind: 'category',
       category: c.id,
       slot: c.slot,
@@ -233,13 +233,13 @@ export function getLandmark(id: string): LandmarkDef | undefined {
 
 /* ---------- per-game completion (the three "beaten" UI surfaces) ---------- */
 
-/** difficulties this game has been WON at, in tier order */
+/** difficulties this game has been cleanly beaten at, in tier order */
 export function beatenDifficulties(p: PlayerProgress, gameId: string): Difficulty[] {
   const won = p.wins[gameId] ?? [];
   return DIFFICULTIES.filter((d) => won.includes(d));
 }
 
-/** true when the game has been won on every tier, easy through extreme */
+/** true when the game has been cleanly beaten on every tier, easy → extreme */
 export function allDifficultiesBeaten(p: PlayerProgress, gameId: string): boolean {
   return beatenDifficulties(p, gameId).length === DIFFICULTIES.length;
 }
@@ -304,11 +304,27 @@ function emptyProgress(): PlayerProgress {
   return { days: [], played: [], wins: {}, landmarks: {}, xp: 0, records: {} };
 }
 
+/**
+ * Does this result COUNT as beating the tier?
+ *
+ * Only a clean win: won with zero hints and zero assists used (the
+ * `cleanWin` flag every result already carries — passive assists count as
+ * used whenever they were enabled, see the assist convention in CLAUDE.md).
+ * This is the single gate behind the green ring, the star seal, the game
+ * trophy, the difficulty-sweep and category-mastery landmarks, and the
+ * "all difficulties" XP award — so every one of those marks means exactly
+ * one thing: you did it unaided. A win with help still counts as a play, a
+ * streak day, XP, and a history entry; it just isn't a conquest.
+ */
+export function countsAsBeaten(r: GameResult): boolean {
+  return r.outcome === 'won' && r.cleanWin;
+}
+
 function applyResult(p: PlayerProgress, r: GameResult): void {
   const day = dayKey(r.finishedAt);
   if (!p.days.includes(day)) p.days.push(day);
   if (!p.played.includes(r.gameId)) p.played.push(r.gameId);
-  if (r.outcome === 'won') {
+  if (countsAsBeaten(r)) {
     const won = p.wins[r.gameId] ?? [];
     if (!won.includes(r.difficulty)) p.wins[r.gameId] = [...won, r.difficulty];
   }

@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import { sfx } from '../audio';
 import { XP_PER_LEVEL, xpMeter, XP_SOURCE_LABEL, type XpAward } from '../progress/xp';
 
+/** The XP bar's height in px — the hero ring matches it (see .xp-bar). */
+const XP_BAR_THICKNESS = 12;
+
 /**
  * Player level UI — the XP surfaces.
  *
@@ -22,7 +25,9 @@ export function LevelRing({
   size = 44,
   percent,
   level,
-  showNumber = false
+  showNumber = false,
+  label,
+  stroke = size < 40 ? 3.5 : XP_BAR_THICKNESS
 }: {
   xp: number;
   size?: number;
@@ -31,11 +36,17 @@ export function LevelRing({
   /** print the level inside the ring — for the big hero/level-up dials. The
       chip leaves it off: the number sits beside it, as on the streak pill. */
   showNumber?: boolean;
+  /** small caption inside the ring instead of the level — the home chip
+      writes "XP" there, since on a phone its outside caption is hidden and
+      a bare dial tells a new player nothing. */
+  label?: string;
+  /** ring thickness; the hero matches the XP bar under it so the two read
+      as one instrument instead of two unrelated shapes */
+  stroke?: number;
 }) {
   const derived = xpMeter(xp);
   const meter = { level: level ?? derived.level, percent: percent ?? derived.percent };
   // stroke-based arc: dependency-free SVG, like the profile charts
-  const stroke = size < 40 ? 3.5 : 4;
   const r = (size - stroke) / 2 - 0.5;
   const circumference = 2 * Math.PI * r;
   return (
@@ -70,17 +81,18 @@ export function LevelRing({
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       )}
-      {showNumber && (
+      {(showNumber || label) && (
         <text
           x="50%"
           y="50%"
           textAnchor="middle"
           dominantBaseline="central"
-          fontSize={size * 0.4}
+          fontSize={label ? size * 0.3 : size * 0.4}
           fontWeight="800"
-          fill="var(--text)"
+          letterSpacing={label ? '0.04em' : undefined}
+          fill={label ? 'var(--xp)' : 'var(--text)'}
         >
-          {meter.level}
+          {label ?? meter.level}
         </text>
       )}
     </svg>
@@ -96,7 +108,7 @@ export function LevelChip({ xp }: { xp: number }) {
       title={`Level ${meter.level} — ${meter.into}/${XP_PER_LEVEL} XP`}
       aria-label={`Level ${meter.level}, ${meter.into} of ${XP_PER_LEVEL} XP`}
     >
-      <LevelRing xp={xp} size={34} />
+      <LevelRing xp={xp} size={34} label="XP" />
       <span className="level-chip-text">
         <span className="level-chip-num">{meter.level}</span>
         <span className="level-chip-label">level</span>
@@ -124,7 +136,7 @@ export function LevelHero({ xp }: { xp: number }) {
   return (
     <div className="level-hero fx-card">
       <div className="level-hero-badge">
-        <LevelRing xp={xp} size={96} showNumber />
+        <LevelRing xp={xp} size={96} showNumber stroke={XP_BAR_THICKNESS} />
       </div>
       <div className="level-hero-num">Level</div>
       <XpBar percent={meter.percent} label={`${meter.into} of ${XP_PER_LEVEL} XP to level ${meter.level + 1}`} />
@@ -138,30 +150,37 @@ export function LevelHero({ xp }: { xp: number }) {
 }
 
 /**
- * The XP block inside the results modal. Shows the total in the XP orange
- * with one line per source, so a big award is explained rather than
- * mysterious ("+100 XP" reads as a bug; "+80 Landmark earned" reads as a
- * reward).
+ * The XP block inside the results modal: a solid orange bar, white text.
+ *
+ * With ONE source (the common case) it is a single centred line — printing
+ * a "+10" total above a "+10 Game played" row showed the same number twice
+ * and read like a bug. The per-source breakdown only appears when there is
+ * actually something to break down, because that is the case where a bare
+ * "+100 XP" would be mysterious instead of a reward.
  */
 export function XpEarned({ award }: { award: XpAward }) {
   if (award.total <= 0) return null;
+  const only = award.entries.length === 1 ? award.entries[0] : null;
+  const describe = (e: XpAward['entries'][number]) =>
+    `${XP_SOURCE_LABEL[e.source]}${e.detail ? ` · ${e.detail}` : ''}`;
+
   return (
     <div className="xp-earned">
-      <div className="xp-earned-total">
+      <p className="xp-earned-head">
         <span className="xp-earned-num">+{award.total}</span>
         <span className="xp-earned-unit">XP</span>
-      </div>
-      <ul className="xp-earned-list">
-        {award.entries.map((e, i) => (
-          <li key={`${e.source}-${i}`}>
-            <span className="xp-earned-src">
-              {XP_SOURCE_LABEL[e.source]}
-              {e.detail && <span className="xp-earned-detail"> · {e.detail}</span>}
-            </span>
-            <span className="xp-earned-amt">+{e.xp}</span>
-          </li>
-        ))}
-      </ul>
+        {only && <span className="xp-earned-why">{describe(only)}</span>}
+      </p>
+      {!only && (
+        <ul className="xp-earned-list">
+          {award.entries.map((e, i) => (
+            <li key={`${e.source}-${i}`}>
+              <span className="xp-earned-src">{describe(e)}</span>
+              <span className="xp-earned-amt">+{e.xp}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

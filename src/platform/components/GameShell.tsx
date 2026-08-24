@@ -343,7 +343,8 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
             <h3 className="section-title">Assists</h3>
             <p className="section-note">
               Assists you use are recorded with each game, so your history shows which wins were
-              clean and which had help.
+              clean and which had help. Only a clean win — no hints, no assists — earns the green
+              star for a difficulty, the game's trophy, or a landmark.
             </p>
             <div className="card-list">
               {game.assistFeatures.map((f) => (

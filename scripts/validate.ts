@@ -3765,9 +3765,45 @@ console.log('— Player XP & levels —');
   if (fresh.level !== 1 || fresh.into !== 0 || fresh.percent !== 0)
     bad(`a fresh profile is level ${fresh.level} at ${fresh.percent}%`);
 
+  // 7. ONLY a clean win counts as beating a tier. This is the single gate
+  //    behind the green ring, the star seal, the game trophy, the sweep and
+  //    mastery landmarks and the "all difficulties" XP award — if it ever
+  //    loosens, every one of those marks quietly starts meaning less.
+  const { countsAsBeaten } = await import('../src/platform/progress/progress');
+  type GameResult = import('../src/platform/types').GameResult;
+  const result = (over: Partial<GameResult>): GameResult => ({
+    id: 'x',
+    gameId: 'sudoku',
+    difficulty: 'easy',
+    startedAt: 0,
+    finishedAt: 0,
+    durationSec: 10,
+    outcome: 'won',
+    score: 1,
+    errors: 0,
+    hintsUsed: 0,
+    assistsEnabled: [],
+    assistsUsed: [],
+    cleanWin: true,
+    ...over
+  });
+  const beatCases: [string, GameResult, boolean][] = [
+    ['clean win', result({}), true],
+    ['win with a hint', result({ cleanWin: false, hintsUsed: 1 }), false],
+    ['win with an assist', result({ cleanWin: false, assistsUsed: ['peek'] }), false],
+    ['loss', result({ outcome: 'lost', cleanWin: false }), false],
+    ['abandoned', result({ outcome: 'abandoned', cleanWin: false }), false],
+    // a mislabelled row must not sneak past on the flag alone
+    ['lost but flagged clean', result({ outcome: 'lost' }), false]
+  ];
+  for (const [name, r, want] of beatCases) {
+    if (countsAsBeaten(r) !== want)
+      bad(`countsAsBeaten("${name}") = ${countsAsBeaten(r)}, expected ${want}`);
+  }
+
   if (ok)
     console.log(
-      `  ✓ ${XP_PER_LEVEL} XP per level, boundaries exact over 0–350, ${Object.keys(XP_AWARDS).length} labelled awards, hostile XP and malformed records normalized`
+      `  ✓ ${XP_PER_LEVEL} XP per level, boundaries exact over 0–350, ${Object.keys(XP_AWARDS).length} labelled awards, hostile XP and malformed records normalized, only clean wins count as beaten (${beatCases.length} cases)`
     );
 }
 
