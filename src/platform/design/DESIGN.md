@@ -202,6 +202,25 @@ nothing else.
   *stroked* in the rim color as well as filled white, because on the pale
   materials a bare white glyph on a bright disc disappears — one formula
   that survives all six beats six special cases.
+- **The badge is extruded, and it looks like what it is made of.** The
+  disc is drawn as a rim circle with the lit face sitting slightly high
+  and small on top, so the bottom crescent IS the darker edge the rest of
+  the app gets from `inset 0 -3px 0`; the crown emblem repeats itself in
+  rim underneath so it lifts off the face. The face then carries the
+  material's own texture — wood grain, brushed iron tool marks, silver and
+  gold specular bands (gold keeps a sparkle), platinum's mirror pair,
+  challenger's gem facets — plus a dome gloss on everything except matte
+  wood. Six flat discs in six hues were six hues, not six materials.
+- **The texture lives in ONE table**, `design/rankMaterials.ts`: SVG path
+  data with a stroke width and an alpha, painted in the rank's own rim
+  colour or in white, never a new hue. The SVG badge and the share card's
+  canvas port both read it — canvas takes the same path strings through
+  `Path2D` — because they are two drawings of one crown, and separate
+  copies are precisely how a shared card ends up showing a different badge
+  from the profile. `npm run validate` fails if a rank has no material, if
+  a texture path/alpha/width is malformed, or if either renderer stops
+  importing the table. The sheens are a sanctioned content-art opt-out
+  from the no-gradient surface rule, like the game sticker icons.
 - **The whole ladder is always shown** (`RankLadder`, under the XP bar),
   with unearned crowns greyed by the SAME `filter: grayscale(1)` +
   low-opacity treatment as locked landmark plates: "grey means not yet"
@@ -211,6 +230,37 @@ nothing else.
   and immediately left of the home header's level chip. Below level 10
   there is no crown and nothing is drawn — an empty corner is honest,
   a placeholder crown is not.
+
+### Daily Challenge (the one board everybody plays)
+
+The home card sits above "Last played" and below the filter row: it is the
+only thing on the page with an expiry, so it leads. It wears a
+`--xp`-tinted ring rather than the ordinary border — progression colour,
+same reasoning as the level and streak surfaces — and that ring RELAXES to
+the plain border once the day is done, so a finished card stops asking for
+attention. The countdown to local midnight is the point of the card: "Play"
+alone would not tell anyone that waiting costs them the streak.
+
+The profile's four-week grid is paint-only state on fixed geometry (see
+"Tile grids"): solved-unaided is `--good`, solved-with-help is `--play-7`,
+started-and-abandoned is a dashed border, today carries an accent ring —
+and every one of those is the same 1px box at the same size, so the grid
+never jitters as it fills in.
+
+A solved day wears the **same material as the streak check disc**: a SOLID
+fill with the darker inset bottom edge, plus a tick pinned top-right. It
+used to be a ~30% tint of the same colour, which reads as "sort of done" —
+a finished day should look as finished as a lit streak dot. The one thing
+the material must not flatten is the clean/helped split: green for
+unaided, orange for helped, because "you did this without help" is one
+meaning across the whole app (see "Completion markers"). The `today` ring
+composes with the edge through a `--cell-edge` variable rather than
+replacing the whole `box-shadow` — a completed today must keep both.
+
+Its trophies use **calendar-page** art, never a flame. The play streak owns
+the flame; two streaks that share a badge are two streaks nobody can tell
+apart, and these two deliberately measure different things ("played
+anything today" vs "played today's board").
 
 ### Completion markers (beaten difficulties & swept games)
 
@@ -366,6 +416,18 @@ transforms anywhere, in any theme:
   card-surface class; component CSS must NEVER declare its own card
   `background`/`border` — layout only. New card-like components join
   the fx-card class or the effects.css selector list.
+- **The card surface is ONE rule for every theme.** Themes differ only
+  through `--card-fill` and `--card-hairline` in `tokens.css`; the
+  `effects.css` selector must never be repeated behind a
+  `:root[data-theme='…']` prefix. It was, once: the light copy sat at
+  specificity (0,3,0) and outranked every component override, so a card
+  that deliberately restyled itself (the Daily Challenge's `--xp` ring,
+  the *selected* appearance button, the open dropdown's focus border,
+  the press-down edge on Settings rows) looked right on black and dim
+  and silently lost the styling on light — the theme most likely to go
+  unchecked. A doubled component class (`.daily-card.daily-card`) beats
+  the one rule on all three themes. `npm run validate` fails on a
+  `[data-theme]`-prefixed `.fx-card` rule and on a missing card token.
 - **Elevation exception**: floating overlays (modals, the results pill,
   sticky start button context) keep `var(--shadow)` — they hover above
   the page, so a drop shadow is information, not decoration.
@@ -547,6 +609,23 @@ The shell owns everything else: the header Save button, the saved-game
 card on the setup screen, elapsed-time restoration, and clearing the
 save when its session finishes. Timed games should resume by replaying
 the current sequence/trial rather than mid-animation.
+
+**A snapshot that returns `null` and a disabled Save button must agree.**
+Games with a pre-game menu (Maze's size picker, Battleship's fleet
+placement, the vs-Robot/vs-Friend menus) have no board to store yet, and
+they return `null` from the snapshot — which is why they must also call
+`holdClock(true)`, since that is exactly what disables the header Save
+button. Skip the hold and the player gets an enabled button that does
+nothing, reads it as "saved", leaves, and loses the run. The shell keeps
+a backstop for that case ("Nothing to save yet"), but the hold is the
+real contract.
+
+**A save belongs to the mode that made it.** `GameSave.daily` records the
+Daily Challenge date, and the setup screen only offers a save back in the
+mode that created it — restoring a daily board into an ordinary session
+would put the player on a board the screen does not claim they are
+playing. There is still one slot per game, so the modes overwrite each
+other; only the *offer* is mode-aware.
 
 ## Games
 

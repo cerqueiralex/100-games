@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon } from '../../platform/design/icons';
@@ -49,7 +50,8 @@ export function SlitherlinkGame({
   elapsedSec,
   events,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   const saved =
     savedState &&
@@ -60,9 +62,9 @@ export function SlitherlinkGame({
       : undefined;
 
   const puzzle = useMemo(
-    () => saved?.puzzle ?? generateSlitherlink(CONFIG[difficulty]),
+    () => saved?.puzzle ?? withSeed(dailySeed, () => generateSlitherlink(CONFIG[difficulty])),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [difficulty]
+    [difficulty, dailySeed]
   );
   const { rows, cols } = puzzle;
   const g = useMemo(() => geometry(rows, cols), [rows, cols]);

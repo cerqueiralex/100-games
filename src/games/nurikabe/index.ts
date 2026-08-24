@@ -13,6 +13,7 @@ export const nurikabeDefinition: GameDefinition = {
   component: NurikabeGame,
   tutorial: nurikabeTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     'Paint a grid into numbered islands and one connected sea (no 2×2 sea, islands never touch) on boards from 5×5 up to 10×10 on extreme. Solve the whole board to score +5 per cell × difficulty (1–5), minus 20 per error and 30 per hint, plus a time bonus under par (2/4/6/9/14 min).',
   assistFeatures: [

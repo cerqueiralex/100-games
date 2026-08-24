@@ -10,6 +10,7 @@ import {
   type RankTier,
   type XpAward
 } from '../progress/xp';
+import { RANK_BADGE, RANK_GLOSS, RANK_MATERIAL } from '../design/rankMaterials';
 
 /** The XP bar's height in px — the hero ring matches it (see .xp-bar). */
 const XP_BAR_THICKNESS = 12;
@@ -111,18 +112,37 @@ export function LevelRing({
 /* ---------- rank crowns (the level ladder) ---------- */
 
 /**
- * One rank crown: a white crown on the tier's material disc, with the same
- * darker rim every extruded token in the app wears.
+ * One rank crown: a white crown on the tier's material disc.
+ *
+ * Extruded, not flat — the rim disc sits behind a slightly smaller, slightly
+ * higher face, so what shows along the bottom IS the darker edge every
+ * pushable surface in the app wears. The face then carries the material's
+ * own texture (grain, brush marks, sheen, facets) from the ONE table in
+ * design/rankMaterials.ts, which the share card's canvas port reads too.
  *
  * The crown is stroked in the rim color as well as filled white — on the
  * pale materials (silver, platinum) a bare white glyph on a bright disc
  * disappears, and one formula that survives all six beats six special cases.
+ * It gets its own drop edge (the same glyph in rim, offset down) so the
+ * emblem lifts off the disc instead of lying on it.
  * Locked crowns are greyed by CSS (`.rank-step.locked`), never by different
  * art, exactly like the locked landmark plates.
  */
+const CROWN_PARTS = (
+  <>
+    <path d="M3.6 8.4 8.5 12.2 12 5.9 15.5 12.2 20.4 8.4 18.6 17.4 5.4 17.4Z" />
+    <circle cx="3.6" cy="8.4" r="2.1" />
+    <circle cx="12" cy="5.9" r="2.3" />
+    <circle cx="20.4" cy="8.4" r="2.1" />
+    <rect x="5.4" y="18.6" width="13.2" height="2.8" rx="0.7" />
+  </>
+);
+
 export function RankCrown({ rank, size = 32 }: { rank: RankTier; size?: number }) {
   const fill = `var(--rank-${rank.id})`;
   const rim = `var(--rank-${rank.id}-rim)`;
+  const mat = RANK_MATERIAL[rank.id];
+  const clipId = `rank-face-${rank.id}`;
   return (
     <svg
       className="rank-crown"
@@ -132,8 +152,45 @@ export function RankCrown({ rank, size = 32 }: { rank: RankTier; size?: number }
       role="img"
       aria-label={`${rank.name} crown, level ${rank.level}`}
     >
-      <circle cx="32" cy="32" r="29" fill={fill} stroke={rim} strokeWidth="4" />
+      <defs>
+        {/* the texture is clipped to the face, never to the rim: a grain
+            line running out over the edge would read as a scratch */}
+        <clipPath id={clipId}>
+          <circle cx={RANK_BADGE.faceCx} cy={RANK_BADGE.faceCy} r={RANK_BADGE.faceR} />
+        </clipPath>
+      </defs>
+      <circle cx={RANK_BADGE.cx} cy={RANK_BADGE.cy} r={RANK_BADGE.r} fill={rim} />
+      <circle cx={RANK_BADGE.faceCx} cy={RANK_BADGE.faceCy} r={RANK_BADGE.faceR} fill={fill} />
+      <g clipPath={`url(#${clipId})`}>
+        {mat.strokes.map((s, i) => (
+          <path
+            key={`s${i}`}
+            d={s.d}
+            fill="none"
+            stroke={rim}
+            strokeWidth={s.w}
+            strokeLinecap="round"
+            opacity={s.o}
+          />
+        ))}
+        {mat.sheens.map((s, i) => (
+          <path key={`h${i}`} d={s.d} fill="#fff" opacity={s.o} />
+        ))}
+        {!mat.matte && (
+          <ellipse
+            cx={RANK_GLOSS.cx}
+            cy={RANK_GLOSS.cy}
+            rx={RANK_GLOSS.rx}
+            ry={RANK_GLOSS.ry}
+            fill="#fff"
+            opacity={RANK_GLOSS.o}
+          />
+        )}
+      </g>
       {/* the shared 24-viewBox crown, scaled and centred inside the disc */}
+      <g transform="translate(11.5 12.1) scale(1.71)" fill={rim} opacity="0.55">
+        {CROWN_PARTS}
+      </g>
       <g
         transform="translate(11.5 10.6) scale(1.71)"
         fill="#fff"
@@ -141,11 +198,7 @@ export function RankCrown({ rank, size = 32 }: { rank: RankTier; size?: number }
         strokeWidth="1.05"
         strokeLinejoin="round"
       >
-        <path d="M3.6 8.4 8.5 12.2 12 5.9 15.5 12.2 20.4 8.4 18.6 17.4 5.4 17.4Z" />
-        <circle cx="3.6" cy="8.4" r="2.1" />
-        <circle cx="12" cy="5.9" r="2.3" />
-        <circle cx="20.4" cy="8.4" r="2.1" />
-        <rect x="5.4" y="18.6" width="13.2" height="2.8" rx="0.7" />
+        {CROWN_PARTS}
       </g>
     </svg>
   );

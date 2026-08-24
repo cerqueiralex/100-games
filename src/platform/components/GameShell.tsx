@@ -13,6 +13,14 @@ import { LevelUpModal, XpEarned } from './Level';
 import { levelFromXp, NO_AWARD, rankForXp, type XpAward } from '../progress/xp';
 import { TutorialModal } from './Tutorial';
 import { MasteryModal } from './Mastery';
+import {
+  completeDaily,
+  dailyStreakInfo,
+  loadDaily,
+  markDailyStarted,
+  type DailyChallengeRecord
+} from '../daily/store';
+import type { DailyProgressInfo } from '../progress/progress';
 
 type Phase = 'setup' | 'playing' | 'finished';
 
@@ -26,6 +34,14 @@ const DIFFICULTY_LABEL: Record<Difficulty, string> = {
 
 const emptyStats: LiveStats = { score: 0, errors: 0, hintsUsed: 0, assistsUsed: [] };
 
+/** "Aug 24" from a 'YYYY-MM-DD' key — parsed as LOCAL parts, because
+    new Date('2026-08-24') is UTC midnight and prints the day before in
+    every timezone west of Greenwich. */
+export function formatDailyDate(dateKey: string): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 /** Where leaving a running game lands: this game's setup screen, or the home list. */
 type LeaveTo = 'setup' | 'home';
 
@@ -38,14 +54,24 @@ const LEAVE_COPY: Record<LeaveTo, { title: string; confirm: string }> = {
  * Standard wrapper around every game: difficulty selection, assist toggles,
  * timing, pause, quit, result recording and the completion screen.
  */
-export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () => void }) {
+export function GameShell({
+  game,
+  onExit,
+  daily
+}: {
+  game: GameDefinition;
+  onExit: () => void;
+  /** present when this session is today's Daily Challenge: the board comes
+      from the stored seed and the difficulty is locked to the assignment */
+  daily?: DailyChallengeRecord;
+}) {
   const { settings, updateSettings, setGameAssist, recordResult, profile, progress } = useAppState();
   // difficulties this game has been WON at — green star + border on the picker
   const beaten = beatenDifficulties(progress, game.id);
 
   const [phase, setPhase] = useState<Phase>('setup');
   const [difficulty, setDifficulty] = useState<Difficulty>(
-    settings.lastDifficulty[game.id] ?? 'easy'
+    daily?.difficulty ?? settings.lastDifficulty[game.id] ?? 'easy'
   );
   const [paused, setPaused] = useState(false);
   const [elapsedSec, setElapsedSec] = useState(0);
@@ -67,10 +93,17 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   const [award, setAward] = useState<XpAward>(NO_AWARD);
   /** a level reached by this result — its card opens before the results */
   const [levelUp, setLevelUp] = useState<number | null>(null);
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [storedSave, setStoredSave] = useState<GameSave | null>(
-    () => loadSaves()[game.id] ?? null
-  );
+  /** what the Save button did: wrote a save, or had nothing to write yet
+      (games with a pre-game menu — Maze's size picker, Battleship's fleet
+      placement — have no board to snapshot until real play starts) */
+  const [saveOutcome, setSaveOutcome] = useState<'saved' | 'nothing' | null>(null);
+  /** the stored save, but only when it belongs to this mode (see GameSave.daily) */
+  const saveForThisMode = useCallback(() => {
+    const save = loadSaves()[game.id];
+    if (!save) return null;
+    return (save.daily ?? null) === (daily?.date ?? null) ? save : null;
+  }, [game.id, daily?.date]);
+  const [storedSave, setStoredSave] = useState<GameSave | null>(saveForThisMode);
   const [activeSave, setActiveSave] = useState<GameSave | null>(null);
 
   const liveStats = useRef<LiveStats>(emptyStats);
@@ -81,8 +114,8 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   const sessionHasSave = useRef(false);
 
   useEffect(() => {
-    if (phase === 'setup') setStoredSave(loadSaves()[game.id] ?? null);
-  }, [phase, game.id]);
+    if (phase === 'setup') setStoredSave(saveForThisMode());
+  }, [phase, saveForThisMode]);
 
   const assists = useMemo(
     () => resolveAssists(settings, game.id, game.assistFeatures),
@@ -114,9 +147,14 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
   }, []);
 
   const start = (resume?: GameSave | null) => {
-    const diff = resume?.difficulty ?? difficulty;
-    if (resume) setDifficulty(diff);
-    updateSettings({ lastDifficulty: { ...settings.lastDifficulty, [game.id]: diff } });
+    const diff = daily?.difficulty ?? resume?.difficulty ?? difficulty;
+    if (resume || daily) setDifficulty(diff);
+    // a daily run is locked to its own tier, so it must not overwrite the
+    // difficulty the player chose for their normal games
+    if (!daily) {
+      updateSettings({ lastDifficulty: { ...settings.lastDifficulty, [game.id]: diff } });
+    }
+    if (daily) markDailyStarted(daily.date);
     liveStats.current = emptyStats;
     finished.current = false;
     sessionHasSave.current = !!resume;
@@ -132,24 +170,34 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
     setCelebrating(false);
     setAward(NO_AWARD);
     setLevelUp(null);
-    setShowSaveModal(false);
+    setSaveOutcome(null);
     setSession((s) => s + 1);
     setPhase('playing');
   };
 
   const saveGame = () => {
     const state = snapshotRef.current?.();
-    if (state === undefined || state === null) return;
+    /* Backstop, not the primary guard: the Save button is disabled while a
+       game holds the clock, which is exactly when a pre-game menu (Maze's
+       size picker, Battleship's fleet placement) has no board to snapshot.
+       A game that returns null WITHOUT holding the clock would otherwise
+       give the player a button that silently does nothing — which reads as
+       "saved", and they leave and lose the run. Say so instead. */
+    if (state === undefined || state === null) {
+      setSaveOutcome('nothing');
+      return;
+    }
     putSave({
       gameId: game.id,
       difficulty,
       elapsedSec,
       savedAt: Date.now(),
-      state
+      state,
+      ...(daily ? { daily: daily.date } : {})
     });
     sessionHasSave.current = true;
     sfx.place();
-    setShowSaveModal(true);
+    setSaveOutcome('saved');
   };
 
   const buildResult = useCallback(
@@ -185,7 +233,30 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         if (finished.current) return;
         finished.current = true;
         liveStats.current = payload;
-        const earned = recordResult(buildResult(payload.outcome, payload));
+
+        /* A daily is "completed" by WINNING it — a loss leaves the day open
+           to try again, because the challenge is the puzzle, not the first
+           attempt at it. Folded in BEFORE recordResult so the XP award can
+           see the streak this very run extended. */
+        let dailyInfo: DailyProgressInfo | undefined;
+        if (daily && payload.outcome === 'won') {
+          const clean = payload.hintsUsed === 0 && payload.assistsUsed.length === 0;
+          const outcome = completeDaily(daily.date, {
+            timeSec: elapsedRef.current,
+            hintsUsed: payload.hintsUsed,
+            assistsUsed: payload.assistsUsed,
+            cleanWin: clean
+          });
+          dailyInfo = {
+            gameId: daily.gameId,
+            firstCompletion: outcome.firstCompletion,
+            advanced: outcome.advanced,
+            cleanWin: clean,
+            best: outcome.store.streak.best
+          };
+        }
+
+        const earned = recordResult(buildResult(payload.outcome, payload), dailyInfo);
         setAward(earned);
         // the level card opens before the results (see the modal gate below)
         if (earned.leveledUp) setLevelUp(earned.levelAfter);
@@ -204,7 +275,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         } else sfx.lose();
       }
     }),
-    [buildResult, recordResult, game.id]
+    [buildResult, recordResult, game.id, daily]
   );
 
   /**
@@ -314,6 +385,19 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           </div>
         )}
 
+        {daily ? (
+          <section className="setup-section">
+            <h3 className="section-title">Today&rsquo;s challenge</h3>
+            <p className="section-note">
+              The same board for everyone, everywhere, today only. The difficulty is fixed so
+              every result is comparable.
+            </p>
+            <div className="daily-lock fx-card">
+              <span className="daily-lock-date">{formatDailyDate(daily.date)}</span>
+              <Chip tone="accent">{DIFFICULTY_LABEL[daily.difficulty]}</Chip>
+            </div>
+          </section>
+        ) : (
         <section className="setup-section">
           <h3 className="section-title">Difficulty</h3>
           <div className="difficulty-row">
@@ -337,6 +421,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
             ))}
           </div>
         </section>
+        )}
 
         {game.assistFeatures.length > 0 && (
           <section className="setup-section">
@@ -363,7 +448,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         <p className="scoring-note">{game.scoringNote}</p>
 
         <button className="primary-btn start-btn" onClick={() => start()}>
-          Start game
+          {daily ? "Play today's challenge" : 'Start game'}
         </button>
 
         {showTutorial && <TutorialModal game={game} onClose={() => setShowTutorial(false)} />}
@@ -380,7 +465,8 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
           <div className="game-header-mid">
             <span className="game-header-title">{game.name}</span>
             <span className="game-header-sub">
-              {DIFFICULTY_LABEL[difficulty]} · {formatDuration(elapsedSec)}
+              {daily ? `Daily · ${formatDailyDate(daily.date)}` : DIFFICULTY_LABEL[difficulty]} ·{' '}
+              {formatDuration(elapsedSec)}
             </span>
           </div>
         </div>
@@ -458,6 +544,7 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
             snapshotRef.current = fn;
           }}
           holdClock={holdClock}
+          dailySeed={daily?.seed}
         />
         {paused && phase === 'playing' && (
           <div className="pause-overlay">
@@ -482,17 +569,25 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
         />
       )}
 
-      <Modal open={showSaveModal} onClose={() => setShowSaveModal(false)} title="Game saved">
+      <Modal
+        open={saveOutcome !== null}
+        onClose={() => setSaveOutcome(null)}
+        title={saveOutcome === 'nothing' ? 'Nothing to save yet' : 'Game saved'}
+      >
         <p className="modal-text">
-          Pick it up any time from this game's start screen — even after closing the app.
+          {saveOutcome === 'nothing'
+            ? 'This game has no board to store until you start playing. Make your first move, then save.'
+            : "Pick it up any time from this game's start screen — even after closing the app."}
         </p>
         <div className="modal-actions">
-          <button className="ghost-btn" onClick={() => setShowSaveModal(false)}>
+          <button className="ghost-btn" onClick={() => setSaveOutcome(null)}>
             Keep playing
           </button>
-          <button className="primary-btn" onClick={() => onExit()}>
-            Exit to menu
-          </button>
+          {saveOutcome === 'saved' && (
+            <button className="primary-btn" onClick={() => onExit()}>
+              Exit to menu
+            </button>
+          )}
         </div>
       </Modal>
 
@@ -640,7 +735,15 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
             playerName: profile.name,
             playerEmoji: profile.emoji,
             level: levelFromXp(progress.xp),
-            rank: rankForXp(progress.xp)
+            rank: rankForXp(progress.xp),
+            ...(daily
+              ? {
+                  daily: {
+                    dateLabel: formatDailyDate(daily.date),
+                    streak: dailyStreakInfo(loadDaily(), daily.date).current
+                  }
+                }
+              : {})
           }}
           onClose={() => setShowShare(false)}
         />

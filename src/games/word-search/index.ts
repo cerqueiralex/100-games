@@ -13,6 +13,7 @@ export const wordSearchDefinition: GameDefinition = {
   component: WordSearchGame,
   tutorial: wordSearchTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     'Each found word scores 20 + 6 per letter, times the difficulty multiplier (1–5). Consecutive finds without a wrong drag add a +15×multiplier streak bonus; wrong drags count as errors and reset the streak; each hint costs 40 points. Solving the board adds 100×multiplier plus 1×multiplier per second under par (2/3/5/6/8 minutes). Extreme hides the word list behind length-only silhouettes.',
   assistFeatures: [

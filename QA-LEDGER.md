@@ -100,6 +100,85 @@ they gain enforcement, delete entries obsoleted by code removal.
   flaky check by widening its tolerance. Enforced: the seed block in
   scripts/validate.ts.
 
+- **2026-08-24 · async · a `try/finally` around a callback does NOT wrap an
+  async one.** The Daily Challenge seeds boards by swapping `Math.random`
+  for the duration of one generator call. Handed an `async` callback, the
+  function returns its promise at the first `await`, so `finally` restored
+  `Math.random` *before* the generator drew a number — every board came out
+  unseeded, which for this feature means every player silently gets a
+  different puzzle. Caught only because the validate check compared two runs
+  of the real generators rather than trusting the helper. Rule: any helper
+  that installs and restores global state around a callback must reject
+  async callbacks outright — and the test for it must exercise the real
+  caller, not the helper alone. Enforced: `withSeededRandom` throws on a
+  thenable, plus the validate case that drives the real generators twice.
+
+- **2026-08-24 · CSS specificity · a per-theme copy of a shared rule
+  outranks every component override.** `effects.css` defined the card
+  surface twice: once at `.fx-card.fx-card` (0,2,0) and again behind
+  `:root[data-theme='light']` (0,3,0). Every deliberate card override
+  therefore worked on black and dim and silently lost on **light** — the
+  Daily Challenge card's `--xp` ring, the *selected* appearance button in
+  Settings (no highlight at all, so nothing showed which theme was on), the
+  open dropdown's accent focus border, and the press-down edge on the
+  Settings action rows. Four visible bugs, one root cause, and light is the
+  theme least likely to be spot-checked. Rule: a shared surface rule is
+  ONE rule for all themes; the theme difference lives in tokens
+  (`--card-fill`, `--card-hairline`). Enforced: validate fails on a
+  `[data-theme]`-prefixed `.fx-card` rule or a missing card token; DESIGN.md
+  "Depth & motion" + CLAUDE.md design bullet. Corollary worth carrying:
+  when a component override "doesn't apply", suspect a theme-prefixed copy
+  of the base rule before rewriting the component.
+
+- **2026-08-24 · UX · an enabled control that does nothing reads as
+  success.** `GameShell.saveGame()` returned silently when the snapshot was
+  null, so a game with a pre-game menu could offer a Save button that
+  neither saved nor said anything — the player reads that as "saved",
+  leaves, and loses the run. Today no game reaches it (the pre-game menus
+  all `holdClock(true)`, which disables the button), but the coupling was
+  implicit. Rule: the null-snapshot state and the disabled Save button must
+  agree — a game whose snapshot can return null MUST hold the clock there.
+  Enforced: shell backstop ("Nothing to save yet" instead of a no-op) +
+  DESIGN.md "Save & resume" contract + CLAUDE.md. General form: never let a
+  user-initiated action fail silently; say what happened.
+
+- **2026-08-24 · trophies · a whole FAMILY can unlock vacuously, not just a
+  single landmark.** The empty-category rule ("no games in a category → no
+  mastery landmark, or it unlocks on 0/0") had a sibling nobody had checked:
+  the Daily Challenge trophies were spread into `LANDMARKS` unconditionally,
+  so a rotation with nothing eligible would have shown five trophies with
+  0/0 meters that could never be earned. Rule: any landmark family derived
+  from a filtered list is spread in only when that list is non-empty.
+  Enforced: validate's daily-family check (no family with an empty rotation,
+  Collector total == eligible count, rungs as documented). Related split
+  worth remembering: a permanent store must not hold a number that decays
+  with the calendar, so the daily METER reads the live streak passed in
+  while UNLOCKING falls back to the stored best — validate pins both.
+
+- **2026-08-24 · art · one drawing rendered twice will drift.** The rank
+  crown exists as an SVG badge (`RankCrown`, every DOM surface) and as a
+  canvas port (`drawRankCrown`, the shareable win card). They were two
+  independent copies of the same geometry, so the moment the badge gained
+  material texture the share card would have kept shipping the old flat
+  disc — a player's card showing a different crown from their profile.
+  Rule: when the same artwork must exist in two renderers, the *shape data*
+  lives in one table both read (canvas takes SVG path strings through
+  `Path2D`), never in two drawings. Enforced: `design/rankMaterials.ts` +
+  validate (every rank has a material; both files still import the table).
+
+- **2026-08-24 · UI · a "done" state drawn as a low-opacity tint reads as
+  half-done.** The profile's Daily Challenge calendar painted a solved day
+  as a ~30% mix of its colour into the surface, next to a streak row whose
+  played days are solid discs with an extruded edge — so the finished day
+  looked weaker than the thing it was meant to celebrate. Rule: a completed
+  state gets the SAME material as the app's other completion marks (solid
+  fill + inset bottom edge + an explicit mark), never a wash of the
+  incomplete one; and adding it must not flatten the clean/helped split.
+  Enforced: DESIGN.md "Daily Challenge". Watch for the sibling trap it
+  raised — a state that adds `box-shadow` and a state that sets
+  `box-shadow` will silently cancel each other; compose through a custom
+  property (`--cell-edge`) instead.
+
 ## Watch items (re-check every QA — not yet machine-enforced)
 
 - **2026-08-24 · data · a retroactive backfill must count the RIGHT
@@ -182,3 +261,17 @@ they gain enforcement, delete entries obsoleted by code removal.
   promoted), 2 per-event drag commits (fixed), duplicated Undo icon
   (promoted to platform `UndoIcon`); reflect physics validate check
   added; light-theme content colors verified; README refreshed.
+- 2026-08-24 — /qa-everything over the Daily Challenge work: gates green;
+  all 67 games re-driven headlessly at 390×780 (one `.game-tools` card, no
+  horizontal overflow, tools ≤42% of the viewport) with zero page or
+  console errors; the daily surfaces checked on all three themes at phone
+  and desktop widths. Found and fixed the per-theme `.fx-card` copy (four
+  light-theme regressions, promoted with a validate check), the vacuous
+  daily trophy family, the daily meter reading the wrong streak, text
+  glyphs used as icons on the daily card plus a dead identical-branch
+  ternary, a silent no-op Save, and the missing validate coverage of the
+  daily XP award path. Same run, on the user's design notes: the solved-day
+  calendar cell was rebuilt in the streak disc's solid extruded material
+  with a tick, and the rank crowns gained extrusion plus per-material
+  texture from a new shared table both renderers read. Every new check was
+  proved to bite by breaking the code under it first.

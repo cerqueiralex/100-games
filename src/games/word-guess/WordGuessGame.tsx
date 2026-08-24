@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, EyeIcon } from '../../platform/design/icons';
@@ -40,7 +41,8 @@ export function WordGuessGame({
   paused,
   events,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   const cfg = CONFIG[difficulty];
   const saved =
@@ -49,7 +51,10 @@ export function WordGuessGame({
       : undefined;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const secret = useMemo(() => saved?.secret ?? pickSecret(difficulty), [difficulty]);
+  const secret = useMemo(
+    () => saved?.secret ?? withSeed(dailySeed, () => pickSecret(difficulty)),
+    [difficulty, dailySeed]
+  );
 
   const [guesses, setGuesses] = useState<string[]>(() => saved?.guesses ?? []);
   const [marks, setMarks] = useState<Mark[][]>(() => saved?.marks ?? []);

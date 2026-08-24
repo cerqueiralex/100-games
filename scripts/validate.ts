@@ -3604,6 +3604,8 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
     xp: 0,
     plays: 0,
     cleanWins: 0,
+    dailyBest: 0,
+    dailyGames: [],
     records: {}
   };
   const noStreak = computeStreak([], new Date());
@@ -3644,6 +3646,41 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
       const { total } = landmarkMeter(defs[0], fresh, noStreak);
       if (total !== games.length)
         bad(`${defs[0].id} covers ${total} games, category has ${games.length}`);
+    }
+  }
+
+  // the Daily Challenge family follows the SAME rule as categories: it
+  // exists only while the rotation is non-empty, and its Collector covers
+  // exactly the games that opted in — never a hardcoded count
+  {
+    const { eligibleGames } = await import('../src/platform/daily/rotation');
+    const eligible = eligibleGames();
+    const dailyDefs = LANDMARKS.filter(
+      (d) => d.kind === 'daily-streak' || d.kind === 'daily-collector'
+    );
+    if (eligible.length === 0 && dailyDefs.length > 0)
+      bad('the daily landmarks exist with an empty rotation (they could never unlock)');
+    if (eligible.length > 0) {
+      const rungs = LANDMARKS.filter((d) => d.kind === 'daily-streak').map((d) => d.days);
+      const wantRungs = [7, 30, 100, 365];
+      if (JSON.stringify(rungs) !== JSON.stringify(wantRungs))
+        bad(`daily streak rungs are [${rungs}], expected [${wantRungs}]`);
+      const collectors = LANDMARKS.filter((d) => d.kind === 'daily-collector');
+      if (collectors.length !== 1) bad(`${collectors.length} daily collectors, expected 1`);
+      if (collectors[0]) {
+        const { total } = landmarkMeter(collectors[0], fresh, noStreak);
+        if (total !== eligible.length)
+          bad(`daily-collector covers ${total} games, rotation has ${eligible.length}`);
+      }
+      // the meter shows the LIVE run when the caller knows it (so a broken
+      // streak reads as "start again"), while unlocking still uses the best
+      // ever — the same split the play-streak meters use
+      const tier = LANDMARKS.find((d) => d.kind === 'daily-streak')!;
+      const withBest: Progress = { ...fresh, dailyBest: 5 };
+      if (landmarkMeter(tier, withBest, noStreak).done !== 5)
+        bad('daily streak meter ignores dailyBest when no live streak is supplied');
+      if (landmarkMeter(tier, withBest, noStreak, 0).done !== 0)
+        bad('daily streak meter ignores the live streak it was handed');
     }
   }
 
@@ -3719,6 +3756,37 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
       const got = rankForLevel(level)?.id ?? null;
       if (got !== want) bad(`rankForLevel(${level}) = ${got}, expected ${want}`);
     }
+
+    /* Every crown is MADE OF something, and both renderers read the same
+       table. The SVG badge (Level.tsx) and the canvas port (ShareCard.tsx)
+       are two drawings of one crown; before rankMaterials.ts they were two
+       independent copies, which is exactly how a shared card ends up
+       showing a different badge from the profile. */
+    const { RANK_MATERIAL } = await import('../src/platform/design/rankMaterials');
+    for (const tier of RANK_TIERS) {
+      const m = RANK_MATERIAL[tier.id];
+      if (!m) {
+        bad(`rank ${tier.id} has no material — its crown would render flat`);
+        continue;
+      }
+      if (m.strokes.length + m.sheens.length === 0)
+        bad(`rank ${tier.id} has neither texture nor sheen (it is just a coloured disc)`);
+      for (const s of [...m.strokes, ...m.sheens]) {
+        if (!/^M[\s\d.]/.test(s.d)) bad(`rank ${tier.id} has a texture path that is not path data`);
+        if (!(s.o > 0 && s.o <= 1)) bad(`rank ${tier.id} has a texture opacity of ${s.o}`);
+      }
+      for (const s of m.strokes) if (!(s.w > 0)) bad(`rank ${tier.id} has a zero-width texture line`);
+    }
+    const readsTable = (p: string) =>
+      /from '(\.\.\/)+design\/rankMaterials'|from '\.\.\/design\/rankMaterials'/.test(
+        readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8')
+      );
+    for (const p of [
+      'src/platform/components/Level.tsx',
+      'src/platform/components/ShareCard.tsx'
+    ]) {
+      if (!readsTable(p)) bad(`${p} no longer reads the shared rank material table`);
+    }
   }
 
   // the lifetime counters drive their meters (and the level ladder reads XP)
@@ -3762,7 +3830,7 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
 
   if (ok)
     console.log(
-      `  ✓ ${LANDMARKS.length} landmarks: streak ladder ${expectedTiers.length} tiers, library trophies cover all ${GAMES.length} games, 1 mastery per non-empty category, fresh profile fully locked, streak math sane`
+      `  ✓ ${LANDMARKS.length} landmarks: streak ladder ${expectedTiers.length} tiers, library trophies cover all ${GAMES.length} games, 1 mastery per non-empty category, daily family only while the rotation is non-empty, fresh profile fully locked, streak math sane`
     );
 }
 
@@ -3902,6 +3970,328 @@ console.log('— Player XP & levels —');
 }
 
 // ---------------------------------------------------------------------------
+// Daily Challenge (src/platform/daily/)
+// ---------------------------------------------------------------------------
+console.log('— Daily Challenge (rotation, seeding, streak) —');
+{
+  const { assignmentFor, dayIndexOf, eligibleGames } = await import(
+    '../src/platform/daily/rotation'
+  );
+  const { hashSeed, withSeededRandom } = await import('../src/platform/daily/seededRandom');
+  const { GAMES } = await import('../src/platform/registry');
+
+  let ok = true;
+  const bad = (msg: string) => {
+    failed = true;
+    ok = false;
+    console.error(`✗ ${msg}`);
+  };
+
+  const eligible = eligibleGames();
+  if (eligible.length < 3) bad(`only ${eligible.length} eligible games — the rotation needs at least 3`);
+
+  // 1. THE DERIVATION RULE: the rotation reads the registry, never a list.
+  const expected = GAMES.filter((g) => g.dailyChallenge?.eligible).map((g) => g.id);
+  if (JSON.stringify(eligible.map((g) => g.id)) !== JSON.stringify(expected))
+    bad('eligibleGames() disagrees with GAMES.filter(dailyChallenge.eligible)');
+
+  // 2. withSeededRandom is deterministic AND always hands Math.random back —
+  //    a leaked patch would make every later shuffle in the app replay.
+  const original = Math.random;
+  const draw = () => withSeededRandom(1234, () => [Math.random(), Math.random(), Math.random()]);
+  if (JSON.stringify(draw()) !== JSON.stringify(draw()))
+    bad('withSeededRandom is not deterministic for a fixed seed');
+  if (JSON.stringify(draw()) === JSON.stringify(withSeededRandom(5678, () => [Math.random()])))
+    bad('two different seeds produced the same first draw');
+  if (Math.random !== original) bad('withSeededRandom did not restore Math.random');
+  try {
+    withSeededRandom(1, () => {
+      throw new Error('boom');
+    });
+  } catch {
+    /* expected */
+  }
+  if (Math.random !== original) bad('withSeededRandom leaked the patch when the generator threw');
+
+  // 3. Rotation coverage: over one full cycle every eligible game comes up
+  //    exactly once, and no game lands on two adjacent days across the
+  //    boundary between cycles.
+  {
+    const n = eligible.length;
+    const base = dayIndexOf('2026-08-24');
+    // start at a cycle boundary so the window is exactly one cycle
+    const start = base - (base % n);
+    const dateAt = (index: number) => {
+      const d = new Date(index * 86_400_000);
+      const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const dd = String(d.getUTCDate()).padStart(2, '0');
+      return `${d.getUTCFullYear()}-${mm}-${dd}`;
+    };
+    for (const cycle of [0, 1, 2]) {
+      const ids: string[] = [];
+      for (let i = 0; i < n; i++) ids.push(assignmentFor(dateAt(start + cycle * n + i))!.gameId);
+      if (new Set(ids).size !== n)
+        bad(`cycle ${cycle}: ${n - new Set(ids).size} game(s) repeated inside one cycle`);
+    }
+    // adjacent days, spanning two boundaries
+    let prev = '';
+    for (let i = -1; i <= 2 * n + 1; i++) {
+      const id = assignmentFor(dateAt(start + i))!.gameId;
+      if (id === prev) bad(`the same game (${id}) landed on two days running at offset ${i}`);
+      prev = id;
+    }
+  }
+
+  // 4. The assignment is a pure function of the date: two devices must agree.
+  for (const date of ['2026-01-01', '2026-08-24', '2027-03-09']) {
+    const a = assignmentFor(date)!;
+    const b = assignmentFor(date)!;
+    if (a.gameId !== b.gameId || a.seed !== b.seed)
+      bad(`assignmentFor(${date}) is not stable across calls`);
+    if (a.seed !== hashSeed(`${date}:${a.gameId}`))
+      bad(`the seed for ${date} is not derived from date+game`);
+  }
+  // two games on one date must not share a board seed
+  if (hashSeed('2026-08-24:sudoku') === hashSeed('2026-08-24:tents'))
+    bad('the seed ignores the game id');
+
+  // 5. EVERY eligible game generates an identical board twice from one seed.
+  //    This is the whole promise of the feature; a generator that reaches for
+  //    anything but Math.random (a clock, a module counter) fails here.
+  //    The map is checked against the eligible list below, so opting a game
+  //    in without adding it here is a build failure, not a silent gap.
+  const gen: Record<string, () => Promise<() => unknown>> = {
+    sudoku: async () => {
+      const m = await import('../src/games/sudoku/logic/generator');
+      return () => m.generatePuzzle('medium');
+    },
+    nonogram: async () => {
+      const m = await import('../src/games/nonogram/logic/generator');
+      return () => m.generateNonogram({ size: 10 });
+    },
+    tents: async () => {
+      const m = await import('../src/games/tents/logic/generator');
+      return () => m.generateTents({ size: 8 });
+    },
+    hashi: async () => {
+      const m = await import('../src/games/hashi/logic/generator');
+      return () => m.generateHashi(m.HASHI_CONFIG.medium);
+    },
+    nurikabe: async () => {
+      const m = await import('../src/games/nurikabe/logic/generator');
+      return () => m.generateNurikabe({ size: 6 });
+    },
+    aquarium: async () => {
+      const m = await import('../src/games/aquarium/logic/generator');
+      return () => m.generateAquarium(m.AQU_CONFIG.medium);
+    },
+    slitherlink: async () => {
+      const m = await import('../src/games/slitherlink/logic/generator');
+      return () => m.generateSlitherlink({ rows: 6, cols: 6, removeFrac: 0.5 });
+    },
+    kakuro: async () => {
+      const m = await import('../src/games/kakuro/logic/generator');
+      return () => m.generateKakuro({ difficulty: 'medium' });
+    },
+    'killer-sudoku': async () => {
+      const m = await import('../src/games/killer-sudoku/logic/generator');
+      return () => m.generateKiller({ difficulty: 'medium' });
+    },
+    skyscrapers: async () => {
+      const m = await import('../src/games/skyscrapers/logic/generator');
+      return () => m.generateSkyPuzzle('medium');
+    },
+    futoshiki: async () => {
+      const m = await import('../src/games/futoshiki/logic/generator');
+      return () => m.generateFutoshiki(m.DIFFICULTY_CONFIG.medium);
+    },
+    'binary-grid': async () => {
+      const m = await import('../src/games/binary-grid/logic/generator');
+      return () => m.generateBinary({ size: 8, uniqueLines: true, targetGivens: 26, depth: 1 });
+    },
+    mathdoku: async () => {
+      const m = await import('../src/games/mathdoku/logic/generator');
+      return () => m.generateMathdoku(m.DIFF_CONFIG.medium);
+    },
+    'word-search': async () => {
+      const m = await import('../src/games/word-search/logic/generator');
+      return () => m.generateWordSearch({ difficulty: 'medium' });
+    },
+    cryptogram: async () => {
+      const m = await import('../src/games/cryptogram/logic/words');
+      return () => m.generateCryptoPuzzle('medium');
+    },
+    'word-guess': async () => {
+      const m = await import('../src/games/word-guess/logic/engine');
+      return () => m.pickSecret('medium');
+    },
+    gridlock: async () => {
+      const m = await import('../src/games/gridlock/logic/generator');
+      return () => m.generateGridlock({ difficulty: 'medium' });
+    }
+  };
+
+  const covered = Object.keys(gen).sort();
+  const eligibleIds = eligible.map((g) => g.id).sort();
+  if (JSON.stringify(covered) !== JSON.stringify(eligibleIds)) {
+    const missing = eligibleIds.filter((id) => !covered.includes(id));
+    const extra = covered.filter((id) => !eligibleIds.includes(id));
+    if (missing.length) bad(`eligible but not determinism-checked: ${missing.join(', ')}`);
+    if (extra.length) bad(`determinism-checked but not eligible: ${extra.join(', ')}`);
+  }
+
+  for (const id of eligibleIds) {
+    const load = gen[id];
+    if (!load) continue;
+    // the module is awaited OUTSIDE the seeded window: the patch cannot span
+    // an await, which is what the thenable guard in withSeededRandom enforces
+    const make = await load();
+    const seed = hashSeed(`2026-08-24:${id}`);
+    const a = JSON.stringify(withSeededRandom(seed, make));
+    const b = JSON.stringify(withSeededRandom(seed, make));
+    if (a !== b) bad(`${id}: the same seed produced two different boards`);
+    // a different seed must actually change the board, or "seeded" is a lie
+    const other = JSON.stringify(withSeededRandom(seed + 1, make));
+    if (a === other) bad(`${id}: two different seeds produced the same board`);
+    if (a === '{}' || a === 'undefined' || a === 'null') bad(`${id}: generator returned nothing`);
+  }
+
+  // an async callback can never be seeded — it must fail loudly, not quietly
+  {
+    let threw = false;
+    try {
+      withSeededRandom(1, async () => 1);
+    } catch {
+      threw = true;
+    }
+    if (!threw) bad('withSeededRandom accepted an async callback (its seed would not apply)');
+    if (Math.random !== original) bad('the async guard leaked the patched Math.random');
+  }
+
+  // 6. The streak predicate: only a same-day completion advances it.
+  {
+    const store = await import('../src/platform/daily/store');
+    const at = (key: string, h = 12) => {
+      const [y, m, d] = key.split('-').map(Number);
+      return new Date(y, m - 1, d, h).getTime();
+    };
+    const mem = new Map<string, string>();
+    (globalThis as { localStorage?: unknown }).localStorage = {
+      getItem: (k: string) => mem.get(k) ?? null,
+      setItem: (k: string, v: string) => void mem.set(k, v),
+      removeItem: (k: string) => void mem.delete(k),
+      clear: () => mem.clear(),
+      key: (i: number) => [...mem.keys()][i] ?? null,
+      get length() {
+        return mem.size;
+      }
+    };
+    try {
+      const seed = (dates: string[]) => {
+        const records: Record<string, unknown> = {};
+        for (const date of dates) {
+          records[date] = {
+            date,
+            gameId: eligible[0].id,
+            difficulty: 'medium',
+            seed: 1,
+            status: 'unplayed'
+          };
+        }
+        mem.set(
+          '100games.v1.daily',
+          JSON.stringify({ records, streak: { current: 0, best: 0, lastCompletedDate: null } })
+        );
+      };
+      const done = { timeSec: 10, hintsUsed: 0, assistsUsed: [], cleanWin: true };
+
+      // consecutive days build the run
+      seed(['2026-03-01', '2026-03-02', '2026-03-03']);
+      store.completeDaily('2026-03-01', done, at('2026-03-01'));
+      store.completeDaily('2026-03-02', done, at('2026-03-02'));
+      let s3 = store.completeDaily('2026-03-03', done, at('2026-03-03'));
+      if (s3.store.streak.current !== 3) bad(`3 days running gave a streak of ${s3.store.streak.current}`);
+      if (!s3.advanced) bad('a same-day completion did not report advancing the streak');
+
+      // finishing a day LATE is logged but never extends the streak
+      seed(['2026-03-01', '2026-03-02']);
+      store.completeDaily('2026-03-01', done, at('2026-03-01'));
+      const late = store.completeDaily('2026-03-02', done, at('2026-03-04'));
+      if (late.advanced) bad('a late completion advanced the streak');
+      if (late.store.streak.current !== 1)
+        bad(`a late completion changed the streak to ${late.store.streak.current}`);
+      if (late.store.records['2026-03-02'].result?.onTime !== false)
+        bad('a late completion was not flagged onTime:false');
+
+      // a missed day restarts the run at 1
+      seed(['2026-03-01', '2026-03-04']);
+      store.completeDaily('2026-03-01', done, at('2026-03-01'));
+      const after = store.completeDaily('2026-03-04', done, at('2026-03-04'));
+      if (after.store.streak.current !== 1)
+        bad(`after a missed day the streak is ${after.store.streak.current}, expected 1`);
+      if (after.store.streak.best !== 1) bad('best streak moved when it should not have');
+
+      // re-winning the same day pays nothing twice
+      seed(['2026-03-01']);
+      store.completeDaily('2026-03-01', done, at('2026-03-01'));
+      const again = store.completeDaily('2026-03-01', done, at('2026-03-01', 20));
+      if (again.advanced || again.firstCompletion)
+        bad('replaying an already-completed day reported a fresh completion');
+      if (again.store.streak.current !== 1)
+        bad(`replaying a day moved the streak to ${again.store.streak.current}`);
+
+      // a broken run stops being displayed, without touching what was earned
+      const shown = store.dailyStreakInfo(
+        { records: {}, streak: { current: 9, best: 12, lastCompletedDate: '2026-03-01' } },
+        '2026-03-20'
+      );
+      if (shown.current !== 0) bad(`a run last extended 19 days ago still shows ${shown.current}`);
+      if (shown.best !== 12) bad('the best run was lost when the current one lapsed');
+
+      // 7. Backup sanitation: junk is dropped, never thrown, and the streak
+      //    counters cannot be poisoned by a hand-edited file.
+      const dirty = store.normalizeDailyStore({
+        records: {
+          good: {
+            date: '2026-03-01',
+            gameId: eligible[0].id,
+            difficulty: 'medium',
+            seed: 3,
+            status: 'completed',
+            result: { timeSec: 5, hintsUsed: 0, assistsUsed: [], cleanWin: true, completedAt: 'x', onTime: true }
+          },
+          gone: { date: '2026-03-02', gameId: 'no-such-game', difficulty: 'medium', seed: 1, status: 'completed' },
+          bogusDate: { date: '2026-02-31', gameId: eligible[0].id, difficulty: 'medium', seed: 1, status: 'unplayed' },
+          bogusDiff: { date: '2026-03-03', gameId: eligible[0].id, difficulty: 'impossible', seed: 1, status: 'unplayed' },
+          bogusStatus: { date: '2026-03-04', gameId: eligible[0].id, difficulty: 'medium', seed: 1, status: 'hacked' },
+          notAnObject: 42
+        },
+        streak: { current: -5, best: Number.NaN, lastCompletedDate: 'not-a-date' }
+      });
+      if (!dirty) bad('normalizeDailyStore rejected a store it should have cleaned');
+      else {
+        if (dirty.records['2026-03-02']) bad('a record for a removed game survived import');
+        if (dirty.records['2026-02-31']) bad('an impossible date survived import');
+        if (dirty.records['2026-03-03']) bad('an unknown difficulty survived import');
+        if (dirty.records['2026-03-04']?.status !== 'unplayed')
+          bad('an unknown status was not demoted to unplayed');
+        if (!dirty.records['2026-03-01']) bad('a sound record was dropped');
+        if (dirty.streak.current !== 0 || dirty.streak.best !== 0)
+          bad(`hostile streak counters normalized to ${dirty.streak.current}/${dirty.streak.best}`);
+        if (dirty.streak.lastCompletedDate !== null) bad('a malformed date survived as lastCompletedDate');
+      }
+    } finally {
+      delete (globalThis as { localStorage?: unknown }).localStorage;
+    }
+  }
+
+  if (ok)
+    console.log(
+      `  ✓ ${eligible.length} eligible games, all deterministic per seed; rotation covers each cycle exactly once with no back-to-back repeats; only same-day completions extend the streak; hostile daily stores sanitized`
+    );
+}
+
+// ---------------------------------------------------------------------------
 // The progress write path, end to end (src/platform/progress/progress.ts)
 // ---------------------------------------------------------------------------
 console.log('— Progress write path (lifetime counters & award order) —');
@@ -3936,24 +4326,28 @@ console.log('— Progress write path (lifetime counters & award order) —');
     type GameResult = import('../src/platform/types').GameResult;
 
     let clock = Date.parse('2026-03-01T10:00:00Z');
-    const play = (over: Partial<GameResult> = {}) => {
+    type DailyInfo = import('../src/platform/progress/progress').DailyProgressInfo;
+    const play = (over: Partial<GameResult> = {}, dailyInfo?: DailyInfo) => {
       clock += 60_000;
-      return recordProgress({
-        id: `v${clock}`,
-        gameId: 'sudoku',
-        difficulty: 'easy',
-        startedAt: clock - 60_000,
-        finishedAt: clock,
-        durationSec: 60,
-        outcome: 'won',
-        score: 100,
-        errors: 0,
-        hintsUsed: 0,
-        assistsEnabled: [],
-        assistsUsed: [],
-        cleanWin: true,
-        ...over
-      });
+      return recordProgress(
+        {
+          id: `v${clock}`,
+          gameId: 'sudoku',
+          difficulty: 'easy',
+          startedAt: clock - 60_000,
+          finishedAt: clock,
+          durationSec: 60,
+          outcome: 'won',
+          score: 100,
+          errors: 0,
+          hintsUsed: 0,
+          assistsEnabled: [],
+          assistsUsed: [],
+          cleanWin: true,
+          ...over
+        },
+        dailyInfo
+      );
     };
 
     // 1. what each outcome counts as. plays = finished sessions only;
@@ -4038,13 +4432,60 @@ console.log('— Progress write path (lifetime counters & award order) —');
     const persisted = JSON.parse(mem.get('100games.v1.progress')!);
     if (persisted.plays !== 2)
       bad('the backfill was not persisted at load (it would recount every start-up)');
+
+    /* 6. THE DAILY AWARD PATH. Every daily award is keyed to a STATE CHANGE
+       reported by completeDaily, which is the only thing stopping a player
+       from re-finishing one day for XP forever. Drive the real write path
+       with the flags the shell hands it. */
+    mem.clear();
+    const daily = (over: Partial<DailyInfo>) =>
+      play({ gameId: 'nonogram' }, {
+        gameId: 'nonogram',
+        firstCompletion: true,
+        advanced: true,
+        cleanWin: true,
+        best: 1,
+        ...over
+      });
+
+    const first = daily({});
+    const paid = (r: typeof first, source: string) =>
+      r.award.entries.some((e) => e.source === source);
+    if (!paid(first, 'daily') || !paid(first, 'dailyClean') || !paid(first, 'dailyStreak'))
+      bad('a first clean daily did not pay daily + dailyClean + dailyStreak');
+    if (first.progress.dailyBest !== 1 || first.progress.dailyGames.join() !== 'nonogram')
+      bad(
+        `daily projections wrong: best ${first.progress.dailyBest}, games [${first.progress.dailyGames}]`
+      );
+
+    // replaying a day already finished: completeDaily reports no state
+    // change, so nothing is paid a second time
+    const replay = daily({ firstCompletion: false, advanced: false, best: 1 });
+    if (paid(replay, 'daily') || paid(replay, 'dailyClean') || paid(replay, 'dailyStreak'))
+      bad('re-finishing an already-completed daily paid XP again');
+    if (replay.progress.dailyGames.length !== 1)
+      bad('the same game was recorded twice in dailyGames');
+
+    // a helped daily still pays the base award, never the clean bonus
+    const helped = daily({ cleanWin: false, advanced: false, best: 1 });
+    if (!paid(helped, 'daily') || paid(helped, 'dailyClean'))
+      bad('a helped daily paid the no-help bonus');
+
+    // dailyBest is a high-water mark: a later, shorter run cannot lower it
+    const afterBreak = daily({ best: 1, gameId: 'tents' });
+    if (afterBreak.progress.dailyBest !== 1) bad('dailyBest moved backwards');
+    const grown = daily({ best: 9, gameId: 'tents' });
+    if (grown.progress.dailyBest !== 9)
+      bad(`dailyBest did not follow the daily store (${grown.progress.dailyBest}, expected 9)`);
+    if (!grown.progress.landmarks['daily-streak-7'])
+      bad('a 9-day daily streak did not unlock the 7-day landmark');
   } finally {
     delete (globalThis as { localStorage?: unknown }).localStorage;
   }
 
   if (ok)
     console.log(
-      '  ✓ plays counts finished sessions only, cleanWins only unaided wins, landmark XP paid in the same award, level crowns judged after the XP lands, pre-counter stores backfilled once'
+      '  ✓ plays counts finished sessions only, cleanWins only unaided wins, landmark XP paid in the same award, level crowns judged after the XP lands, pre-counter stores backfilled once, daily XP paid only on a real state change'
     );
 }
 
@@ -4079,7 +4520,30 @@ console.log('— Monochrome palette —');
   if (/AccentId|accent\s*:\s*[A-Za-z]/.test(read('src/platform/types.ts')))
     bad('PlatformSettings carries an accent field again');
 
-  if (ok) console.log('  ✓ one fixed accent + --xp, no data-accent theme, no accent setting');
+  /* THE CARD SURFACE IS ONE RULE. It was briefly two — the light theme
+     repeating the whole .fx-card block behind a `:root[data-theme='light']`
+     prefix. That raised its specificity to (0,3,0), above every component
+     override, so anything restyling a card (the Daily Challenge's --xp
+     ring, the selected theme button, the open dropdown's focus border, the
+     press-down edge on Settings rows) worked on black and dim and silently
+     lost on light. The theme difference lives in tokens now; re-splitting
+     the rule would bring the whole class of bug back. */
+  const effects = read('src/platform/design/effects.css');
+  if (/\[data-theme[^\n]*\.fx-card/.test(effects))
+    bad('effects.css restyles .fx-card behind a [data-theme] prefix — it must stay one rule');
+  for (const token of ['--card-fill', '--card-hairline']) {
+    if (!new RegExp(`${token}:`).test(tokens)) bad(`tokens.css no longer defines ${token}`);
+    if (!new RegExp(`var\\(${token}\\)`).test(effects))
+      bad(`effects.css no longer reads ${token} (the theme difference left the tokens)`);
+    // every theme must supply it, or a card goes transparent/borderless
+    const perTheme = tokens.split(/:root/).filter((chunk) => chunk.includes(`${token}:`)).length;
+    if (perTheme < 2) bad(`${token} is defined in only ${perTheme} theme block(s)`);
+  }
+
+  if (ok)
+    console.log(
+      '  ✓ one fixed accent + --xp, no data-accent theme, no accent setting, card surface is one theme-agnostic rule'
+    );
 }
 
 // ---------------------------------------------------------------------------

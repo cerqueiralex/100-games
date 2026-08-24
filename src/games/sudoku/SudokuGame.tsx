@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import {
@@ -44,7 +45,8 @@ export function SudokuGame({
   events,
   onToggleAssist,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   // old-format saves may lack these arrays — treat them as no save
   const saved =
@@ -56,9 +58,12 @@ export function SudokuGame({
       ? (savedState as SudokuSave)
       : undefined;
   const { puzzle, solution } = useMemo(
-    () => (saved ? { puzzle: saved.puzzle, solution: saved.solution } : generatePuzzle(difficulty)),
+    () =>
+      saved
+        ? { puzzle: saved.puzzle, solution: saved.solution }
+        : withSeed(dailySeed, () => generatePuzzle(difficulty)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [difficulty]
+    [difficulty, dailySeed]
   );
 
   const [values, setValues] = useState<Grid>(() => (saved ? [...saved.values] : [...puzzle]));

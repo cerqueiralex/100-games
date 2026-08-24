@@ -438,6 +438,225 @@ p {
   flex-shrink: 0;
 }
 
+/* ---- Daily Challenge ----
+   The home card is the feature's front door: one row, the same plate
+   language as the game cards, with the countdown carrying the urgency. It
+   wears --xp (progression), not the accent, because the daily streak is a
+   progression surface — see DESIGN.md "Player level & XP". */
+
+.daily-card.daily-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  border-radius: var(--radius-l);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  /* the one card on the page that is time-limited, so it gets the accent
+     ring the rest of the list never uses */
+  border: 1px solid color-mix(in srgb, var(--xp) 45%, var(--border));
+}
+
+.daily-card:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
+}
+
+/* done for today: the ring relaxes to the ordinary border so the card stops
+   asking for attention it no longer needs. Geometry never changes — 1px in
+   both states, per the completion-marker rule in DESIGN.md */
+.daily-card.daily-card.done {
+  border-color: var(--border);
+}
+
+.daily-card-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+
+.daily-card-icon svg {
+  display: block;
+  width: 34px;
+  height: 34px;
+}
+
+.daily-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.daily-card-kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--xp);
+}
+
+.daily-card-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.daily-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daily-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.daily-card.done .daily-card-meta {
+  color: var(--good);
+}
+
+.daily-card-go {
+  display: grid;
+  place-items: center;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.daily-card.done .daily-card-go {
+  color: var(--good);
+}
+
+/* the profile's four-week grid. Cells are paint-only state changes on a
+   fixed geometry (DESIGN.md "Tile grids"): a solved day must not be a
+   different SIZE from a missed one, or the grid jitters as it fills. */
+.daily-grid-card {
+  border-radius: var(--radius-l);
+  padding: 14px;
+}
+
+.daily-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.daily-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  /* the extruded bottom edge, carried in a variable so the `today` ring can
+     compose with it instead of replacing the whole box-shadow */
+  --cell-edge: inset 0 0 0 0 transparent;
+  box-shadow: var(--cell-edge);
+}
+
+.daily-cell:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* A solved day wears the SAME material as the streak check disc: a solid
+   fill with the darker inset bottom edge, never a low-opacity tint — a
+   washed-out cell reads as "sort of done". Solved-with-help keeps the
+   progression orange, solved-unaided the semantic green, because a clean
+   win must stay distinguishable on every surface (see DESIGN.md
+   "Completion markers"). Paint only — the geometry never moves. */
+.daily-cell.completed {
+  background: var(--play-7);
+  border-color: transparent;
+  color: var(--ink);
+  --cell-edge: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.daily-cell.completed.clean {
+  background: var(--good);
+}
+
+/* the solved tick, pinned top-right so it never crowds the date */
+.daily-cell-check {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  opacity: 0.72;
+}
+
+.daily-cell.in_progress {
+  border-style: dashed;
+  color: var(--text);
+}
+
+.daily-cell.today {
+  box-shadow: 0 0 0 2px var(--accent), var(--cell-edge);
+}
+
+.daily-grid-note {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.daily-detail {
+  text-align: center;
+}
+
+.daily-detail-game {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.daily-detail-stats {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* the setup screen's locked assignment, standing in for the difficulty row */
+.daily-lock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: var(--radius-m);
+  padding: 14px 16px;
+}
+
+.daily-lock-date {
+  font-size: 15px;
+  font-weight: 700;
+}
+
 /* "Last played": three equal shortcuts in one row, wearing the category
    chip's plate, height and extruded edge so the two rows read as one
    family. The 3 columns are FIXED rather than auto-fitted — after one or

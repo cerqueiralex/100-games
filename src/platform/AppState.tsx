@@ -11,7 +11,12 @@ import {
   saveSettings
 } from './storage';
 import { configureAudio } from './audio';
-import { loadProgress, recordProgress, type PlayerProgress } from './progress/progress';
+import {
+  loadProgress,
+  recordProgress,
+  type DailyProgressInfo,
+  type PlayerProgress
+} from './progress/progress';
 import type { XpAward } from './progress/xp';
 
 interface AppState {
@@ -24,7 +29,7 @@ interface AppState {
   setGameAssist: (gameId: string, assistId: string, on: boolean) => void;
   updateProfile: (patch: Partial<Profile>) => void;
   /** records the play and returns the XP it earned (see progress/xp.ts) */
-  recordResult: (result: GameResult) => XpAward;
+  recordResult: (result: GameResult, daily?: DailyProgressInfo) => XpAward;
   wipeHistory: () => void;
   wipeEverything: () => void;
   /** re-read every store — used after a backup import replaces them */
@@ -81,10 +86,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           return next;
         });
       },
-      recordResult: (result) => {
+      recordResult: (result, daily) => {
         setHistory(appendResult(result));
         // fold the play into the permanent streak/landmark/XP store
-        const { progress: next, award } = recordProgress(result);
+        const { progress: next, award } = recordProgress(result, daily);
         setProgress(next);
         // handed back so the results modal can show what this result earned
         return award;

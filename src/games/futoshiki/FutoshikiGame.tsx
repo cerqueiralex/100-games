@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, CheckIcon, EraseIcon, PencilIcon } from '../../platform/design/icons';
@@ -54,7 +55,8 @@ export function FutoshikiGame({
   events,
   onToggleAssist,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   const saved =
     savedState &&
@@ -71,9 +73,9 @@ export function FutoshikiGame({
     () =>
       saved
         ? { n: saved.n, seed: saved.seed, solution: saved.solution, givens: saved.givens, ineqs: saved.ineqs }
-        : generateFutoshiki(DIFFICULTY_CONFIG[difficulty]),
+        : withSeed(dailySeed, () => generateFutoshiki(DIFFICULTY_CONFIG[difficulty])),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [difficulty]
+    [difficulty, dailySeed]
   );
   const { n, solution, givens, ineqs } = puzzle;
   const N = n * n;

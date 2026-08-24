@@ -7,21 +7,25 @@ import { computeStats, formatDuration } from '../stats';
 import { allDifficultiesBeaten, computeStreak } from '../progress/progress';
 import { StreakChip } from '../components/Streak';
 import { LevelChip, RankCrown } from '../components/Level';
+import { DailyChallengeCard } from '../components/DailyChallenge';
 import { rankForXp } from '../progress/xp';
 import { ChevronIcon, ClockIcon, CrownIcon, SearchIcon, StarIcon } from '../design/icons';
 import { sfx } from '../audio';
 import type { CategoryId, GameDefinition } from '../types';
+import type { DailyChallengeRecord } from '../daily/store';
 
 /** Search text and the category filter are owned by App so they survive a
     game visit along with the list's scroll position (see App.tsx). */
 export function HomePage({
   onOpenGame,
+  onOpenDaily,
   query,
   onQueryChange,
   category,
   onCategoryChange
 }: {
   onOpenGame: (gameId: string) => void;
+  onOpenDaily: (record: DailyChallengeRecord) => void;
   query: string;
   onQueryChange: (q: string) => void;
   category: CategoryId | null;
@@ -283,6 +287,11 @@ export function HomePage({
           ))}
         </div>
       </div>
+
+      {/* The one board everybody plays today. Above "Last played" because
+          it expires at midnight and the recents do not — and hidden while
+          searching, like every other standing section. */}
+      {!q && !category && <DailyChallengeCard onPlay={onOpenDaily} />}
 
       {/* Jump back into what you were playing. Hidden while searching or
           filtering: the page is then a result list, and three unrelated

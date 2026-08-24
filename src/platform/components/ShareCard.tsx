@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RankTier } from '../progress/xp';
+import {
+  RANK_BADGE,
+  RANK_GLOSS,
+  RANK_MATERIAL,
+  type RankMaterial
+} from '../design/rankMaterials';
 
 export interface ShareData {
   gameName: string;
@@ -14,6 +20,8 @@ export interface ShareData {
   /** the player's level and the crown it has earned (null below level 10) */
   level: number;
   rank: RankTier | null;
+  /** present when the run was that day's Daily Challenge */
+  daily?: { dateLabel: string; streak: number };
 }
 
 export const CARD_W = 1080;
@@ -188,56 +196,129 @@ export function drawRankCrown(
   cy: number,
   size: number,
   fill: string,
-  rim: string
+  rim: string,
+  material: RankMaterial
 ) {
   const u = size / 64;
+  // 64-space → canvas, so the numbers below are literally the SVG's
+  const X = (x: number) => cx - size / 2 + x * u;
+  const Y = (y: number) => cy - size / 2 + y * u;
+
+  // extruded disc: rim behind, face slightly high and small on top, so the
+  // bottom crescent reads as the darker edge (identical to the SVG badge)
   ctx.beginPath();
-  ctx.arc(cx, cy, 29 * u, 0, Math.PI * 2);
+  ctx.arc(X(RANK_BADGE.cx), Y(RANK_BADGE.cy), RANK_BADGE.r * u, 0, Math.PI * 2);
+  ctx.fillStyle = rim;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(X(RANK_BADGE.faceCx), Y(RANK_BADGE.faceCy), RANK_BADGE.faceR * u, 0, Math.PI * 2);
   ctx.fillStyle = fill;
   ctx.fill();
-  ctx.lineWidth = 4 * u;
-  ctx.strokeStyle = rim;
-  ctx.stroke();
+
+  /* The material texture, from the same table the SVG reads — canvas takes
+     the SVG path strings straight through Path2D, which is what keeps one
+     definition instead of two drawings that drift. Clipped to the face for
+     the same reason the SVG clips it. */
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(X(RANK_BADGE.faceCx), Y(RANK_BADGE.faceCy), RANK_BADGE.faceR * u, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.translate(X(0), Y(0));
+  ctx.scale(u, u);
+  ctx.lineCap = 'round';
+  for (const s of material.strokes) {
+    ctx.globalAlpha = s.o;
+    ctx.strokeStyle = rim;
+    ctx.lineWidth = s.w;
+    ctx.stroke(new Path2D(s.d));
+  }
+  ctx.fillStyle = '#ffffff';
+  for (const s of material.sheens) {
+    ctx.globalAlpha = s.o;
+    ctx.fill(new Path2D(s.d));
+  }
+  if (!material.matte) {
+    ctx.globalAlpha = RANK_GLOSS.o;
+    ctx.beginPath();
+    ctx.ellipse(RANK_GLOSS.cx, RANK_GLOSS.cy, RANK_GLOSS.rx, RANK_GLOSS.ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 
   const s = 1.71 * u;
-  const ox = cx - size / 2 + 11.5 * u;
-  const oy = cy - size / 2 + 10.6 * u;
-  const px = (x: number) => ox + x * s;
-  const py = (y: number) => oy + y * s;
-  ctx.lineWidth = 1.05 * s;
-  ctx.lineJoin = 'round';
+  const crown = (dy: number, paint: () => void) => {
+    const ox = cx - size / 2 + 11.5 * u;
+    const oy = cy - size / 2 + dy * u;
+    const px = (x: number) => ox + x * s;
+    const py = (y: number) => oy + y * s;
+    ctx.lineWidth = 1.05 * s;
+    ctx.lineJoin = 'round';
 
-  const paint = () => {
+    ctx.beginPath();
+    ctx.moveTo(px(3.6), py(8.4));
+    ctx.lineTo(px(8.5), py(12.2));
+    ctx.lineTo(px(12), py(5.9));
+    ctx.lineTo(px(15.5), py(12.2));
+    ctx.lineTo(px(20.4), py(8.4));
+    ctx.lineTo(px(18.6), py(17.4));
+    ctx.lineTo(px(5.4), py(17.4));
+    ctx.closePath();
+    paint();
+
+    for (const [x, y, r] of [
+      [3.6, 8.4, 2.1],
+      [12, 5.9, 2.3],
+      [20.4, 8.4, 2.1]
+    ]) {
+      ctx.beginPath();
+      ctx.arc(px(x), py(y), r * s, 0, Math.PI * 2);
+      paint();
+    }
+
+    ctx.beginPath();
+    roundRect(ctx, px(5.4), py(18.6), 13.2 * s, 2.8 * s, 0.7 * s);
+    paint();
+  };
+
+  // the emblem's own drop edge, then the emblem — it lifts off the disc
+  // rather than lying flat on it
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  crown(12.1, () => {
+    ctx.fillStyle = rim;
+    ctx.fill();
+  });
+  ctx.restore();
+  crown(10.6, () => {
     ctx.fillStyle = '#ffffff';
     ctx.fill();
     ctx.strokeStyle = rim;
     ctx.stroke();
-  };
+  });
+}
 
-  ctx.beginPath();
-  ctx.moveTo(px(3.6), py(8.4));
-  ctx.lineTo(px(8.5), py(12.2));
-  ctx.lineTo(px(12), py(5.9));
-  ctx.lineTo(px(15.5), py(12.2));
-  ctx.lineTo(px(20.4), py(8.4));
-  ctx.lineTo(px(18.6), py(17.4));
-  ctx.lineTo(px(5.4), py(17.4));
-  ctx.closePath();
-  paint();
-
-  for (const [x, y, r] of [
-    [3.6, 8.4, 2.1],
-    [12, 5.9, 2.3],
-    [20.4, 8.4, 2.1]
-  ]) {
-    ctx.beginPath();
-    ctx.arc(px(x), py(y), r * s, 0, Math.PI * 2);
-    paint();
-  }
-
-  ctx.beginPath();
-  roundRect(ctx, px(5.4), py(18.6), 13.2 * s, 2.8 * s, 0.7 * s);
-  paint();
+/**
+ * A row of pills centred as a group. One pill is the common case; the daily
+ * card adds the streak beside the tier, and two pills each centred on their
+ * own would overlap.
+ */
+export function pillRow(
+  ctx: CanvasRenderingContext2D,
+  items: { text: string; color: string; bg: string }[],
+  cy: number,
+  font: string,
+  padX: number,
+  height: number,
+  gap = 18
+) {
+  ctx.font = font;
+  const widths = items.map((i) => ctx.measureText(i.text).width + padX * 2);
+  const total = widths.reduce((a, w) => a + w, 0) + gap * (items.length - 1);
+  let x = W / 2 - total / 2;
+  items.forEach((item, i) => {
+    pill(ctx, item.text, x + widths[i] / 2, cy, item.color, item.bg, font, padX, height);
+    x += widths[i] + gap;
+  });
 }
 
 /** Shrinks a font until the text fits `max` px wide — long game names must
@@ -273,7 +354,15 @@ export function renderShareCard(d: ShareData): HTMLCanvasElement {
   // the crown you are wearing, in the corner — same place as on the
   // profile's level card, so the two read as one badge
   if (d.rank) {
-    drawRankCrown(ctx, 886, 208, 104, token(`--rank-${d.rank.id}`, '#ffc93c'), token(`--rank-${d.rank.id}-rim`, '#b07d10'));
+    drawRankCrown(
+      ctx,
+      886,
+      208,
+      104,
+      token(`--rank-${d.rank.id}`, '#ffc93c'),
+      token(`--rank-${d.rank.id}-rim`, '#b07d10'),
+      RANK_MATERIAL[d.rank.id]
+    );
     ctx.fillStyle = dim(0.6);
     ctx.font = `700 25px ${FONT}`;
     ctx.fillText(`${d.rank.name.toUpperCase()} · LVL ${d.level}`, 886, 292);
@@ -283,24 +372,43 @@ export function renderShareCard(d: ShareData): HTMLCanvasElement {
   ctx.font = `118px ${EMOJI_FONT}`;
   ctx.fillText('🏆', W / 2, 262);
 
-  // headline
+  // headline — the daily card names the event, since "which day" is the
+  // whole point of comparing one
   ctx.fillStyle = d.cleanWin ? GREEN : ACCENT;
   ctx.font = `700 37px ${FONT}`;
-  ctx.fillText('P U Z Z L E   S O L V E D', W / 2, 368);
+  ctx.fillText(
+    d.daily ? `D A I L Y  ·  ${d.daily.dateLabel.toUpperCase()}` : 'P U Z Z L E   S O L V E D',
+    W / 2,
+    368
+  );
 
   // game name — shrinks rather than overflowing on the long ones
   ctx.fillStyle = t.text;
   ctx.font = fitFont(ctx, d.gameName, 800, 104, W - 260);
   ctx.fillText(d.gameName, W / 2, 466);
 
-  // difficulty pill
-  pill(
+  // tier — plus the daily streak beside it, which is the number a daily
+  // player actually wants to show off
+  const XP_COLOR = token('--xp', '#ff9f0a');
+  pillRow(
     ctx,
-    d.difficultyLabel.toUpperCase(),
-    W / 2,
+    [
+      {
+        text: d.difficultyLabel.toUpperCase(),
+        color: ACCENT,
+        bg: `rgba(${ACCENT_RGB},0.14)`
+      },
+      ...(d.daily && d.daily.streak > 0
+        ? [
+            {
+              text: `${d.daily.streak} DAY STREAK`,
+              color: XP_COLOR,
+              bg: `rgba(${hexToRgb(XP_COLOR)},0.14)`
+            }
+          ]
+        : [])
+    ],
     572,
-    ACCENT,
-    `rgba(${ACCENT_RGB},0.14)`,
     `700 31px ${FONT}`,
     34,
     62

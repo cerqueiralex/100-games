@@ -13,6 +13,7 @@ export const wordGuessDefinition: GameDefinition = {
   component: WordGuessGame,
   tutorial: wordGuessTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     'Win reward = (300 + 160 per unused try) × difficulty multiplier (×1 easy → ×5 extreme), minus 120 per hint used. Losing scores 0. Slips (errors) = invalid-word submissions plus any valid guess from the 4th row onward that reveals no green (right-place) letters. Difficulty: easy 4-letter words + 7 tries, medium 5-letter + 6, hard rarer 5-letter + 6, pro 6-letter + 6, extreme 7-letter + 6 with keyboard hints disabled.',
   assistFeatures: [

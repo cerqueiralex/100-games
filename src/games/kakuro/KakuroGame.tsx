@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, CheckIcon, EraseIcon, PencilIcon, SameIcon } from '../../platform/design/icons';
@@ -67,7 +68,8 @@ export function KakuroGame({
   events,
   onToggleAssist,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   const saved =
     savedState &&
@@ -80,9 +82,9 @@ export function KakuroGame({
       : undefined;
 
   const puzzle = useMemo(
-    () => (saved ? saved.puzzle : generateKakuro({ difficulty })),
+    () => (saved ? saved.puzzle : withSeed(dailySeed, () => generateKakuro({ difficulty }))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [difficulty]
+    [difficulty, dailySeed]
   );
   const { rows, cols, blocks, solution, runs } = puzzle;
 

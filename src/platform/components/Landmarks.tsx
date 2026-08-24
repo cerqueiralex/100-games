@@ -117,6 +117,47 @@ export function LandmarkArt({ def, size = 44 }: { def: LandmarkDef; size?: numbe
       const tier = RANK_TIERS.find((t) => t.id === def.rank);
       return tier ? <RankCrown rank={tier} size={size} /> : null;
     }
+    case 'daily-streak': {
+      // a calendar page, NOT a flame: the play streak already owns the
+      // flame, and two streaks that share art are two streaks nobody can
+      // tell apart (see the spec's note on distinct badges)
+      const n = String(def.days);
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <rect x="7" y="13" width="50" height="44" rx="8" fill={lm} stroke="var(--ink)" strokeWidth="3" />
+          <path d="M7 26h50" stroke="var(--ink)" strokeWidth="3" />
+          <rect x="18" y="5" width="6" height="13" rx="3" fill="var(--ink)" />
+          <rect x="40" y="5" width="6" height="13" rx="3" fill="var(--ink)" />
+          <text
+            x="32"
+            y="48"
+            textAnchor="middle"
+            fontSize={n.length >= 3 ? 16 : 19}
+            fontWeight="800"
+            fill="var(--play-9)"
+          >
+            {n}
+          </text>
+        </svg>
+      );
+    }
+    case 'daily-collector':
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <rect x="7" y="13" width="50" height="44" rx="8" fill={lm} stroke="var(--ink)" strokeWidth="3" />
+          <path d="M7 26h50" stroke="var(--ink)" strokeWidth="3" />
+          <rect x="18" y="5" width="6" height="13" rx="3" fill="var(--ink)" />
+          <rect x="40" y="5" width="6" height="13" rx="3" fill="var(--ink)" />
+          <path
+            d="M19 41.5 27.5 50 46 31"
+            fill="none"
+            stroke="var(--play-9)"
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
     case 'all-played':
       return (
         <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
@@ -185,6 +226,10 @@ function cardStat(def: LandmarkDef, total: number): [string, string] {
       return [String(def.count), 'WINS WITH NO HELP'];
     case 'level':
       return [String(def.level), `LEVEL · ${def.title.toUpperCase()}`];
+    case 'daily-streak':
+      return [String(def.days), 'DAILY CHALLENGES IN A ROW'];
+    case 'daily-collector':
+      return [String(total), 'GAMES SOLVED AS A DAILY'];
     case 'all-played':
       return [String(total), 'GAMES PLAYED'];
     case 'difficulty':
@@ -295,10 +340,14 @@ function LandmarkCard({
 
 export function LandmarksSection({
   progress,
-  streak
+  streak,
+  dailyCurrent
 }: {
   progress: PlayerProgress;
   streak: StreakInfo;
+  /** the live Daily Challenge streak — the daily meters show what the
+      player can still act on, exactly as the play-streak meters do */
+  dailyCurrent: number;
 }) {
   const { profile } = useAppState();
   const [selected, setSelected] = useState<LandmarkDef | null>(null);
@@ -307,7 +356,9 @@ export function LandmarksSection({
   const unlockedCount = LANDMARKS.filter((d) => progress.landmarks[d.id]).length;
 
   const selectedUnlock = selected ? (progress.landmarks[selected.id] ?? null) : null;
-  const selectedMeter = selected ? landmarkMeter(selected, progress, streak) : null;
+  const selectedMeter = selected
+    ? landmarkMeter(selected, progress, streak, dailyCurrent)
+    : null;
 
   return (
     <section className="setup-section">
@@ -323,7 +374,7 @@ export function LandmarksSection({
             key={def.id}
             def={def}
             unlockedAt={progress.landmarks[def.id]?.at ?? null}
-            meter={landmarkMeter(def, progress, streak)}
+            meter={landmarkMeter(def, progress, streak, dailyCurrent)}
             onClick={() => {
               sfx.tap();
               setSelected(def);
@@ -382,7 +433,7 @@ export function LandmarksSection({
                 </div>
                 <p className="lm-meter-text">
                   {selectedMeter.done} / {selectedMeter.total}
-                  {selected.kind === 'streak'
+                  {selected.kind === 'streak' || selected.kind === 'daily-streak'
                     ? ' days'
                     : selected.kind === 'level'
                       ? ' levels'

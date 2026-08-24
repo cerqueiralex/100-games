@@ -13,6 +13,7 @@ export const mathdokuDefinition: GameDefinition = {
   component: MathdokuGame,
   tutorial: mathdokuTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     'Scoring: +30 × tier per correctly placed cell (easy ×1 → extreme ×5), −30 per rule-breaking placement, −40 per hint. Winning adds 100 × tier plus a per-second bonus for finishing under par (5/8/12/16/20 min). Pro has bigger cages and no givens; Extreme hides the operations.',
   assistFeatures: [

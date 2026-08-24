@@ -86,6 +86,14 @@ export interface GameProps {
    * nor counts toward the recorded duration. Release when real play begins.
    */
   holdClock: (hold: boolean) => void;
+  /**
+   * Present only when this session is the Daily Challenge. An eligible game
+   * MUST build its board inside `withSeed(dailySeed, …)` (platform/daily) —
+   * that is what makes every player's board identical — and must list it in
+   * the board memo's deps so switching in or out of daily regenerates.
+   * Games that never opted in can ignore it.
+   */
+  dailySeed?: number;
 }
 
 /** A resumable mid-game save, one per game, persisted on-device. */
@@ -95,6 +103,14 @@ export interface GameSave {
   elapsedSec: number;
   savedAt: number;
   state: unknown;
+  /**
+   * The Daily Challenge date this save belongs to, when it was made in
+   * daily mode. A save is only ever offered back in the mode that created
+   * it: restoring a daily board into a normal session (or the reverse)
+   * would silently put the player on a board that is not the one the
+   * screen claims they are playing.
+   */
+  daily?: string;
 }
 
 /**
@@ -185,6 +201,24 @@ export interface GameDefinition {
       4–7 sections, references) — convention: `mastery.ts` in the game
       folder. */
   mastery: MasteryGuide;
+  /**
+   * Opt-in to the Daily Challenge rotation (see platform/daily/). Declared
+   * per game rather than inferred, because "one fixed board for everyone"
+   * only means something for a game whose board is FULLY DETERMINED by its
+   * generator at mount.
+   *
+   * A game must not opt in when its randomness continues during play (a
+   * tile spawning after every move) or depends on what the player did first
+   * (Minesweeper lays its mines around the opening tap, so two players
+   * would get different boards from the same seed). Opting in also means
+   * wrapping the board line in `withSeed(dailySeed, …)` — the flag alone
+   * does not make a game reproducible.
+   */
+  dailyChallenge?: {
+    eligible: true;
+    /** the tier daily runs are locked to; omit for medium */
+    difficulty?: Difficulty;
+  };
 }
 
 /** A finished (or abandoned) play, persisted in history. */

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon } from '../../platform/design/icons';
@@ -66,7 +67,8 @@ export function NurikabeGame({
   elapsedSec,
   events,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   const saved =
     savedState &&
@@ -76,7 +78,10 @@ export function NurikabeGame({
       : undefined;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const puzzle = useMemo(() => saved?.puzzle ?? generateNurikabe({ size: SIZE[difficulty] }), [difficulty]);
+  const puzzle = useMemo(
+    () => saved?.puzzle ?? withSeed(dailySeed, () => generateNurikabe({ size: SIZE[difficulty] })),
+    [difficulty, dailySeed]
+  );
   const size = puzzle.size;
   const n = size * size;
   const { solution, clues } = puzzle;

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, SameIcon } from '../../platform/design/icons';
@@ -92,7 +93,8 @@ export function BinaryGridGame({
   events,
   onToggleAssist,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   // ignore stale saves that lack the expected shape
   const saved =
@@ -113,9 +115,9 @@ export function BinaryGridGame({
         solution: saved.solution
       };
     }
-    return generateBinary(cfg);
+    return withSeed(dailySeed, () => generateBinary(cfg));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [dailySeed]);
   const { size, givens, solution, uniqueLines } = puzzle;
   const n = size * size;
   const half = size / 2;

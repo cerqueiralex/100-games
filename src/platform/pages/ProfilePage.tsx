@@ -8,6 +8,8 @@ import { CrownIcon, StarIcon } from '../design/icons';
 import { StreakHero } from '../components/Streak';
 import { LevelHero } from '../components/Level';
 import { LandmarksSection } from '../components/Landmarks';
+import { DailyHistorySection } from '../components/DailyChallenge';
+import { dailyStreakInfo, loadDaily } from '../daily/store';
 import { CalendarPicker, Chip, Dropdown, Modal, StatCard } from '../components/ui';
 import { ActivityChart, CategoryBarChart, GamesPieChart, TrendChart } from '../components/charts';
 import type { CategoryId, GameResult } from '../types';
@@ -66,6 +68,9 @@ export function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(profile.name);
   const streak = useMemo(() => computeStreak(progress.days), [progress]);
+  // the live daily run, for the daily landmark meters (progress only keeps
+  // the best-ever, which is what UNLOCKS them — see landmarkMeter)
+  const dailyCurrent = useMemo(() => dailyStreakInfo(loadDaily()).current, []);
 
   // scopes: everything, one category ('cat:<id>'), or a single game
   const catScope = filter.startsWith('cat:') ? (filter.slice(4) as CategoryId) : null;
@@ -168,6 +173,10 @@ export function ProfilePage() {
         <StreakHero streak={streak} />
       </section>
 
+      {/* the two streaks sit together: "played anything" above, "played
+          today's board" below, so the difference between them is visible */}
+      <DailyHistorySection />
+
       <div className="filter-bar">
         <Dropdown
           value={filter}
@@ -244,7 +253,7 @@ export function ProfilePage() {
         </div>
       </section>
 
-      <LandmarksSection progress={progress} streak={streak} />
+      <LandmarksSection progress={progress} streak={streak} dailyCurrent={dailyCurrent} />
 
       <section className="setup-section">
         <h3 className="section-title">High scores by difficulty</h3>

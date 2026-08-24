@@ -13,6 +13,7 @@ export const aquariumDefinition: GameDefinition = {
   component: AquariumGame,
   tutorial: aquariumTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     '+10 per correctly placed water cell × difficulty (×1–×5), −15 per overflow error, −40 per hint. Winning adds 150 × difficulty plus a time bonus for finishing under par (3/5/8/11/15 min). Boards grow from 6×6 to 10×10.',
   assistFeatures: [

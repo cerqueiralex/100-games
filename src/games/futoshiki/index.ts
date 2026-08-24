@@ -13,6 +13,7 @@ export const futoshikiDefinition: GameDefinition = {
   component: FutoshikiGame,
   tutorial: futoshikiTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     'Scoring: +40 points per correctly filled cell × difficulty multiplier (1–5), −40 per entry that breaks a rule, −30 per hint. Finish under par time (4/8/14/20/25 min) for a bonus per second saved. Boards grow from 4×4 to 7×7; pro is inequality-heavy with minimal givens.',
   assistFeatures: [

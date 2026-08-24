@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon } from '../../platform/design/icons';
@@ -37,7 +38,8 @@ export function HashiGame({
   elapsedSec,
   events,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   // ignore saves that lack the expected shape
   const saved =
@@ -48,7 +50,10 @@ export function HashiGame({
       ? (savedState as HshSave)
       : undefined;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const puzzle = useMemo(() => saved?.puzzle ?? generateHashi(HASHI_CONFIG[difficulty]), [difficulty]);
+  const puzzle = useMemo(
+    () => saved?.puzzle ?? withSeed(dailySeed, () => generateHashi(HASHI_CONFIG[difficulty])),
+    [difficulty, dailySeed]
+  );
   const { w, h, islands, links, solution, crossings } = puzzle;
 
   const [bridges, setBridges] = useState<number[]>(() =>

@@ -13,6 +13,7 @@ export const killerSudokuDefinition: GameDefinition = {
   component: KillerSudokuGame,
   tutorial: killerSudokuTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     'Scoring: +30/60/90/120/150 points per correct cell (easy → extreme), −50 per error, −30 per hint. Finish under par time (10/20/30/40/50 min) for a time bonus. Hard starts with 8 givens; pro and extreme have none — the cage sums are everything.',
   assistFeatures: [

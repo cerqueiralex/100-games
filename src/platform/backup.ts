@@ -13,6 +13,7 @@ import {
   writeGameData
 } from './storage';
 import { normalizeProgress, type PlayerProgress } from './progress/progress';
+import { normalizeDailyStore, type DailyChallengeStore } from './daily/store';
 
 /**
  * Backup export / import — moving a player between devices, or handing a
@@ -30,12 +31,14 @@ import { normalizeProgress, type PlayerProgress } from './progress/progress';
 
 const THEMES: ThemeId[] = ['black', 'dim', 'light'];
 const PROGRESS_KEY = 'progress';
+const DAILY_KEY = 'daily';
 
 export interface BackupPayload {
   settings?: PlatformSettings;
   profile?: Profile;
   history?: GameResult[];
   progress?: PlayerProgress;
+  daily?: DailyChallengeStore;
 }
 
 export interface BackupSummary {
@@ -65,7 +68,9 @@ export function exportBackup(): string {
       profile: loadProfile(),
       history: loadHistory(),
       // streak + landmark store (see platform/progress/progress.ts)
-      progress: readGameData(PROGRESS_KEY)
+      progress: readGameData(PROGRESS_KEY),
+      // Daily Challenge records + streak (see platform/daily/store.ts)
+      daily: readGameData(DAILY_KEY)
     },
     null,
     2
@@ -158,8 +163,15 @@ export function parseBackup(text: string): ParseResult {
   // the file's OWN rows back-fill any counter it predates — never this
   // device's history, which belongs to whoever is importing
   const progress = normalizeProgress(raw.progress, history ?? undefined);
+  /* Imported daily records are AUTHORITATIVE for their own dates: they were
+     assigned when those days were live, and re-deriving them against this
+     device's eligible list would hand the player a different game than the
+     one they actually solved. normalizeDailyStore drops anything malformed
+     (unknown status, a game this build no longer has, a bad date) rather
+     than throwing, and clamps the streak counters. */
+  const daily = normalizeDailyStore(raw.daily);
 
-  if (!settings && !profile && !history && !progress) {
+  if (!settings && !profile && !history && !progress && !daily) {
     return {
       ok: false,
       error: 'No 100 Games data found in that file — it may be from another app.'
@@ -170,6 +182,7 @@ export function parseBackup(text: string): ParseResult {
     profile && 'profile',
     history && `${history.length} games`,
     progress && 'streak & landmarks',
+    daily && `${Object.keys(daily.records).length} daily challenges`,
     settings && 'settings'
   ].filter(Boolean) as string[];
 
@@ -179,7 +192,8 @@ export function parseBackup(text: string): ParseResult {
       ...(settings ? { settings } : {}),
       ...(profile ? { profile } : {}),
       ...(history ? { history } : {}),
-      ...(progress ? { progress } : {})
+      ...(progress ? { progress } : {}),
+      ...(daily ? { daily } : {})
     },
     summary: {
       playerName: profile?.name ?? 'Unknown player',
@@ -207,4 +221,5 @@ export function applyBackup(payload: BackupPayload): void {
   if (payload.profile) saveProfile(payload.profile);
   if (payload.history) replaceHistory(payload.history);
   if (payload.progress) writeGameData(PROGRESS_KEY, payload.progress);
+  if (payload.daily) writeGameData(DAILY_KEY, payload.daily);
 }

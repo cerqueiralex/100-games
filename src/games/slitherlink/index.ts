@@ -13,6 +13,7 @@ export const slitherlinkDefinition: GameDefinition = {
   component: SlitherlinkGame,
   tutorial: slitherlinkTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     'Boards run 5×5 (most numbers kept) up to a sparse 10×10. +15 per satisfied clue × difficulty (1–5), −10 per error (a line that contradicts the unique solution), −30 per hint, plus a time bonus under par (3/5/8/12/18 min). One single closed loop that meets every number wins.',
   assistFeatures: [

@@ -13,6 +13,7 @@ export const kakuroDefinition: GameDefinition = {
   component: KakuroGame,
   tutorial: kakuroTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     'Scoring: +20/40/60/80/100 points per correct cell (easy → extreme). −25 for a placement that completes a broken run (wrong sum or a repeated digit), and each hint cancels its cell and costs 25 more. Solve the whole grid under par time (5/10/16/24/35 min) for a bonus of 1–5 points per second saved.',
   assistFeatures: [

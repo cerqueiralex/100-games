@@ -13,6 +13,7 @@ export const skyscrapersDefinition: GameDefinition = {
   component: SkyscrapersGame,
   tutorial: skyscrapersTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     'Scoring: every placed tower banks 20/40/60/80/100 points (easy → extreme) once the skyline is solved; −50 per flagged contradiction, −25 per hint. Finish under par time (4/9/15/22/32 min) for 1–5 bonus points per second saved. Boards grow from 4×4 to 7×7; hard strips the clues to the minimum.',
   assistFeatures: [

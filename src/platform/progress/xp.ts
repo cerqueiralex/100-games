@@ -15,7 +15,15 @@
 /** One level per 100 XP: level 1 at 0 XP, level 2 at 100, level 3 at 200… */
 export const XP_PER_LEVEL = 100;
 
-export type XpSource = 'day' | 'play' | 'record' | 'sweep' | 'landmark';
+export type XpSource =
+  | 'day'
+  | 'play'
+  | 'record'
+  | 'sweep'
+  | 'landmark'
+  | 'daily'
+  | 'dailyClean'
+  | 'dailyStreak';
 
 /** The award table. Rare, hard-won things are worth 8 plays. */
 export const XP_AWARDS: Record<XpSource, number> = {
@@ -23,7 +31,13 @@ export const XP_AWARDS: Record<XpSource, number> = {
   play: 10,
   record: 10,
   sweep: 80,
-  landmark: 80
+  landmark: 80,
+  /* The Daily Challenge pays more than an ordinary play because it is the
+     one board you cannot choose, retry on an easier tier, or postpone. Each
+     is still keyed to a state change — the day completes once. */
+  daily: 15,
+  dailyClean: 10,
+  dailyStreak: 5
 };
 
 export const XP_SOURCE_LABEL: Record<XpSource, string> = {
@@ -31,7 +45,10 @@ export const XP_SOURCE_LABEL: Record<XpSource, string> = {
   play: 'Game played',
   record: 'Personal record',
   sweep: 'All difficulties beaten',
-  landmark: 'Landmark earned'
+  landmark: 'Landmark earned',
+  daily: 'Daily Challenge',
+  dailyClean: 'Daily solved with no help',
+  dailyStreak: 'Daily streak extended'
 };
 
 export interface XpEntry {

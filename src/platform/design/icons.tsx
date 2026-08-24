@@ -188,6 +188,16 @@ export function HelpIcon({ size = 18 }: IconProps) {
   );
 }
 
+/** solid flame — the daily-streak counter (FlameArt in Streak.tsx is the
+    big colored one; this is the monochrome inline glyph) */
+export function FlameIcon({ size = 14 }: IconProps) {
+  return (
+    <Svg size={size} fill>
+      <path d="M12 2.6c.9 3.1-.8 4.6-2.2 5.9C8.2 9.9 7 11.2 7 13.6A5 5 0 0 0 12 18.6a5 5 0 0 0 5-5c0-3.4-2.1-5-3.3-6.6-.3 1-1 1.7-1.8 2.2.6-2.3.5-4.5.1-6.6z" />
+    </Svg>
+  );
+}
+
 export function ClockIcon({ size = 16 }: IconProps) {
   return (
     <Svg size={size}>

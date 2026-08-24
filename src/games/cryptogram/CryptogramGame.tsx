@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, CheckIcon, CipherGlyph, EraseIcon } from '../../platform/design/icons';
@@ -30,7 +31,8 @@ export function CryptogramGame({
   elapsedSec,
   events,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   // Ignore saves from the old phrase-cipher version of this game.
   const saved =
@@ -39,7 +41,10 @@ export function CryptogramGame({
       : undefined;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const puzzle = useMemo(() => saved?.puzzle ?? generateCryptoPuzzle(difficulty), [difficulty]);
+  const puzzle = useMemo(
+    () => saved?.puzzle ?? withSeed(dailySeed, () => generateCryptoPuzzle(difficulty)),
+    [difficulty, dailySeed]
+  );
 
   const [entries, setEntries] = useState<string[][]>(() =>
     saved ? saved.entries.map((r) => [...r]) : puzzle.rows.map((r) => r.word.split('').map(() => ''))

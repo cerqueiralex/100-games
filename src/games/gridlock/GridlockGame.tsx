@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { CSSProperties } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
@@ -42,12 +43,16 @@ export function GridlockGame({
   paused,
   events,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   const saved = isSnapshot(savedState) ? savedState : undefined;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const puzzle = useMemo(() => saved?.puzzle ?? generateGridlock({ difficulty }), [difficulty]);
+  const puzzle = useMemo(
+    () => saved?.puzzle ?? withSeed(dailySeed, () => generateGridlock({ difficulty })),
+    [difficulty, dailySeed]
+  );
   const pieces = puzzle.pieces;
   const redId = puzzle.redId;
   const redLen = pieces[redId].len;

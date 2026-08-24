@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon } from '../../platform/design/icons';
@@ -132,11 +133,15 @@ export function WordSearchGame({
   elapsedSec,
   events,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   const saved = isSave(savedState) ? savedState : undefined;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const puzzle = useMemo(() => saved?.puzzle ?? generateWordSearch({ difficulty }), [difficulty]);
+  const puzzle = useMemo(
+    () => saved?.puzzle ?? withSeed(dailySeed, () => generateWordSearch({ difficulty })),
+    [difficulty, dailySeed]
+  );
   const size = puzzle.size;
   const mult = MULT[difficulty];
   const rays = difficulty === 'easy' ? RAYS_ORTHO : RAYS_ALL;

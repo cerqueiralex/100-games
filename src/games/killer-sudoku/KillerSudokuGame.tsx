@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, CheckIcon, EraseIcon, PencilIcon, SameIcon } from '../../platform/design/icons';
@@ -47,7 +48,8 @@ export function KillerSudokuGame({
   events,
   onToggleAssist,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   const saved =
     savedState &&
@@ -60,9 +62,9 @@ export function KillerSudokuGame({
       : undefined;
 
   const puzzle = useMemo(
-    () => (saved ? saved.puzzle : generateKiller({ difficulty })),
+    () => (saved ? saved.puzzle : withSeed(dailySeed, () => generateKiller({ difficulty }))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [difficulty]
+    [difficulty, dailySeed]
   );
   const { solution, givens, cages, cageOf } = puzzle;
 

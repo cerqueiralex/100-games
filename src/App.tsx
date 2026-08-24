@@ -8,12 +8,16 @@ import { SettingsPage } from './platform/pages/SettingsPage';
 import { getGame } from './platform/registry';
 import { sfx } from './platform/audio';
 import type { CategoryId } from './platform/types';
+import type { DailyChallengeRecord } from './platform/daily/store';
 
 type Tab = 'games' | 'profile' | 'settings';
 
 function Shell() {
   const [tab, setTab] = useState<Tab>('games');
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
+  /** set only when the open game was launched AS today's Daily Challenge —
+      the same game opened from the list is an ordinary session */
+  const [activeDaily, setActiveDaily] = useState<DailyChallengeRecord | null>(null);
 
   /**
    * Browsing state outlives a game visit. HomePage unmounts while playing,
@@ -33,7 +37,16 @@ function Shell() {
   const activeGame = activeGameId ? getGame(activeGameId) : undefined;
 
   if (activeGame) {
-    return <GameShell game={activeGame} onExit={() => setActiveGameId(null)} />;
+    return (
+      <GameShell
+        game={activeGame}
+        daily={activeDaily ?? undefined}
+        onExit={() => {
+          setActiveGameId(null);
+          setActiveDaily(null);
+        }}
+      />
+    );
   }
 
   return (
@@ -47,7 +60,13 @@ function Shell() {
             onCategoryChange={setCategory}
             onOpenGame={(gameId) => {
               listScroll.current = window.scrollY;
+              setActiveDaily(null);
               setActiveGameId(gameId);
+            }}
+            onOpenDaily={(record) => {
+              listScroll.current = window.scrollY;
+              setActiveDaily(record);
+              setActiveGameId(record.gameId);
             }}
           />
         )}

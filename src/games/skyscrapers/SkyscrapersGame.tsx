@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, EraseIcon, EyeIcon, PencilIcon, SameIcon } from '../../platform/design/icons';
@@ -45,7 +46,8 @@ export function SkyscrapersGame({
   events,
   onToggleAssist,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   const saved =
     savedState &&
@@ -57,9 +59,9 @@ export function SkyscrapersGame({
       : undefined;
 
   const puzzle = useMemo(
-    () => (saved ? saved.puzzle : generateSkyPuzzle(difficulty)),
+    () => (saved ? saved.puzzle : withSeed(dailySeed, () => generateSkyPuzzle(difficulty))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [difficulty]
+    [difficulty, dailySeed]
   );
   const { n, solution, top, bottom, left, right } = puzzle;
   const cellsTotal = n * n;

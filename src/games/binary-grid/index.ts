@@ -13,6 +13,7 @@ export const binaryGridDefinition: GameDefinition = {
   component: BinaryGridGame,
   tutorial: binaryGridTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     'Fill boards from 6×6 up to 12×12 (hard and above add the no-identical-lines rule; every board has a single solution). +5 per placed cell × difficulty (1–5), −10 per rule break, −25 per hint, plus a time bonus under par (3/5/8/10/14 min).',
   assistFeatures: [

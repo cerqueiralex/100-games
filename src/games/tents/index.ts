@@ -13,6 +13,7 @@ export const tentsDefinition: GameDefinition = {
   component: TentsGame,
   tutorial: tentsTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     'Pitch every tent on boards from 6×6 (8 tents) up to 12×12 (29 tents). +12 per tent × difficulty (1–5), −15 per misplaced tent, −40 per hint, plus 1 pt/sec under par (3/5/7/9/12 min) × difficulty on a win.',
   assistFeatures: [

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon } from '../../platform/design/icons';
@@ -80,7 +81,8 @@ export function TentsGame({
   elapsedSec,
   events,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   // ignore saves that lack the expected shape (old versions / corruption)
   const saved =
@@ -90,7 +92,10 @@ export function TentsGame({
       ? (savedState as TentsSave)
       : undefined;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const puzzle = useMemo(() => saved?.puzzle ?? generateTents({ size: SIZE[difficulty] }), [difficulty]);
+  const puzzle = useMemo(
+    () => saved?.puzzle ?? withSeed(dailySeed, () => generateTents({ size: SIZE[difficulty] })),
+    [difficulty, dailySeed]
+  );
   const { size } = puzzle;
   const n = size * size;
   const treeSet = useMemo(() => new Set(puzzle.trees), [puzzle]);

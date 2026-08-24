@@ -13,6 +13,7 @@ export const gridlockDefinition: GameDefinition = {
   component: GridlockGame,
   tutorial: gridlockTutorial,
   mastery,
+  dailyChallenge: { eligible: true },
   scoringNote:
     'Slide the traffic aside and drive the red car to the exit. Every board is solvable with a known minimum (par). Score = 400× difficulty win bonus + an efficiency bonus of up to 600× difficulty scaled by par ÷ your moves (solve in par for the full bonus), −60 per hint. Difficulty multiplier runs 1× easy to 5× extreme. Turning off the Move counter and using no hints or undos earns a clean win.',
   assistFeatures: [

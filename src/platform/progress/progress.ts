@@ -2,6 +2,7 @@ import type { CategoryId, Difficulty, GameResult } from '../types';
 import { DIFFICULTIES } from '../types';
 import { GAMES } from '../registry';
 import { CATEGORIES } from '../categories';
+import { eligibleGames } from '../daily/rotation';
 import { loadHistory, readGameData, writeGameData } from '../storage';
 import {
   levelFromXp,
@@ -65,6 +66,18 @@ export interface PlayerProgress {
   plays: number;
   /** lifetime clean wins — every result countsAsBeaten() accepts */
   cleanWins: number;
+  /**
+   * Daily Challenge projections. The daily store owns the records and the
+   * live streak; these are the two facts the TROPHIES need, kept here so
+   * landmark evaluation stays a pure function of PlayerProgress. The daily
+   * completion path is the single writer for both.
+   *
+   * `dailyBest` is the best streak ever, not the current one: a permanent
+   * store must not hold a number that silently decays with the calendar.
+   */
+  dailyBest: number;
+  /** game ids ever completed as a Daily Challenge */
+  dailyGames: string[];
   /**
    * gameId -> difficulty -> personal best. Lives HERE rather than being
    * read from history because the XP award for beating your own record must
@@ -150,6 +163,8 @@ export type LandmarkKind =
   | 'plays'
   | 'clean-wins'
   | 'level'
+  | 'daily-streak'
+  | 'daily-collector'
   | 'all-played'
   | 'difficulty'
   | 'category';
@@ -205,6 +220,16 @@ const CLEAN_TIERS: { count: number; title: string; slot: number }[] = [
   { count: 200, title: 'Self-Made', slot: 16 },
   { count: 500, title: 'Untouchable', slot: 3 },
   { count: 1000, title: 'Flawless Thousand', slot: 8 }
+];
+
+/** the Daily Challenge streak ladder — deliberately shorter rungs than the
+    play streak: one specific board a day is a much harder ask than playing
+    anything at all, so 100 days here is worth more than 100 there */
+const DAILY_TIERS: { days: number; title: string; slot: number }[] = [
+  { days: 7, title: 'Daily Habit', slot: 7 },
+  { days: 30, title: 'Daily Devotee', slot: 8 },
+  { days: 100, title: 'Daily Centurion', slot: 5 },
+  { days: 365, title: 'Daily Year', slot: 6 }
 ];
 
 /** the plate tint behind each rank crown, matched to its material (the
@@ -285,6 +310,35 @@ export const LANDMARKS: LandmarkDef[] = [
       emoji: '✨'
     })
   ),
+  /* The Daily Challenge trophies exist only while something is actually in
+     the rotation — the same rule that gives an empty category no mastery
+     landmark. With nothing eligible the feature is off, its card renders
+     nothing, and a gallery of trophies with a 0/0 meter would be five
+     promises the app cannot keep. Derived from the registry, never a
+     hardcoded "the daily exists" flag. */
+  ...(eligibleGames().length > 0
+    ? [
+        ...DAILY_TIERS.map(
+          (t): LandmarkDef => ({
+            id: `daily-streak-${t.days}`,
+            title: t.title,
+            requirement: `Complete ${t.days} Daily Challenges in a row`,
+            kind: 'daily-streak',
+            days: t.days,
+            slot: t.slot,
+            emoji: '📅'
+          })
+        ),
+        {
+          id: 'daily-collector',
+          title: 'Every Daily',
+          requirement: 'Complete a Daily Challenge of every game in the rotation',
+          kind: 'daily-collector',
+          slot: 11,
+          emoji: '🗓️'
+        } as LandmarkDef
+      ]
+    : []),
   ...RANK_TIERS.map(
     (t): LandmarkDef => ({
       id: `level-${t.level}`,
@@ -354,7 +408,15 @@ export function allDifficultiesBeaten(p: PlayerProgress, gameId: string): boolea
 export function landmarkMeter(
   def: LandmarkDef,
   p: PlayerProgress,
-  streak: StreakInfo
+  streak: StreakInfo,
+  /** the daily streak still alive today. Same role `streak.current` plays
+      for the play-streak meters: it is what the player can act on. The
+      progress store deliberately keeps only `dailyBest` (a permanent store
+      must not hold a number that decays with the calendar), and it cannot
+      read the daily store itself — daily/store.ts imports THIS module, so
+      the arrow must not be turned around. Omitted, the meter falls back to
+      the best run, which is what unlocking uses. */
+  dailyCurrent?: number
 ): { done: number; total: number } {
   switch (def.kind) {
     case 'first':
@@ -367,6 +429,20 @@ export function landmarkMeter(
       return { done: Math.min(p.cleanWins, def.count!), total: def.count! };
     case 'level':
       return { done: Math.min(levelFromXp(p.xp), def.level!), total: def.level! };
+    case 'daily-streak':
+      // the live run when the caller knows it, so a broken streak reads
+      // honestly as "start again" instead of freezing at a number the
+      // player can no longer build on. Unlocking still uses the best run
+      // ever (see `achieved`) — a trophy is never taken back.
+      return { done: Math.min(dailyCurrent ?? p.dailyBest, def.days!), total: def.days! };
+    case 'daily-collector': {
+      const eligible = eligibleGames();
+      const done = new Set(p.dailyGames);
+      return {
+        done: eligible.filter((g) => done.has(g.id)).length,
+        total: eligible.length
+      };
+    }
     case 'all-played': {
       const played = new Set(p.played);
       return { done: GAMES.filter((g) => played.has(g.id)).length, total: GAMES.length };
@@ -409,7 +485,18 @@ function evaluateLandmarks(p: PlayerProgress, atMs: number): boolean {
 /* ---------- persistence ---------- */
 
 function emptyProgress(): PlayerProgress {
-  return { days: [], played: [], wins: {}, landmarks: {}, xp: 0, plays: 0, cleanWins: 0, records: {} };
+  return {
+    days: [],
+    played: [],
+    wins: {},
+    landmarks: {},
+    xp: 0,
+    plays: 0,
+    cleanWins: 0,
+    dailyBest: 0,
+    dailyGames: [],
+    records: {}
+  };
 }
 
 /**
@@ -566,6 +653,12 @@ function normalize(raw: unknown, backfillFrom?: GameResult[]): PlayerProgress | 
     xp: xp ?? 0,
     plays: plays ?? 0,
     cleanWins: cleanWins ?? 0,
+    // no history source to rebuild these from — a store that predates the
+    // Daily Challenge simply starts it at zero, which is the truth
+    dailyBest: cleanCount(p.dailyBest) ?? 0,
+    dailyGames: Array.isArray(p.dailyGames)
+      ? p.dailyGames.filter((g): g is string => typeof g === 'string')
+      : [],
     records: cleanRecords(p.records)
   };
   // a store from before levels / the volume ladders: backfill from what the
@@ -596,7 +689,8 @@ export function loadProgress(): PlayerProgress {
     typeof raw === 'object' &&
     (typeof raw.xp !== 'number' ||
       typeof raw.plays !== 'number' ||
-      typeof raw.cleanWins !== 'number');
+      typeof raw.cleanWins !== 'number' ||
+      typeof raw.dailyBest !== 'number');
   const stored = normalize(raw);
   const p = stored ?? seedFromHistory();
   const changed = evaluateLandmarks(p, Date.now());
@@ -615,7 +709,24 @@ export function loadProgress(): PlayerProgress {
  * level up without playing anything, and a level nobody earned is worth
  * nothing. They still count for the streak day, which is a real play day.
  */
-function awardXp(p: PlayerProgress, r: GameResult): XpAward {
+/**
+ * What a finished Daily Challenge contributed, handed down from the shell
+ * (which owns the daily store) so the award and the trophies can both be
+ * decided in this one place. Every flag here is a STATE CHANGE, not a
+ * standing fact, so nothing can be paid twice by replaying the day.
+ */
+export interface DailyProgressInfo {
+  gameId: string;
+  /** first time this date was completed — the base award pays once */
+  firstCompletion: boolean;
+  /** the streak grew on this completion */
+  advanced: boolean;
+  cleanWin: boolean;
+  /** the daily streak's best run after this completion */
+  best: number;
+}
+
+function awardXp(p: PlayerProgress, r: GameResult, daily?: DailyProgressInfo): XpAward {
   const entries: XpEntry[] = [];
   /* XP lands on p.xp as it is granted, not in one sum at the end: the level
      ladder's landmarks are evaluated against p.xp, so they must see the XP
@@ -637,6 +748,17 @@ function awardXp(p: PlayerProgress, r: GameResult): XpAward {
   if (r.outcome !== 'abandoned') grant('play');
   if (brokeRecord) grant('record');
   if (!sweptBefore && allDifficultiesBeaten(p, r.gameId)) grant('sweep');
+
+  if (daily) {
+    // the projections the trophies read; the daily store stays the source
+    p.dailyBest = Math.max(p.dailyBest, daily.best);
+    if (!p.dailyGames.includes(daily.gameId)) p.dailyGames.push(daily.gameId);
+    if (daily.firstCompletion) {
+      grant('daily');
+      if (daily.cleanWin) grant('dailyClean');
+    }
+    if (daily.advanced) grant('dailyStreak');
+  }
 
   /* Landmarks last, and in a LOOP: unlocking one pays 80 XP, which can
      itself carry the player over a level tier whose crown must then unlock
@@ -663,9 +785,9 @@ export interface ProgressUpdate {
 /** The single write path: fold one finished/abandoned session in, unlock
     anything newly earned, grant XP, persist. Returns a fresh object
     (React state) plus what this result earned, for the results modal. */
-export function recordProgress(result: GameResult): ProgressUpdate {
+export function recordProgress(result: GameResult, daily?: DailyProgressInfo): ProgressUpdate {
   const p = normalize(readGameData<PlayerProgress>(PROGRESS_KEY)) ?? seedFromHistory();
-  const award = awardXp(p, result);
+  const award = awardXp(p, result, daily);
   writeGameData(PROGRESS_KEY, p);
   return { progress: p, award };
 }

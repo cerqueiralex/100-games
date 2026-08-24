@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { withSeed } from '../../platform/daily/seededRandom';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { BulbIcon, DropletIcon, TttCrossIcon } from '../../platform/design/icons';
@@ -47,7 +48,8 @@ export function AquariumGame({
   elapsedSec,
   events,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  dailySeed
 }: GameProps) {
   const saved = savedState as AquSave | undefined;
   const cfg = AQU_CONFIG[difficulty];
@@ -55,8 +57,12 @@ export function AquariumGame({
   // the shell remounts via key for a new game, so generating once is safe
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const puzzle = useMemo<AquariumPuzzle>(
-    () => saved?.puzzle ?? generateAquarium({ size: cfg.size, minTank: cfg.minTank, maxTank: cfg.maxTank }),
-    []
+    () =>
+      saved?.puzzle ??
+      withSeed(dailySeed, () =>
+        generateAquarium({ size: cfg.size, minTank: cfg.minTank, maxTank: cfg.maxTank })
+      ),
+    [dailySeed]
   );
   const size = puzzle.size;
   const n = size * size;

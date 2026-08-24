@@ -79,7 +79,7 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 - **Five difficulty tiers** (easy / medium / hard / pro / extreme), pause, restart, quit — all via the standard game shell; after finishing you can close the results popup to review the solved board
 - **Two ways out of a game**: the back arrow steps back to that game's own start screen (to switch difficulty or re-read the rules), the home button leaves for the game list — so changing difficulty never means a round trip through all 67 games
 - **Player level & XP**: every 100 XP is a level. You earn 10 XP for a game played, 10 for extending your daily streak, 10 for beating your own record on a game+difficulty, 80 for beating a game on all five difficulties, and 80 for each landmark earned. A win shows exactly what it earned, and a new level gets its own card (with a sound) before the results appear. The level dial sits in the home header next to your streak and heads the profile
-- **Rank crowns**: six crowns mark the climb — Wood at level 10, Iron 25, Silver 50, Gold 100, Platinum 150, Challenger 200. The whole ladder is on the level card with the unearned crowns greyed out, so you can always see the next one and what it costs; the crown you're wearing rides in the card's corner, next to your name on the home page, and on every win card you share
+- **Rank crowns**: six crowns mark the climb — Wood at level 10, Iron 25, Silver 50, Gold 100, Platinum 150, Challenger 200 — each one looking like what it's made of: wood grain, brushed iron, polished silver, gold with a glint, mirror platinum, gem-cut challenger. The whole ladder is on the level card with the unearned crowns greyed out, so you can always see the next one and what it costs; the crown you're wearing rides in the card's corner, next to your name on the home page, and on every win card you share
 - **Win celebration**: every win plays the same ~3.5-second green celebration — confetti, a success ring and a "Complete!" badge — *over* the finished board (it never covers or tints it), and only then does the results popup appear, so you always see your puzzle finish before the statistics
 - **The list remembers where you were**: your search, category filter and scroll position survive a game, so trying game #40 doesn't send you back to the top of the list
 - **Save & resume**: a save button in every game's header snapshots the running game; a "Continue saved game" card on the start screen restores board, timer, score and assist usage — even after closing the app
@@ -89,11 +89,12 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 - **Statistics & history**: win rate, best/avg time, best/avg score, streaks, errors, hints, time played, high scores per difficulty, filterable per game, with a calendar to browse any day's games (Profile tab)
 - **Play streak**: playing on consecutive days builds a Duolingo-style day streak — a flame card on the profile with a Mo–Su week row (plus best-ever and total days played) and a compact flame counter next to your name on the home page; miss a full day and it resets. The flame greys out until you've played that day
 - **Completion markers**: every difficulty you've beaten gets a thick green ring and a gold-star seal on its top-left corner — on that game's difficulty picker and on the profile's high-score tiles alike; beat a game on all five tiers and it earns a green badge with a flat gold check-marked trophy, shown on its menu card and beside its name in the profile's high scores
-- **Landmarks**: a trophy collection on the profile — play your first game, streak milestones (1–3 weeks, 1 month, bimester, trimester, quadrimester, semester, a full year), finish 50/100/200/500/1000 games, win 50/100/200/500/1000 of them with no help at all, reach each rank crown, play every game, beat every game on each difficulty, and master each category. Locked trophies show in black & white behind a padlock with live progress ("41/67"); unlocked ones color in with their date and can be shared as a designed 1080×1350 card. Trophies are permanent — once earned they're never taken back, and they survive a history wipe
+- **Landmarks**: a trophy collection on the profile — play your first game, streak milestones (1–3 weeks, 1 month, bimester, trimester, quadrimester, semester, a full year), finish 50/100/200/500/1000 games, win 50/100/200/500/1000 of them with no help at all, reach each rank crown, keep a Daily Challenge streak (7 days, a month, 100 days, a year) and solve one of every game in the daily rotation, play every game, beat every game on each difficulty, and master each category. Locked trophies show in black & white behind a padlock with live progress ("41/67"); unlocked ones color in with their date and can be shared as a designed 1080×1350 card. Trophies are permanent — once earned they're never taken back, and they survive a history wipe
 - **Profile**: name + avatar, totals across games
 - **Share cards**: on any win, generate a 1080×1350 PNG win card — native share sheet on iPhone (WhatsApp etc.), download or long-press-copy anywhere
 - **Themes**: 3 surface themes — pure black, dim, and warm-paper light — for playing at night or in daylight. The palette is monochrome ink plus one orange, reserved for progression (level, XP, streak)
 - **Progress charts** on the profile: a most-played donut and a 30-day stacked activity timeline (both capped to the top games, tail folded into "Other"), and a per-game improvement trend (score / win time / win % / errors)
+- **Daily Challenge**: one shared puzzle a day — the same game, the same difficulty and the exact same board for everyone, everywhere, worked out from the date itself so it needs no account and no connection. It rotates through the eligible games so each comes up once per cycle, expires at midnight, and keeps its own streak (separate from the play streak) with its own trophies. The profile shows the last four weeks at a glance — every solved day a solid ticked block: green for solved unaided, orange for solved with help
 - **Last played**: the three games you played most recently sit in one row above Pinned, newest on the left — one tap back into what you were doing. Deduped, so replaying one game doesn't fill the row with it
 - **Pinned favorites**: star any game to move it into a Pinned section at the top of the menu
 - **Search** on the home page to find games as the catalog grows, plus a category filter that scrolls sideways on one line (arrows and edge fades show when there's more) so the list keeps the screen
@@ -187,6 +188,9 @@ src/
       effects.css        ← the shared flat card surface (one rule, whole app)
       icons.tsx          ← every UI icon (monochrome SVG, inherits theme color)
       gameIcons.tsx      ← game identity icons (colorful sticker SVGs, home cards)
+      rankMaterials.ts   ← what each rank crown is made of (grain, brush,
+                            sheen, facets) — read by the SVG badge AND the
+                            share card's canvas port, so they can't drift
       DESIGN.md          ← the rulebook (read before any UI work)
     types.ts             ← GameDefinition contract, GameProps, GameResult
     registry.ts          ← the list of games (add new games here)
@@ -194,6 +198,8 @@ src/
     backup.ts            ← export/import one JSON backup (validates untrusted
                             files before replacing anything)
     stats.ts             ← statistics engine (win rate, streaks, best times…)
+    daily/               ← Daily Challenge: date→game rotation, seeded board
+                            generation, records + streak store
     progress/            ← play-streak + landmark (trophy) + XP/level store —
                             permanent, derived from the registry so new games
                             auto-sync; xp.ts holds the level rules

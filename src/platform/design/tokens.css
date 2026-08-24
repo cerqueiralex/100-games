@@ -19,6 +19,14 @@
   /* the extruded ("candy / pushable") bottom edge on surface-colored
      elements — see DESIGN.md "Depth & motion" */
   --edge: rgba(0, 0, 0, 0.5);
+  /* the card surface itself, so effects.css needs ONE rule for every theme.
+     Before these existed the light theme repeated the whole .fx-card block
+     behind a `:root[data-theme='light']` prefix, which outranked every
+     component override — a card that restyled its border got it on black
+     and dim and silently lost it on light. Theme differences belong in
+     tokens; see DESIGN.md "Card surfaces are one rule". */
+  --card-fill: color-mix(in srgb, var(--surface) 88%, transparent);
+  --card-hairline: rgba(255, 255, 255, 0.1);
 }
 
 :root[data-theme='dim'] {
@@ -43,6 +51,8 @@
   --cell-peer: #e8e4d9;
   --shadow: 0 8px 24px rgba(62, 52, 34, 0.08);
   --edge: rgba(62, 52, 34, 0.13);
+  --card-fill: color-mix(in srgb, var(--surface) 85%, transparent);
+  --card-hairline: rgba(0, 0, 0, 0.07);
 }
 
 /* ---------- the accent: monochrome, ONE value, not a setting ----------
