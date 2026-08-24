@@ -155,7 +155,9 @@ export function parseBackup(text: string): ParseResult {
   const history = Array.isArray(raw.history)
     ? raw.history.map(validResult).filter((r): r is GameResult => r !== null)
     : null;
-  const progress = normalizeProgress(raw.progress);
+  // the file's OWN rows back-fill any counter it predates — never this
+  // device's history, which belongs to whoever is importing
+  const progress = normalizeProgress(raw.progress, history ?? undefined);
 
   if (!settings && !profile && !history && !progress) {
     return {

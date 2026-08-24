@@ -6,8 +6,9 @@ import { activeCategories, categoryColor, categoryName } from '../categories';
 import { computeStats, formatDuration } from '../stats';
 import { allDifficultiesBeaten, computeStreak } from '../progress/progress';
 import { StreakChip } from '../components/Streak';
-import { LevelChip } from '../components/Level';
-import { ChevronIcon, CrownIcon, SearchIcon, StarIcon } from '../design/icons';
+import { LevelChip, RankCrown } from '../components/Level';
+import { rankForXp } from '../progress/xp';
+import { ChevronIcon, ClockIcon, CrownIcon, SearchIcon, StarIcon } from '../design/icons';
 import { sfx } from '../audio';
 import type { CategoryId, GameDefinition } from '../types';
 
@@ -28,6 +29,27 @@ export function HomePage({
 }) {
   const { profile, history, settings, updateSettings, progress } = useAppState();
   const streak = useMemo(() => computeStreak(progress.days), [progress]);
+  const rank = rankForXp(progress.xp);
+
+  /**
+   * "Last played" — the 3 most recently played games, newest first (history
+   * is stored newest-first). Deduped by game, because replaying one game
+   * three times would otherwise fill the whole row with it and the shortcut
+   * would stop being a shortcut. Any outcome counts as played, matching the
+   * progress store. A result whose game has left the registry is skipped.
+   */
+  const recent = useMemo(() => {
+    const seen = new Set<string>();
+    const out: GameDefinition[] = [];
+    for (const r of history) {
+      if (seen.has(r.gameId)) continue;
+      seen.add(r.gameId);
+      const game = GAMES.find((g) => g.id === r.gameId);
+      if (game) out.push(game);
+      if (out.length === 3) break;
+    }
+    return out;
+  }, [history]);
 
   /**
    * The category row scrolls sideways so it costs ONE line of vertical
@@ -183,6 +205,13 @@ export function HomePage({
           <h1 className="home-title">{profile.name}</h1>
         </div>
         <div className="home-right">
+          {/* the crown rides ahead of the level token — no plate of its own,
+              so the header keeps three controls rather than growing a fourth */}
+          {rank && (
+            <span className="home-rank" title={`${rank.name} crown — level ${rank.level}+`}>
+              <RankCrown rank={rank} size={28} />
+            </span>
+          )}
           <LevelChip xp={progress.xp} />
           <StreakChip streak={streak} />
           <span className="home-avatar">{profile.emoji}</span>
@@ -254,6 +283,30 @@ export function HomePage({
           ))}
         </div>
       </div>
+
+      {/* Jump back into what you were playing. Hidden while searching or
+          filtering: the page is then a result list, and three unrelated
+          games pinned above it would just be noise. */}
+      {!q && !category && recent.length > 0 && (
+        <>
+          <h3 className="section-title home-section">
+            <ClockIcon size={13} /> Last played
+          </h3>
+          <div className="recent-row">
+            {recent.map((game) => (
+              <button
+                key={game.id}
+                className="recent-tile"
+                onClick={() => onOpenGame(game.id)}
+                title={game.name}
+              >
+                <span className="recent-icon">{game.icon}</span>
+                <span className="recent-name">{game.name}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {pinned.length > 0 && (
         <>

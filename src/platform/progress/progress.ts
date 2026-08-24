@@ -3,7 +3,15 @@ import { DIFFICULTIES } from '../types';
 import { GAMES } from '../registry';
 import { CATEGORIES } from '../categories';
 import { loadHistory, readGameData, writeGameData } from '../storage';
-import { levelFromXp, XP_AWARDS, type XpAward, type XpEntry, type XpSource } from './xp';
+import {
+  levelFromXp,
+  RANK_TIERS,
+  XP_AWARDS,
+  type RankId,
+  type XpAward,
+  type XpEntry,
+  type XpSource
+} from './xp';
 
 /**
  * Player progress — the streak + landmark (trophy) database, kept in its own
@@ -43,6 +51,20 @@ export interface PlayerProgress {
   landmarks: Record<string, LandmarkUnlock>;
   /** total XP ever earned — drives the player level (see ./xp.ts) */
   xp: number;
+  /**
+   * Lifetime counters for the volume ladders. They live HERE, not in
+   * history, for the same reason records do: history is capped at 1000 rows
+   * and clearable, so counting from it would make a 500-game trophy
+   * un-earnable and re-fire the ones already earned.
+   *
+   * `plays` counts FINISHED sessions (won or lost) — an abandon is not a
+   * game played, exactly as it earns no play XP: quitting from the game
+   * screen takes two seconds, and a trophy anyone can hold down a button
+   * for is worth nothing.
+   */
+  plays: number;
+  /** lifetime clean wins — every result countsAsBeaten() accepts */
+  cleanWins: number;
   /**
    * gameId -> difficulty -> personal best. Lives HERE rather than being
    * read from history because the XP award for beating your own record must
@@ -122,7 +144,15 @@ export function computeStreak(days: string[], now: Date = new Date()): StreakInf
 
 /* ---------- landmark catalogue ---------- */
 
-export type LandmarkKind = 'first' | 'streak' | 'all-played' | 'difficulty' | 'category';
+export type LandmarkKind =
+  | 'first'
+  | 'streak'
+  | 'plays'
+  | 'clean-wins'
+  | 'level'
+  | 'all-played'
+  | 'difficulty'
+  | 'category';
 
 export interface LandmarkDef {
   id: string;
@@ -135,6 +165,11 @@ export interface LandmarkDef {
   /** celebratory emoji for the shareable card (content, not UI chrome) */
   emoji: string;
   days?: number;
+  /** target for the volume ladders (plays / clean wins) */
+  count?: number;
+  /** target level, and the crown it earns, for the level ladder */
+  level?: number;
+  rank?: RankId;
   difficulty?: Difficulty;
   category?: CategoryId;
 }
@@ -152,6 +187,36 @@ const STREAK_TIERS: { days: number; title: string; slot: number }[] = [
   { days: 180, title: 'Semester', slot: 4 },
   { days: 365, title: 'One Year', slot: 6 }
 ];
+
+/** volume ladders — same 50/100/200/500/1000 rungs for both, so the two
+    read as one scale (one counts everything you finish, one only the wins
+    you took unaided) */
+const PLAY_TIERS: { count: number; title: string; slot: number }[] = [
+  { count: 50, title: 'Warmed Up', slot: 4 },
+  { count: 100, title: 'Century', slot: 6 },
+  { count: 200, title: 'Devoted', slot: 11 },
+  { count: 500, title: 'Marathon', slot: 10 },
+  { count: 1000, title: 'Thousand Club', slot: 15 }
+];
+
+const CLEAN_TIERS: { count: number; title: string; slot: number }[] = [
+  { count: 50, title: 'Fair Play', slot: 1 },
+  { count: 100, title: 'Purist', slot: 13 },
+  { count: 200, title: 'Self-Made', slot: 16 },
+  { count: 500, title: 'Untouchable', slot: 3 },
+  { count: 1000, title: 'Flawless Thousand', slot: 8 }
+];
+
+/** the plate tint behind each rank crown, matched to its material (the
+    crown itself is painted with the fixed --rank-* tokens) */
+const RANK_SLOT: Record<RankId, number> = {
+  wood: 12,
+  iron: 14,
+  silver: 6,
+  gold: 3,
+  platinum: 11,
+  challenger: 5
+};
 
 const DIFFICULTY_TIERS: Record<Difficulty, { slot: number; emoji: string }> = {
   easy: { slot: 1, emoji: '🥉' },
@@ -193,6 +258,43 @@ export const LANDMARKS: LandmarkDef[] = [
       days: t.days,
       slot: t.slot,
       emoji: '🔥'
+    })
+  ),
+  ...PLAY_TIERS.map(
+    (t): LandmarkDef => ({
+      id: `plays-${t.count}`,
+      title: t.title,
+      // "finish", not "play": an abandoned session does not count (see
+      // PlayerProgress.plays), and the requirement line must not promise
+      // something the meter will refuse to credit
+      requirement: `Finish ${t.count} games`,
+      kind: 'plays',
+      count: t.count,
+      slot: t.slot,
+      emoji: '🎮'
+    })
+  ),
+  ...CLEAN_TIERS.map(
+    (t): LandmarkDef => ({
+      id: `clean-${t.count}`,
+      title: t.title,
+      requirement: `Win ${t.count} games with no help`,
+      kind: 'clean-wins',
+      count: t.count,
+      slot: t.slot,
+      emoji: '✨'
+    })
+  ),
+  ...RANK_TIERS.map(
+    (t): LandmarkDef => ({
+      id: `level-${t.level}`,
+      title: `${t.name} Crown`,
+      requirement: `Reach level ${t.level}`,
+      kind: 'level',
+      level: t.level,
+      rank: t.id,
+      slot: RANK_SLOT[t.id],
+      emoji: '👑'
     })
   ),
   {
@@ -259,6 +361,12 @@ export function landmarkMeter(
       return { done: Math.min(p.played.length, 1), total: 1 };
     case 'streak':
       return { done: Math.min(streak.current, def.days!), total: def.days! };
+    case 'plays':
+      return { done: Math.min(p.plays, def.count!), total: def.count! };
+    case 'clean-wins':
+      return { done: Math.min(p.cleanWins, def.count!), total: def.count! };
+    case 'level':
+      return { done: Math.min(levelFromXp(p.xp), def.level!), total: def.level! };
     case 'all-played': {
       const played = new Set(p.played);
       return { done: GAMES.filter((g) => played.has(g.id)).length, total: GAMES.length };
@@ -301,7 +409,7 @@ function evaluateLandmarks(p: PlayerProgress, atMs: number): boolean {
 /* ---------- persistence ---------- */
 
 function emptyProgress(): PlayerProgress {
-  return { days: [], played: [], wins: {}, landmarks: {}, xp: 0, records: {} };
+  return { days: [], played: [], wins: {}, landmarks: {}, xp: 0, plays: 0, cleanWins: 0, records: {} };
 }
 
 /**
@@ -324,7 +432,9 @@ function applyResult(p: PlayerProgress, r: GameResult): void {
   const day = dayKey(r.finishedAt);
   if (!p.days.includes(day)) p.days.push(day);
   if (!p.played.includes(r.gameId)) p.played.push(r.gameId);
+  if (r.outcome !== 'abandoned') p.plays += 1;
   if (countsAsBeaten(r)) {
+    p.cleanWins += 1;
     const won = p.wins[r.gameId] ?? [];
     if (!won.includes(r.difficulty)) p.wins[r.gameId] = [...won, r.difficulty];
   }
@@ -372,29 +482,50 @@ function seedXp(p: PlayerProgress, history: GameResult[]): number {
 function seedFromHistory(): PlayerProgress {
   const p = emptyProgress();
   const history = loadHistory();
+  // applyResult also runs up the lifetime plays/cleanWins counters
   for (const r of history) applyResult(p, r);
   p.days.sort();
   for (const r of history) updateRecord(p, r);
-  evaluateLandmarks(p, Date.now());
   p.xp = seedXp(p, history);
+  // after the XP, so the level ladder sees the level this history earned
+  evaluateLandmarks(p, Date.now());
   return p;
 }
 
-/** shape-guard: a stale/foreign store falls back to a history reseed
-    instead of crashing (see QA ledger, save/resume rule). Exported so
-    backup import can validate an untrusted file with the same rules. */
-export function normalizeProgress(raw: unknown): PlayerProgress | null {
-  return normalize(raw);
+/**
+ * Lifetime counters for a store written before the volume ladders existed.
+ * Only the (capped) history can be counted, so a player with more than 1000
+ * recorded games is credited with what is still on the device — the
+ * alternative is starting them at zero, which is further from the truth.
+ */
+function seedCounters(p: PlayerProgress, history: GameResult[]): void {
+  p.plays = history.filter((r) => r.outcome !== 'abandoned').length;
+  p.cleanWins = history.filter(countsAsBeaten).length;
 }
 
 /**
- * XP from a stored — and after a backup import, UNTRUSTED — file. A NaN,
- * an Infinity or a negative would spread to every level readout and to the
- * bar width, so anything that is not a sane whole number becomes 0 rather
- * than poisoning the UI. `null` means "no XP field at all" (a store written
- * before levels existed), which the caller backfills retroactively.
+ * shape-guard: a stale/foreign store falls back to a history reseed instead
+ * of crashing (see QA ledger, save/resume rule). Exported so backup import
+ * can validate an untrusted file with the same rules.
+ *
+ * `history` overrides what the retroactive backfills count. Backup import
+ * MUST pass the file's own rows: an older backup carries no lifetime
+ * counters, and filling them from the importing device's history would
+ * credit the wrong person's play (zero, on a fresh device).
  */
-function cleanXp(raw: unknown): number | null {
+export function normalizeProgress(raw: unknown, history?: GameResult[]): PlayerProgress | null {
+  return normalize(raw, history);
+}
+
+/**
+ * A lifetime counter (XP, plays, clean wins) from a stored — and after a
+ * backup import, UNTRUSTED — file. A NaN, an Infinity or a negative would
+ * spread to every level readout, bar width and trophy meter, so anything
+ * that is not a sane whole number becomes 0 rather than poisoning the UI.
+ * `null` means "no such field at all" (a store written before that counter
+ * existed), which the caller backfills retroactively.
+ */
+function cleanCount(raw: unknown): number | null {
   if (raw === undefined || raw === null) return null;
   if (typeof raw !== 'number' || !Number.isFinite(raw) || raw < 0) return 0;
   return Math.floor(raw);
@@ -418,24 +549,33 @@ function cleanRecords(raw: unknown): PlayerProgress['records'] {
   return out;
 }
 
-function normalize(raw: unknown): PlayerProgress | null {
+function normalize(raw: unknown, backfillFrom?: GameResult[]): PlayerProgress | null {
   if (!raw || typeof raw !== 'object') return null;
   const p = raw as Partial<PlayerProgress>;
   if (!Array.isArray(p.days) || !Array.isArray(p.played)) return null;
   if (!p.wins || typeof p.wins !== 'object' || Array.isArray(p.wins)) return null;
   if (!p.landmarks || typeof p.landmarks !== 'object' || Array.isArray(p.landmarks)) return null;
-  const xp = cleanXp(p.xp);
+  const xp = cleanCount(p.xp);
+  const plays = cleanCount(p.plays);
+  const cleanWins = cleanCount(p.cleanWins);
   const out: PlayerProgress = {
     days: p.days.filter((d): d is string => typeof d === 'string'),
     played: p.played.filter((g): g is string => typeof g === 'string'),
     wins: p.wins as Record<string, Difficulty[]>,
     landmarks: p.landmarks as Record<string, LandmarkUnlock>,
     xp: xp ?? 0,
+    plays: plays ?? 0,
+    cleanWins: cleanWins ?? 0,
     records: cleanRecords(p.records)
   };
-  // a pre-levels store: backfill XP from what the store already proves,
-  // so an existing player keeps the level their play has earned
-  if (xp === null) out.xp = seedXp(out, loadHistory());
+  // a store from before levels / the volume ladders: backfill from what the
+  // device can still prove, so an existing player keeps the level and the
+  // counts their play has earned (one history read for both)
+  if (xp === null || plays === null || cleanWins === null) {
+    const history = backfillFrom ?? loadHistory();
+    if (xp === null) out.xp = seedXp(out, history);
+    if (plays === null || cleanWins === null) seedCounters(out, history);
+  }
   return out;
 }
 
@@ -444,13 +584,19 @@ function normalize(raw: unknown): PlayerProgress | null {
 export function loadProgress(): PlayerProgress {
   const raw = readGameData<PlayerProgress>(PROGRESS_KEY);
   /**
-   * A store written before levels existed. Its retroactive XP MUST be
-   * seeded and persisted here, at load — recordProgress runs after the new
-   * result is already in history, so seeding there would count that game
-   * once in the backfill and again in its award (and could skip the
-   * level-up card by inflating the "before" level past a boundary).
+   * A store written before levels (or before the lifetime counters) existed.
+   * Its retroactive XP and counts MUST be seeded and persisted here, at
+   * load — recordProgress runs after the new result is already in history,
+   * so seeding there would count that game once in the backfill and again in
+   * its award (and could skip the level-up card by inflating the "before"
+   * level past a boundary).
    */
-  const needsXpSeed = !!raw && typeof raw === 'object' && typeof raw.xp !== 'number';
+  const needsXpSeed =
+    !!raw &&
+    typeof raw === 'object' &&
+    (typeof raw.xp !== 'number' ||
+      typeof raw.plays !== 'number' ||
+      typeof raw.cleanWins !== 'number');
   const stored = normalize(raw);
   const p = stored ?? seedFromHistory();
   const changed = evaluateLandmarks(p, Date.now());
@@ -471,29 +617,40 @@ export function loadProgress(): PlayerProgress {
  */
 function awardXp(p: PlayerProgress, r: GameResult): XpAward {
   const entries: XpEntry[] = [];
-  const add = (source: XpSource, detail?: string) =>
+  /* XP lands on p.xp as it is granted, not in one sum at the end: the level
+     ladder's landmarks are evaluated against p.xp, so they must see the XP
+     this very result just earned. */
+  const grant = (source: XpSource, detail?: string) => {
     entries.push({ source, xp: XP_AWARDS[source], detail });
+    p.xp += XP_AWARDS[source];
+  };
 
   const isNewDay = !p.days.includes(dayKey(r.finishedAt));
   const sweptBefore = allDifficultiesBeaten(p, r.gameId);
-  const landmarksBefore = new Set(Object.keys(p.landmarks));
+  const levelBefore = levelFromXp(p.xp);
 
   applyResult(p, r);
   p.days.sort();
   const brokeRecord = updateRecord(p, r);
-  evaluateLandmarks(p, r.finishedAt);
 
-  if (isNewDay) add('day');
-  if (r.outcome !== 'abandoned') add('play');
-  if (brokeRecord) add('record');
-  if (!sweptBefore && allDifficultiesBeaten(p, r.gameId)) add('sweep');
-  for (const id of Object.keys(p.landmarks)) {
-    if (!landmarksBefore.has(id)) add('landmark', getLandmark(id)?.title);
+  if (isNewDay) grant('day');
+  if (r.outcome !== 'abandoned') grant('play');
+  if (brokeRecord) grant('record');
+  if (!sweptBefore && allDifficultiesBeaten(p, r.gameId)) grant('sweep');
+
+  /* Landmarks last, and in a LOOP: unlocking one pays 80 XP, which can
+     itself carry the player over a level tier whose crown must then unlock
+     in the same breath. Bounded by the catalogue size — each pass stamps at
+     least one landmark and none is ever stamped twice. */
+  for (let pass = 0; pass < LANDMARKS.length; pass++) {
+    const before = new Set(Object.keys(p.landmarks));
+    if (!evaluateLandmarks(p, r.finishedAt)) break;
+    for (const id of Object.keys(p.landmarks)) {
+      if (!before.has(id)) grant('landmark', getLandmark(id)?.title);
+    }
   }
 
   const total = entries.reduce((sum, e) => sum + e.xp, 0);
-  const levelBefore = levelFromXp(p.xp);
-  p.xp += total;
   const levelAfter = levelFromXp(p.xp);
   return { total, entries, levelBefore, levelAfter, leveledUp: levelAfter > levelBefore };
 }

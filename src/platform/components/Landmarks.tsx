@@ -10,9 +10,12 @@ import {
 import { categoryName } from '../categories';
 import { useAppState } from '../AppState';
 import { FlameArt } from './Streak';
+import { RankCrown } from './Level';
+import { RANK_TIERS } from '../progress/xp';
 import { Chip, Modal } from './ui';
 import { LockIcon } from '../design/icons';
 import {
+  alpha,
   CARD_H,
   CARD_W,
   drawCardChrome,
@@ -56,6 +59,64 @@ export function LandmarkArt({ def, size = 44 }: { def: LandmarkDef; size?: numbe
           <path d="M11 48 L13.5 52.5 L11 57 L8.5 52.5 Z" fill="var(--play-6)" />
         </svg>
       );
+    case 'plays': {
+      // a stack of finished boards; the rung's count is the whole message
+      const n = String(def.count);
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <rect x="16" y="5" width="42" height="42" rx="10" fill={lm} opacity="0.4" />
+          <rect x="6" y="14" width="45" height="45" rx="11" fill={lm} stroke="var(--ink)" strokeWidth="3" />
+          <text
+            x="28.5"
+            y="43.5"
+            textAnchor="middle"
+            fontSize={n.length >= 4 ? 15 : 19}
+            fontWeight="800"
+            fill="var(--play-9)"
+          >
+            {n}
+          </text>
+        </svg>
+      );
+    }
+    case 'clean-wins': {
+      const n = String(def.count);
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <path
+            d="M32 5 57 18.5 57 45.5 32 59 7 45.5 7 18.5Z"
+            fill={lm}
+            stroke="var(--ink)"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          {/* the tick is what separates this ladder from plays: these are
+              the wins nobody helped with */}
+          <path
+            d="M23 24.5 29.5 31 41 19"
+            fill="none"
+            stroke="var(--play-9)"
+            strokeWidth="4.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <text
+            x="32"
+            y="49"
+            textAnchor="middle"
+            fontSize={n.length >= 4 ? 14 : 17}
+            fontWeight="800"
+            fill="var(--play-9)"
+          >
+            {n}
+          </text>
+        </svg>
+      );
+    }
+    case 'level': {
+      const tier = RANK_TIERS.find((t) => t.id === def.rank);
+      return tier ? <RankCrown rank={tier} size={size} /> : null;
+    }
     case 'all-played':
       return (
         <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
@@ -111,6 +172,28 @@ function resolvePlayColor(slot: number): string {
   return /^#[0-9a-fA-F]{6}$/.test(v) ? v : '#ff9f0a';
 }
 
+/** the card's headline number and its caption, one per landmark kind */
+function cardStat(def: LandmarkDef, total: number): [string, string] {
+  switch (def.kind) {
+    case 'streak':
+      return [String(def.days), 'DAY STREAK'];
+    case 'first':
+      return ['GO!', 'THE COLLECTION BEGINS'];
+    case 'plays':
+      return [String(def.count), 'GAMES FINISHED'];
+    case 'clean-wins':
+      return [String(def.count), 'WINS WITH NO HELP'];
+    case 'level':
+      return [String(def.level), `LEVEL · ${def.title.toUpperCase()}`];
+    case 'all-played':
+      return [String(total), 'GAMES PLAYED'];
+    case 'difficulty':
+      return [String(total), `GAMES BEATEN ON ${def.difficulty!.toUpperCase()}`];
+    case 'category':
+      return [String(total), `${categoryName(def.category!).toUpperCase()} GAMES BEATEN`];
+  }
+}
+
 function renderLandmarkCard(
   def: LandmarkDef,
   unlockedAt: number,
@@ -125,7 +208,7 @@ function renderLandmarkCard(
   const RGB = hexToRgb(COLOR);
   const W = CARD_W;
 
-  drawCardChrome(ctx, RGB, RGB);
+  const t = drawCardChrome(ctx, RGB, RGB);
 
   // emblem
   ctx.font = `170px ${EMOJI_FONT}`;
@@ -137,28 +220,21 @@ function renderLandmarkCard(
   ctx.fillText('L A N D M A R K   U N L O C K E D', W / 2, 478);
 
   // title
-  ctx.fillStyle = '#f5f5f7';
+  ctx.fillStyle = t.text;
   ctx.font = `800 ${def.title.length > 12 ? 84 : 104}px ${FONT}`;
   ctx.fillText(def.title, W / 2, 588);
 
   // requirement pill
   pill(ctx, def.requirement.toUpperCase(), W / 2, 700, COLOR, `rgba(${RGB},0.14)`, `700 30px ${FONT}`, 34, 62);
 
-  // the big middle stat
-  const stat: [string, string] =
-    def.kind === 'streak'
-      ? [String(def.days), 'DAY STREAK']
-      : def.kind === 'first'
-        ? ['GO!', 'THE COLLECTION BEGINS']
-        : def.kind === 'all-played'
-          ? [String(total), 'GAMES PLAYED']
-          : def.kind === 'difficulty'
-            ? [String(total), `GAMES BEATEN ON ${def.difficulty!.toUpperCase()}`]
-            : [String(total), `${categoryName(def.category!).toUpperCase()} GAMES BEATEN`];
+  // the big middle stat — exhaustive on kind, never a fallback: a new
+  // landmark kind falling into the category branch would read another
+  // trophy's caption (and crash on the missing category name)
+  const stat = cardStat(def, total);
   ctx.fillStyle = COLOR;
   ctx.font = `800 190px ${FONT}`;
   ctx.fillText(stat[0], W / 2, 905);
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillStyle = alpha(t.text, 0.6);
   ctx.font = `700 33px ${FONT}`;
   ctx.fillText(stat[1], W / 2, 1030);
 
@@ -171,7 +247,7 @@ function renderLandmarkCard(
   pill(ctx, `★  UNLOCKED ${date.toUpperCase()}`, W / 2, 1150, '#30d158', 'rgba(48,209,88,0.13)', `700 29px ${FONT}`, 36, 62);
 
   // footer
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillStyle = alpha(t.text, 0.6);
   ctx.font = `600 33px ${FONT}`;
   ctx.fillText(`${player.emoji} ${player.name}  ·  100 GAMES`, W / 2, 1256);
 
@@ -306,7 +382,11 @@ export function LandmarksSection({
                 </div>
                 <p className="lm-meter-text">
                   {selectedMeter.done} / {selectedMeter.total}
-                  {selected.kind === 'streak' ? ' days' : ''}
+                  {selected.kind === 'streak'
+                    ? ' days'
+                    : selected.kind === 'level'
+                      ? ' levels'
+                      : ''}
                 </p>
                 <div className="lm-status">
                   <Chip tone="muted">Locked</Chip>

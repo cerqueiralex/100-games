@@ -102,6 +102,19 @@ they gain enforcement, delete entries obsoleted by code removal.
 
 ## Watch items (re-check every QA — not yet machine-enforced)
 
+- **2026-08-24 · data · a retroactive backfill must count the RIGHT
+  source, and run exactly once.** Adding the lifetime `plays`/`cleanWins`
+  counters meant older stores had to be filled in from history — and
+  `parseBackup` normalized the imported progress against *the importing
+  device's* history, so an old backup restored onto a fresh phone would
+  have claimed 0 games played. `normalizeProgress` now takes the history
+  to count (backup passes the file's own rows), and the backfill is
+  persisted in `loadProgress`, never in `recordProgress` (which runs
+  after the new result is already in history — that is the double-count
+  that once ate a level-up card). Rule: whenever a store gains a derived
+  field, ask both questions — *which* history proves it, and *where* does
+  the fill happen so it cannot repeat or double-count.
+
 - **2026-08-23 · UX · state that must survive a screen change belongs to
   the parent.** Leaving a game dropped the player at the top of the
   67-game list (HomePage unmounts while playing, taking scroll, search

@@ -10,7 +10,7 @@ import { beatenDifficulties } from '../progress/progress';
 import { ShareCardModal } from './ShareCard';
 import { WinCelebration, WIN_CELEBRATION_MS } from './WinCelebration';
 import { LevelUpModal, XpEarned } from './Level';
-import { NO_AWARD, type XpAward } from '../progress/xp';
+import { levelFromXp, NO_AWARD, rankForXp, type XpAward } from '../progress/xp';
 import { TutorialModal } from './Tutorial';
 import { MasteryModal } from './Mastery';
 
@@ -638,7 +638,9 @@ export function GameShell({ game, onExit }: { game: GameDefinition; onExit: () =
             hintsUsed: finish.hintsUsed,
             cleanWin: finish.hintsUsed === 0 && finish.assistsUsed.length === 0,
             playerName: profile.name,
-            playerEmoji: profile.emoji
+            playerEmoji: profile.emoji,
+            level: levelFromXp(progress.xp),
+            rank: rankForXp(progress.xp)
           }}
           onClose={() => setShowShare(false)}
         />

@@ -105,6 +105,24 @@ tokens. Rules:
   canvas chrome (`drawCardChrome` + `ShareImageModal` in ShareCard.tsx)
   so every shared image stays one family.
 
+### Share cards follow the player's theme
+
+The canvas cards read `--bg`/`--surface`/`--text`/`--accent` through
+`cardTheme()` and paint with those, exactly like the results modal behind
+them. They were once hardcoded black, which meant a player on the light
+appearance opened a share sheet showing a card from a different app.
+`drawCardChrome` returns the theme it painted with, so a caller never
+re-reads or hardcodes ink; texture and glow strengths switch on
+`theme.light` (a strong tint turns the beige paper muddy). Anything
+semantic — the green of a clean win, a landmark's `--play-*` identity, a
+rank's material — stays fixed across themes, same rule as everywhere else.
+
+Vertical rhythm is part of the design, not an accident: the emblem block
+is deliberately small so the bands below the divider (statistics, badge,
+footer) get even air. Long game names shrink to fit (`fitFont`) rather
+than overflowing the card or wrapping into a layout with no room for a
+second line.
+
 ### Win celebration (the payoff beat — every game, no exceptions)
 
 When a player wins, the shell plays ONE shared celebration
@@ -166,6 +184,33 @@ instead of competing with a statistics table — the same reasoning as the
 win celebration below. It plays `sfx.levelUp()`, deliberately brighter and
 longer than `sfx.win()` so the two events never sound alike, and all of its
 motion is disabled under `prefers-reduced-motion`.
+
+### Rank crowns (the level ladder)
+
+Six crowns mark the climb — Wood 10, Iron 25, Silver 50, Gold 100,
+Platinum 150, Challenger 200 — defined once in `progress/xp.ts`
+(`RANK_TIERS`); the profile row, the home badge, the level landmarks and
+the share card all derive from that list, so a new tier is one entry and
+nothing else.
+
+- **Materials are FIXED tokens**, `--rank-<id>` plus `--rank-<id>-rim`,
+  declared once in `tokens.css` alongside `--good`/`--bad`. A rank is an
+  achievement: Gold that turned beige on the light theme would stop being
+  gold. This is the same reasoning that keeps `--xp` off the accent.
+- **One badge everywhere**: a white crown on the material disc with the
+  darker rim every extruded token wears (`RankCrown`). The crown is
+  *stroked* in the rim color as well as filled white, because on the pale
+  materials a bare white glyph on a bright disc disappears — one formula
+  that survives all six beats six special cases.
+- **The whole ladder is always shown** (`RankLadder`, under the XP bar),
+  with unearned crowns greyed by the SAME `filter: grayscale(1)` +
+  low-opacity treatment as locked landmark plates: "grey means not yet"
+  should only have to be learned once. Hiding unearned crowns would hide
+  the progression, which is the point of the row.
+- **Current crown, two places**: the profile level card's top-right corner
+  and immediately left of the home header's level chip. Below level 10
+  there is no crown and nothing is drawn — an empty corner is honest,
+  a placeholder crown is not.
 
 ### Completion markers (beaten difficulties & swept games)
 
@@ -273,6 +318,23 @@ third of a screen down. The pattern, in `.cat-scroller` / `.cat-chips`:
   visible circle small and add an invisible `::after` cushion — and inset
   it far enough that the cushion cannot hang past a full-bleed container
   and add horizontal page overflow.
+
+### Pill rows share ONE height token
+
+The home screen stacks two pill rows — the category filter and the "Last
+played" shortcuts (`.recent-row`, three fixed columns, newest on the
+left). They are meant to read as the same control, so neither sets its own
+height: both take `--home-chip-h`, declared once on the two containers,
+exactly like `--head-token` for the header's streak pill and avatar. Two
+rows that *look* matched but are sized independently drift apart the first
+time one side's padding or font changes.
+
+Where a label must fit a fraction of a phone's width, scale the TYPE, not
+the row: `.recent-tile` uses `font-size: clamp(11.5px, 3.1vw, 13px)` so it
+matches the chips wherever there is room and only the longest game names
+ellipsize on a small screen. Truncation still needs `min-width: 0` on the
+flex/grid child — without it a long name widens the track instead of
+clipping, and the page scrolls sideways.
 
 ## Typography
 

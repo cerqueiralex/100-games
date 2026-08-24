@@ -3596,7 +3596,16 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
     console.error(`✗ ${msg}`);
   };
 
-  const fresh: Progress = { days: [], played: [], wins: {}, landmarks: {}, xp: 0, records: {} };
+  const fresh: Progress = {
+    days: [],
+    played: [],
+    wins: {},
+    landmarks: {},
+    xp: 0,
+    plays: 0,
+    cleanWins: 0,
+    records: {}
+  };
   const noStreak = computeStreak([], new Date());
 
   // unique ids
@@ -3642,9 +3651,94 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
   for (const def of LANDMARKS) {
     const { done, total } = landmarkMeter(def, fresh, noStreak);
     if (total <= 0) bad(`${def.id} has an empty meter (total ${total})`);
-    if (done !== 0) bad(`${def.id} starts at ${done}/${total} on a fresh profile`);
+    // LOCKED is the real invariant; the level ladder legitimately starts at
+    // 1/10, because a fresh profile is already level 1 by definition
+    if (done >= total) bad(`${def.id} is already complete (${done}/${total}) on a fresh profile`);
+    if (done !== 0 && def.kind !== 'level')
+      bad(`${def.id} starts at ${done}/${total} on a fresh profile`);
     if (def.slot < 1 || def.slot > 16 || def.slot === 9)
       bad(`${def.id} uses content slot ${def.slot} (must be 1-16, never 9/white)`);
+  }
+
+  // the volume ladders are exactly the documented rungs, ascending
+  for (const [kind, want] of [
+    ['plays', [50, 100, 200, 500, 1000]],
+    ['clean-wins', [50, 100, 200, 500, 1000]]
+  ] as const) {
+    const got = LANDMARKS.filter((d) => d.kind === kind).map((d) => d.count);
+    if (JSON.stringify(got) !== JSON.stringify(want))
+      bad(`${kind} rungs are [${got}], expected [${want}]`);
+  }
+
+  // the level ladder must stay DERIVED from RANK_TIERS — one landmark per
+  // crown, in order, or the profile row and the trophy gallery disagree
+  {
+    const { RANK_TIERS, rankForLevel } = await import('../src/platform/progress/xp');
+    const defs = LANDMARKS.filter((d) => d.kind === 'level');
+    if (defs.length !== RANK_TIERS.length)
+      bad(`${defs.length} level landmarks for ${RANK_TIERS.length} rank tiers`);
+    RANK_TIERS.forEach((t, i) => {
+      const d = defs[i];
+      if (!d) return;
+      if (d.level !== t.level || d.rank !== t.id)
+        bad(`level landmark ${i} is ${d.rank}/${d.level}, tier is ${t.id}/${t.level}`);
+      if (i > 0 && t.level <= RANK_TIERS[i - 1].level)
+        bad(`rank tier ${t.id} (level ${t.level}) does not ascend`);
+    });
+
+    // every crown needs its two material tokens, or it renders colorless
+    const { readFileSync } = (await import('node:fs')) as {
+      readFileSync: (path: string, encoding: string) => string;
+    };
+    const tokens = readFileSync(
+      new URL('../src/platform/design/tokens.css', import.meta.url).pathname,
+      'utf8'
+    );
+    for (const t of RANK_TIERS) {
+      for (const suffix of ['', '-rim']) {
+        if (!tokens.includes(`--rank-${t.id}${suffix}:`))
+          bad(`tokens.css has no --rank-${t.id}${suffix} for the ${t.name} crown`);
+      }
+    }
+
+    // rank boundaries: one level below a tier must NOT wear its crown
+    const rankCases: [number, string | null][] = [
+      [1, null],
+      [9, null],
+      [10, 'wood'],
+      [24, 'wood'],
+      [25, 'iron'],
+      [99, 'silver'],
+      [100, 'gold'],
+      [149, 'gold'],
+      [150, 'platinum'],
+      [200, 'challenger'],
+      [10_000, 'challenger']
+    ];
+    for (const [level, want] of rankCases) {
+      const got = rankForLevel(level)?.id ?? null;
+      if (got !== want) bad(`rankForLevel(${level}) = ${got}, expected ${want}`);
+    }
+  }
+
+  // the lifetime counters drive their meters (and the level ladder reads XP)
+  {
+    const p: Progress = { ...fresh, plays: 120, cleanWins: 60, xp: 1500 };
+    const meterOf = (id: string) => {
+      const def = LANDMARKS.find((d) => d.id === id)!;
+      return landmarkMeter(def, p, noStreak);
+    };
+    const expect = (id: string, done: number, total: number) => {
+      const m = meterOf(id);
+      if (m.done !== done || m.total !== total)
+        bad(`${id} meter is ${m.done}/${m.total}, expected ${done}/${total}`);
+    };
+    expect('plays-100', 100, 100); // met, and clamped to the target
+    expect('plays-200', 120, 200);
+    expect('clean-50', 50, 50);
+    expect('clean-100', 60, 100);
+    expect('level-10', 10, 10); // 1500 XP = level 16
+    expect('level-25', 16, 25);
   }
 
   // streak day-math sanity — unlock evaluation depends on these runs
@@ -3804,6 +3898,153 @@ console.log('— Player XP & levels —');
   if (ok)
     console.log(
       `  ✓ ${XP_PER_LEVEL} XP per level, boundaries exact over 0–350, ${Object.keys(XP_AWARDS).length} labelled awards, hostile XP and malformed records normalized, only clean wins count as beaten (${beatCases.length} cases)`
+    );
+}
+
+// ---------------------------------------------------------------------------
+// The progress write path, end to end (src/platform/progress/progress.ts)
+// ---------------------------------------------------------------------------
+console.log('— Progress write path (lifetime counters & award order) —');
+{
+  let ok = true;
+  const bad = (msg: string) => {
+    failed = true;
+    ok = false;
+    console.error(`✗ ${msg}`);
+  };
+
+  /* An in-memory localStorage, so the REAL write path runs: recordProgress
+     persists through storage.ts exactly as it does in the browser. Testing
+     the counters any other way would only test a hand-built object, not the
+     one line that increments them. Removed again at the end of the block so
+     no later check inherits a live store. */
+  const mem = new Map<string, string>();
+  (globalThis as { localStorage?: unknown }).localStorage = {
+    getItem: (k: string) => mem.get(k) ?? null,
+    setItem: (k: string, v: string) => void mem.set(k, v),
+    removeItem: (k: string) => void mem.delete(k),
+    clear: () => mem.clear(),
+    key: (i: number) => [...mem.keys()][i] ?? null,
+    get length() {
+      return mem.size;
+    }
+  };
+
+  try {
+    const { recordProgress } = await import('../src/platform/progress/progress');
+    const { levelFromXp, XP_AWARDS } = await import('../src/platform/progress/xp');
+    type GameResult = import('../src/platform/types').GameResult;
+
+    let clock = Date.parse('2026-03-01T10:00:00Z');
+    const play = (over: Partial<GameResult> = {}) => {
+      clock += 60_000;
+      return recordProgress({
+        id: `v${clock}`,
+        gameId: 'sudoku',
+        difficulty: 'easy',
+        startedAt: clock - 60_000,
+        finishedAt: clock,
+        durationSec: 60,
+        outcome: 'won',
+        score: 100,
+        errors: 0,
+        hintsUsed: 0,
+        assistsEnabled: [],
+        assistsUsed: [],
+        cleanWin: true,
+        ...over
+      });
+    };
+
+    // 1. what each outcome counts as. plays = finished sessions only;
+    //    cleanWins = only wins taken unaided.
+    const a = play(); // clean win
+    if (a.progress.plays !== 1 || a.progress.cleanWins !== 1)
+      bad(`clean win → plays ${a.progress.plays}, cleanWins ${a.progress.cleanWins}, expected 1/1`);
+    const b = play({ cleanWin: false, hintsUsed: 2 }); // helped win
+    if (b.progress.plays !== 2 || b.progress.cleanWins !== 1)
+      bad(`helped win → plays ${b.progress.plays}, cleanWins ${b.progress.cleanWins}, expected 2/1`);
+    const c = play({ outcome: 'lost', cleanWin: false }); // loss
+    if (c.progress.plays !== 3 || c.progress.cleanWins !== 1)
+      bad(`loss → plays ${c.progress.plays}, cleanWins ${c.progress.cleanWins}, expected 3/1`);
+    const d = play({ outcome: 'abandoned', cleanWin: false }); // quit
+    if (d.progress.plays !== 3 || d.progress.cleanWins !== 1)
+      bad(`abandon → plays ${d.progress.plays}, cleanWins ${d.progress.cleanWins}, expected 3/1`);
+
+    // 2. the first result unlocks First Steps, and the award reports both
+    //    the play and the landmark — the results modal shows this breakdown
+    if (!a.progress.landmarks['first-game']) bad('the first game did not unlock first-game');
+    if (a.award.total !== XP_AWARDS.day + XP_AWARDS.play + XP_AWARDS.landmark)
+      bad(`first result awarded ${a.award.total} XP, expected day+play+landmark`);
+
+    // 3. XP stays in step with the level, and the award's before/after
+    //    bracket the boundary it actually crossed
+    for (const r of [a, b, c, d]) {
+      if (levelFromXp(r.progress.xp) !== r.award.levelAfter)
+        bad(`award levelAfter ${r.award.levelAfter} disagrees with the stored XP`);
+      if (r.award.leveledUp !== r.award.levelAfter > r.award.levelBefore)
+        bad('award.leveledUp disagrees with its own before/after levels');
+    }
+
+    // 4. THE ORDERING RULE: a level landmark is judged AFTER this result's
+    //    XP is banked, and the 80 XP it pays can carry the player over the
+    //    next tier in the same breath. Seed just under level 10 and prove
+    //    the Wood crown lands on the very result that crosses it.
+    mem.clear();
+    mem.set(
+      '100games.v1.progress',
+      JSON.stringify({
+        days: ['2026-02-01'],
+        played: ['sudoku'],
+        wins: {},
+        landmarks: {},
+        xp: 890, // level 9, 10 XP short of the Wood crown
+        plays: 5,
+        cleanWins: 5,
+        records: {}
+      })
+    );
+    const crossing = play({ gameId: 'maze' });
+    if (!crossing.progress.landmarks['level-10'])
+      bad('crossing level 10 did not unlock the Wood crown in the same result');
+    if (!crossing.award.entries.some((e) => e.source === 'landmark' && e.detail === 'Wood Crown'))
+      bad('the Wood crown unlocked without being paid for in the same award');
+    if (crossing.award.total !== crossing.progress.xp - 890)
+      bad(
+        `award total ${crossing.award.total} != the XP actually banked (${crossing.progress.xp - 890})`
+      );
+    if (!crossing.award.leveledUp || crossing.award.levelBefore !== 9)
+      bad(`level-up not reported crossing 10 (before ${crossing.award.levelBefore})`);
+
+    // 5. a store written before the counters existed backfills from history
+    //    instead of starting a long-time player back at zero
+    mem.clear();
+    mem.set(
+      '100games.v1.history',
+      JSON.stringify([
+        { gameId: 'sudoku', outcome: 'won', cleanWin: true, difficulty: 'easy', finishedAt: clock },
+        { gameId: 'maze', outcome: 'won', cleanWin: false, difficulty: 'easy', finishedAt: clock },
+        { gameId: 'pipes', outcome: 'abandoned', cleanWin: false, difficulty: 'easy', finishedAt: clock }
+      ])
+    );
+    mem.set(
+      '100games.v1.progress',
+      JSON.stringify({ days: [], played: [], wins: {}, landmarks: {}, xp: 40, records: {} })
+    );
+    const { loadProgress } = await import('../src/platform/progress/progress');
+    const seeded = loadProgress();
+    if (seeded.plays !== 2 || seeded.cleanWins !== 1)
+      bad(`counter backfill gave plays ${seeded.plays}/cleanWins ${seeded.cleanWins}, expected 2/1`);
+    const persisted = JSON.parse(mem.get('100games.v1.progress')!);
+    if (persisted.plays !== 2)
+      bad('the backfill was not persisted at load (it would recount every start-up)');
+  } finally {
+    delete (globalThis as { localStorage?: unknown }).localStorage;
+  }
+
+  if (ok)
+    console.log(
+      '  ✓ plays counts finished sessions only, cleanWins only unaided wins, landmark XP paid in the same award, level crowns judged after the XP lands, pre-counter stores backfilled once'
     );
 }
 

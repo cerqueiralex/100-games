@@ -89,6 +89,23 @@
      mine on a --bad cell) — deliberately does NOT follow the theme. */
   --ink: #1c1c1e;
 
+  /* rank crowns (level tiers 10/25/50/100/150/200). Materials, so they are
+     FIXED across themes exactly like --good/--bad: a Gold crown that turned
+     beige on the light theme would stop being gold. Each is a fill plus the
+     darker rim every extruded token wears. */
+  --rank-wood: #b07a4a;
+  --rank-wood-rim: #6d4526;
+  --rank-iron: #8d949c;
+  --rank-iron-rim: #565c64;
+  --rank-silver: #ccd6e0;
+  --rank-silver-rim: #8895a4;
+  --rank-gold: #ffc93c;
+  --rank-gold-rim: #b07d10;
+  --rank-platinum: #7de3d8;
+  --rank-platinum-rim: #3f958e;
+  --rank-challenger: #b06bff;
+  --rank-challenger-rim: #6a2fc0;
+
   /* text/icon color on SOLID accent fills (active tool buttons) — every
      accent is bright, so ink works; the light+white-accent combo flips
      the accent to near-black and overrides this to white below. */

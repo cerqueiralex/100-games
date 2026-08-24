@@ -188,6 +188,15 @@ export function HelpIcon({ size = 18 }: IconProps) {
   );
 }
 
+export function ClockIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5.3l3.4 2" />
+    </Svg>
+  );
+}
+
 export function SearchIcon({ size = 18 }: IconProps) {
   return (
     <Svg size={size}>

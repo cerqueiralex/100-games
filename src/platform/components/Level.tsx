@@ -1,6 +1,15 @@
 import { useEffect } from 'react';
 import { sfx } from '../audio';
-import { XP_PER_LEVEL, xpMeter, XP_SOURCE_LABEL, type XpAward } from '../progress/xp';
+import {
+  levelFromXp,
+  RANK_TIERS,
+  rankForXp,
+  XP_PER_LEVEL,
+  xpMeter,
+  XP_SOURCE_LABEL,
+  type RankTier,
+  type XpAward
+} from '../progress/xp';
 
 /** The XP bar's height in px — the hero ring matches it (see .xp-bar). */
 const XP_BAR_THICKNESS = 12;
@@ -99,6 +108,88 @@ export function LevelRing({
   );
 }
 
+/* ---------- rank crowns (the level ladder) ---------- */
+
+/**
+ * One rank crown: a white crown on the tier's material disc, with the same
+ * darker rim every extruded token in the app wears.
+ *
+ * The crown is stroked in the rim color as well as filled white — on the
+ * pale materials (silver, platinum) a bare white glyph on a bright disc
+ * disappears, and one formula that survives all six beats six special cases.
+ * Locked crowns are greyed by CSS (`.rank-step.locked`), never by different
+ * art, exactly like the locked landmark plates.
+ */
+export function RankCrown({ rank, size = 32 }: { rank: RankTier; size?: number }) {
+  const fill = `var(--rank-${rank.id})`;
+  const rim = `var(--rank-${rank.id}-rim)`;
+  return (
+    <svg
+      className="rank-crown"
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      role="img"
+      aria-label={`${rank.name} crown, level ${rank.level}`}
+    >
+      <circle cx="32" cy="32" r="29" fill={fill} stroke={rim} strokeWidth="4" />
+      {/* the shared 24-viewBox crown, scaled and centred inside the disc */}
+      <g
+        transform="translate(11.5 10.6) scale(1.71)"
+        fill="#fff"
+        stroke={rim}
+        strokeWidth="1.05"
+        strokeLinejoin="round"
+      >
+        <path d="M3.6 8.4 8.5 12.2 12 5.9 15.5 12.2 20.4 8.4 18.6 17.4 5.4 17.4Z" />
+        <circle cx="3.6" cy="8.4" r="2.1" />
+        <circle cx="12" cy="5.9" r="2.3" />
+        <circle cx="20.4" cy="8.4" r="2.1" />
+        <rect x="5.4" y="18.6" width="13.2" height="2.8" rx="0.7" />
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * The whole crown ladder, always shown in full: earned crowns in their
+ * material, the rest greyed. Showing only what you own would hide the
+ * progression — the point of the row is that the next crown, and the level
+ * it costs, are visible from level 1. The caption names where you are and
+ * what is next, so the row needs no legend.
+ */
+export function RankLadder({ xp }: { xp: number }) {
+  const level = levelFromXp(xp);
+  const current = rankForXp(xp);
+  const next = RANK_TIERS.find((t) => level < t.level) ?? null;
+  return (
+    <div className="rank-ladder">
+      <div className="rank-steps">
+        {RANK_TIERS.map((t) => (
+          <div
+            key={t.id}
+            className={`rank-step ${level >= t.level ? '' : 'locked'}`}
+            title={`${t.name} crown — level ${t.level}`}
+          >
+            <RankCrown rank={t} size={30} />
+            <span className="rank-step-lvl">{t.level}</span>
+          </div>
+        ))}
+      </div>
+      <p className="rank-caption">
+        {current ? (
+          <>
+            <span className="xp-strong">{current.name}</span> crown
+          </>
+        ) : (
+          'No crown yet'
+        )}
+        {next ? ` · ${next.name} at level ${next.level}` : ' · every crown earned'}
+      </p>
+    </div>
+  );
+}
+
 /** Compact level token for the home header, left of the streak pill. */
 export function LevelChip({ xp }: { xp: number }) {
   const meter = xpMeter(xp);
@@ -133,8 +224,16 @@ export function XpBar({ percent, label }: { percent: number; label?: string }) {
  */
 export function LevelHero({ xp }: { xp: number }) {
   const meter = xpMeter(xp);
+  const rank = rankForXp(xp);
   return (
     <div className="level-hero fx-card">
+      {/* the crown you are currently wearing, in the corner — the ladder
+          below says how it was earned and what comes next */}
+      {rank && (
+        <span className="level-hero-rank" title={`${rank.name} crown — level ${rank.level}+`}>
+          <RankCrown rank={rank} size={38} />
+        </span>
+      )}
       <div className="level-hero-badge">
         <LevelRing xp={xp} size={96} showNumber stroke={XP_BAR_THICKNESS} />
       </div>
@@ -145,6 +244,7 @@ export function LevelHero({ xp }: { xp: number }) {
         <span className="xp-strong">{meter.remaining}</span> to level {meter.level + 1}
       </p>
       <p className="level-hero-note">{meter.total.toLocaleString()} XP earned in total</p>
+      <RankLadder xp={xp} />
     </div>
   );
 }
