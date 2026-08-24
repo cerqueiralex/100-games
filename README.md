@@ -8,7 +8,7 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 | --- | --- |
 | **Sudoku** | Runtime-generated puzzles with guaranteed-unique solutions; notes mode plus 6 toggleable assists (smart hints, error limit, rule-out blocks, region highlight, same-number highlight, points) |
 | **Crossword** | Hand-crafted criss-cross puzzles (2 per difficulty) with on-screen keyboard, auto-check, check and reveal assists |
-| **Memory Match** | Flip cards to find pairs (4×4 up to 7×8), streak bonuses, peek assists |
+| **Memory Match** | Flip cards to find pairs (4×4 up to 7×8), streak bonuses, peek assists — pick a card theme: emoji, the original 151 Pokémon, pixel zodiac or an 8-bit deck |
 | **Simon** | Repeat growing color+tone sequences; reach round 8–24 to win (faster every tier); lives, slow playback and replay assists |
 | **N-Back** | Press Match when the lit position repeats from N steps back (N = 1–5); ≥70% accuracy wins |
 | **Dual N-Back** | Positions AND letters tracked at once on independent channels; ≥65% accuracy wins |
@@ -90,7 +90,7 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 - **Play streak**: playing on consecutive days builds a Duolingo-style day streak — a flame card on the profile with a Mo–Su week row (plus best-ever and total days played) and a compact flame counter next to your name on the home page; miss a full day and it resets. The flame greys out until you've played that day
 - **Completion markers**: every difficulty you've beaten gets a thick green ring and a gold-star seal on its top-left corner — on that game's difficulty picker and on the profile's high-score tiles alike; beat a game on all five tiers and it earns a green badge with a flat gold check-marked trophy, shown on its menu card and beside its name in the profile's high scores
 - **Landmarks**: a trophy collection on the profile — play your first game, streak milestones (1–3 weeks, 1 month, bimester, trimester, quadrimester, semester, a full year), finish 50/100/200/500/1000 games, win 50/100/200/500/1000 of them with no help at all, reach each rank crown, keep a Daily Challenge streak (7 days, a month, 100 days, a year) and solve one of every game in the daily rotation, play every game, beat every game on each difficulty, and master each category. Locked trophies show in black & white behind a padlock with live progress ("41/67"); unlocked ones color in with their date and can be shared as a designed 1080×1350 card. Trophies are permanent — once earned they're never taken back, and they survive a history wipe
-- **Profile**: name + avatar, totals across games
+- **Profile**: name + avatar — an emoji or one of six Pokémon (Pikachu, Bulbasaur, Charmander, Squirtle, Snorlax, Mewtwo), which follows you onto the home header and every card you share — plus totals across games
 - **Share cards**: on any win, generate a 1080×1350 PNG win card — native share sheet on iPhone (WhatsApp etc.), download or long-press-copy anywhere
 - **Themes**: 3 surface themes — pure black, dim, and warm-paper light — for playing at night or in daylight. The palette is monochrome ink plus one orange, reserved for progression (level, XP, streak)
 - **Progress charts** on the profile: a most-played donut and a 30-day stacked activity timeline (both capped to the top games, tail folded into "Other"), and a per-game improvement trend (score / win time / win % / errors)

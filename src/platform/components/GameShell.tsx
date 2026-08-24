@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, FinishPayload, GameDefinition, GameResult, GameSave, LiveStats } from '../types';
 import { DIFFICULTIES } from '../types';
 import { useAppState } from '../AppState';
-import { deleteSave, loadSaves, putSave, resolveAssists } from '../storage';
+import { deleteSave, loadSaves, putSave, resolveAssists, resolveOptions } from '../storage';
 import { formatDate, formatDuration } from '../stats';
 import { sfx } from '../audio';
 import { BackIcon, Chip, HelpIcon, HomeIcon, Modal, PauseIcon, PlayIcon, RestartIcon, SaveIcon, ShareIcon, StarIcon, Toggle } from './ui';
@@ -42,6 +42,23 @@ export function formatDailyDate(dateKey: string): string {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+/**
+ * Option choices from a save, keeping only the ones this build still offers.
+ * A save written before a theme was renamed (or after one was removed) must
+ * not put the game on a choice it can no longer draw.
+ */
+function pickKnownOptions(
+  game: GameDefinition,
+  saved: Record<string, string>
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const def of game.options ?? []) {
+    const pick = saved[def.id];
+    if (def.choices.some((c) => c.id === pick)) out[def.id] = pick;
+  }
+  return out;
+}
+
 /** Where leaving a running game lands: this game's setup screen, or the home list. */
 type LeaveTo = 'setup' | 'home';
 
@@ -65,7 +82,8 @@ export function GameShell({
       from the stored seed and the difficulty is locked to the assignment */
   daily?: DailyChallengeRecord;
 }) {
-  const { settings, updateSettings, setGameAssist, recordResult, profile, progress } = useAppState();
+  const { settings, updateSettings, setGameAssist, setGameOption, recordResult, profile, progress } =
+    useAppState();
   // difficulties this game has been WON at — green star + border on the picker
   const beaten = beatenDifficulties(progress, game.id);
 
@@ -122,6 +140,18 @@ export function GameShell({
     [settings, game]
   );
 
+  /* The option choices this SESSION runs under. They are frozen at start()
+     rather than read live from settings: an option decides how the board is
+     built, so a player flipping the theme on another screen must not change
+     the deck they are halfway through. */
+  const [sessionOptions, setSessionOptions] = useState<Record<string, string>>(() =>
+    resolveOptions(settings, game.id, game.options)
+  );
+  const setupOptions = useMemo(
+    () => resolveOptions(settings, game.id, game.options),
+    [settings, game]
+  );
+
   useEffect(() => {
     if (phase !== 'playing' || paused || clockHeld) return;
     const t = setInterval(() => setElapsedSec((s) => s + 1), 1000);
@@ -155,6 +185,13 @@ export function GameShell({
       updateSettings({ lastDifficulty: { ...settings.lastDifficulty, [game.id]: diff } });
     }
     if (daily) markDailyStarted(daily.date);
+    /* A resumed game keeps the options it was SAVED under — the deck in the
+       snapshot was built from them, and drawing a Pokémon deck with zodiac
+       art would be a board the screen cannot render. Anything the save does
+       not name falls back to the current pick. */
+    setSessionOptions(
+      resume?.options ? { ...setupOptions, ...pickKnownOptions(game, resume.options) } : setupOptions
+    );
     liveStats.current = emptyStats;
     finished.current = false;
     sessionHasSave.current = !!resume;
@@ -193,7 +230,8 @@ export function GameShell({
       elapsedSec,
       savedAt: Date.now(),
       state,
-      ...(daily ? { daily: daily.date } : {})
+      ...(daily ? { daily: daily.date } : {}),
+      ...(Object.keys(sessionOptions).length > 0 ? { options: sessionOptions } : {})
     });
     sessionHasSave.current = true;
     sfx.place();
@@ -423,6 +461,35 @@ export function GameShell({
         </section>
         )}
 
+        {/* Pick-one settings the game contributes (Memory Match's card
+            theme). Above Assists because an option changes WHAT you play,
+            while an assist changes how much help you get — and unlike an
+            assist it costs nothing, so it must never sit under a heading
+            that implies it does. */}
+        {(game.options ?? []).map((def) => (
+          <section className="setup-section" key={def.id}>
+            <h3 className="section-title">{def.name}</h3>
+            {def.description && <p className="section-note">{def.description}</p>}
+            <div className="option-row">
+              {def.choices.map((c) => (
+                <button
+                  key={c.id}
+                  className={`option-btn ${setupOptions[def.id] === c.id ? 'active' : ''}`}
+                  onClick={() => {
+                    sfx.tap();
+                    setGameOption(game.id, def.id, c.id);
+                  }}
+                  aria-pressed={setupOptions[def.id] === c.id}
+                >
+                  {c.icon && <span className="option-btn-icon">{c.icon}</span>}
+                  <span className="option-btn-label">{c.label}</span>
+                  {c.description && <span className="option-btn-sub">{c.description}</span>}
+                </button>
+              ))}
+            </div>
+          </section>
+        ))}
+
         {game.assistFeatures.length > 0 && (
           <section className="setup-section">
             <h3 className="section-title">Assists</h3>
@@ -545,6 +612,7 @@ export function GameShell({
           }}
           holdClock={holdClock}
           dailySeed={daily?.seed}
+          options={sessionOptions}
         />
         {paused && phase === 'playing' && (
           <div className="pause-overlay">

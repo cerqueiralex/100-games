@@ -1,6 +1,7 @@
 import type { GameDefinition } from '../../platform/types';
 import { gameIcons } from '../../platform/design/gameIcons';
 import { MemoryMatchGame } from './MemoryMatchGame';
+import { MEMORY_THEME_LIST } from './logic/themes';
 import { memoryMatchTutorial } from './tutorial';
 import { mastery } from './mastery';
 
@@ -15,6 +16,18 @@ export const memoryMatchDefinition: GameDefinition = {
   mastery,
   scoringNote:
     'Scoring: +50/75/100/125/150 per pair (easy → extreme) plus streak bonuses for consecutive matches, −10 per miss, −25 per peek. Finish under par time for a bonus. Boards grow to 6×7 on pro and 7×8 on extreme.',
+  /* Derived from the theme table, never a second list: adding a theme in
+     logic/themes.tsx puts it on the setup screen automatically. */
+  options: [
+    {
+      id: 'theme',
+      name: 'Card theme',
+      description:
+        'What the cards are made of. Purely cosmetic — every theme deals the same board sizes and scores the same, so a theme never counts as help.',
+      choices: MEMORY_THEME_LIST.map((t) => ({ id: t.id, label: t.label, icon: t.preview })),
+      defaultChoice: 'standard'
+    }
+  ],
   assistFeatures: [
     {
       id: 'previewStart',

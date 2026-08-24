@@ -6,6 +6,7 @@ import { ExportIcon, ExternalLinkIcon, ImportIcon, TrashIcon, WarnIcon } from '.
 import { sfx } from '../audio';
 import { buildLine, VERSION_LABEL } from '../version';
 import type { ThemeId } from '../types';
+import { Avatar } from '../design/avatars';
 
 const THEMES: { id: ThemeId; name: string; desc: string }[] = [
   { id: 'black', name: 'Pure black', desc: 'True black, easy on OLED screens' },
@@ -227,7 +228,9 @@ export function SettingsPage() {
         {pending?.ok && (
           <>
             <div className="import-preview">
-              <span className="import-avatar">{pending.summary.playerEmoji}</span>
+              <span className="import-avatar">
+                <Avatar value={pending.summary.playerEmoji} />
+              </span>
               <span className="import-who">
                 <strong>{pending.summary.playerName}</strong>
                 <span className="toggle-desc">

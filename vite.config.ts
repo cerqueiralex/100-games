@@ -128,7 +128,13 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,webp,json,woff2}']
+        /* Memory Match's 151 Pokémon sprites are precached with everything
+           else: as pixel art the whole set is ~600 KB, so the theme works
+           offline from install. (The vector artwork it replaced was 5 MB and
+           needed a runtime-cache carve-out to stay off every install — the
+           pixel sprites made that complexity unnecessary.) */
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,webp,json,woff2}'],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024
       }
     })
   ]

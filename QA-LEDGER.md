@@ -43,12 +43,18 @@ they gain enforcement, delete entries obsoleted by code removal.
   "Leaving a game" section. Caught by measuring rendered button boxes in
   the headless pass — screenshots alone at one viewport would have looked
   merely "compact".
-- **2026-07-23 · CSS layout · `1fr` toolbar tracks overflow the phone
-  viewport.** `grid-auto-columns: 1fr` tracks have `min-width: auto`, so
-  nowrap labels (Battleship's "To battle") pushed the row off-screen.
-  Rule: toolbar tracks are `minmax(0, 1fr)`, labels ellipsize, pad-tools
-  compact under 480px. Enforced: global.css `.sudoku-controls`/`.cw-tools`
-  + CLAUDE.md toolbar bullet.
+- **2026-07-23 · CSS layout · `1fr` tracks overflow the phone viewport.**
+  `grid-auto-columns: 1fr` tracks have `min-width: auto`, so nowrap labels
+  (Battleship's "To battle") pushed the row off-screen. Rule: toolbar
+  tracks are `minmax(0, 1fr)`, labels ellipsize, pad-tools compact under
+  480px. Enforced: global.css `.sudoku-controls`/`.cw-tools` + CLAUDE.md
+  toolbar bullet. **Struck again 2026-08-24 on a BOARD**: Memory Match's
+  `repeat(cols, 1fr)` was fine for years of text faces, and broke the
+  instant the Pokémon theme put images on the cards — intrinsic image
+  width pushed every column wide and the board ran off the page both ways.
+  The rule is not about toolbars, it is about any track holding content
+  with an intrinsic size: `minmax(0, 1fr)` on the track AND `min-width: 0;
+  min-height: 0` on the item. Now in DESIGN.md "Tile grids" too.
 - **2026-07-23 · duplication · five hand-rolled QWERTY keyboards
   drifted until one broke.** Per-game copies of the same keyboard markup/
   CSS diverged (wrong container assumptions, inconsistent styling). Rule:
@@ -178,6 +184,37 @@ they gain enforcement, delete entries obsoleted by code removal.
   raised — a state that adds `box-shadow` and a state that sets
   `box-shadow` will silently cancel each other; compose through a custom
   property (`--cell-edge`) instead.
+
+- **2026-08-24 · art · "drawn to spec" is not "recognisable"; render it and
+  look.** Memory Match's zodiac theme first drew each sign as its CREATURE
+  at 16×16 — a ram's head, a crab, an archer. Geometrically fine, palette
+  fine, validate green; on screen a lion's mane and a sunflower were the
+  same forty pixels and the player could not tell one card from another,
+  which in a memory game is the whole mechanic. Redrawn as the signs'
+  GLYPHS (arcs, bars, zigzags — what a pixel grid actually holds) they read
+  instantly. Two card-deck sprites failed the same way: a jester's cap that
+  looked like a crab, and a rank glyph that fused with its pip because the
+  layout left no gap between them. Rule: pixel art and icon work is not
+  done when it compiles — render every sprite in a grid, look at it, and
+  redraw what does not read. Enforced as far as it can be: validate rejects
+  ragged rows, off-palette characters, near-empty sprites and two faces
+  that draw the same picture — but "recognisable" needs eyes, so the
+  render-and-inspect pass is part of the job, not a nicety.
+
+- **2026-08-24 · CSS · an `<img>` brings its own size, and percentages do not
+  always contain it.** Pokémon profile avatars overflowed their plate in the
+  picker: `width/height: 100%` on the image resolved to `auto` inside a
+  `<button>`, so the sprite's intrinsic aspect ratio took over and the tall
+  ones (Pikachu's ears, Charmander's tail) grew out of the button. Switching
+  to `position: absolute; inset: 5px` did NOT fix it either — an absolutely
+  positioned REPLACED element with `height: auto` takes its height from the
+  intrinsic ratio and ignores the offsets. Only an explicit size against a
+  definite box (`width/height: calc(100% - 10px)` on the positioned image)
+  constrains it. Rule: when dropping an image into a fixed-size control,
+  size it explicitly, add `overflow: hidden` on the container, and MEASURE
+  the rendered boxes — this is the third bug in this repo (after the toolbar
+  and board grids) where intrinsic content size beat the layout that was
+  supposed to bound it, and all three looked fine until content changed.
 
 ## Watch items (re-check every QA — not yet machine-enforced)
 

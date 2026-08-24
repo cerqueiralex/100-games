@@ -13,6 +13,7 @@ import { ChevronIcon, ClockIcon, CrownIcon, SearchIcon, StarIcon } from '../desi
 import { sfx } from '../audio';
 import type { CategoryId, GameDefinition } from '../types';
 import type { DailyChallengeRecord } from '../daily/store';
+import { Avatar } from '../design/avatars';
 
 /** Search text and the category filter are owned by App so they survive a
     game visit along with the list's scroll position (see App.tsx). */
@@ -218,7 +219,9 @@ export function HomePage({
           )}
           <LevelChip xp={progress.xp} />
           <StreakChip streak={streak} />
-          <span className="home-avatar">{profile.emoji}</span>
+          <span className="home-avatar">
+            <Avatar value={profile.emoji} />
+          </span>
         </div>
       </header>
 

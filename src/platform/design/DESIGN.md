@@ -445,18 +445,60 @@ Transitions 0.12–0.2s ease. Press feedback: `scale(0.98)`. Every meaningful
 action can play a `sfx` sound (respecting sound settings). Board state
 changes (correct placement) may flash `--good-soft` briefly.
 
+## Avatars
+
+The player's avatar is an emoji or a Pokémon sprite, and both live in one
+`Profile.emoji` string (see `design/avatars.tsx`). Every surface renders it
+through `<Avatar value={...} />` — never `{profile.emoji}` — so adding a
+kind of avatar never means hunting down the places that draw one.
+
+- **A sprite must never be able to break the layout it lands in.** The
+  plates (`.home-avatar`, `.profile-avatar`, `.import-avatar`) carry
+  `overflow: hidden`, and `.avatar-sprite` carries `max-width`/`max-height`
+  on top of its size. An `<img>` has an intrinsic size that beats a
+  container which is not explicitly bounding it — see the QA ledger entry;
+  inside a `<button>` even `height: 100%` and `inset` failed, and only an
+  explicit size against a definite box worked.
+- **`image-rendering: pixelated`**: the sprites are 96px pixel art and most
+  surfaces draw them smaller or larger; smoothing turns them to mush.
+
+## Game options (the setup screen's pick-one rows)
+
+A game may contribute pick-one settings to its own setup screen
+(`GameDefinition.options`). They render as `.option-row` / `.option-btn` —
+the difficulty picker's plate and press, on wider tracks because an
+option's labels are words rather than tiers.
+
+- **Above Assists, never inside it.** An assist makes the game easier and
+  is recorded against the clean-win rule; an option changes what the board
+  is made of and costs nothing. Choosing the Pokémon cards must never make
+  a win "helped", so it must not sit under a heading that implies it does.
+- **A choice may carry a preview `icon`** — a sample of the thing being
+  chosen (a Pikachu, a card), so it is game CONTENT and may be colourful;
+  the monochrome-icon rule covers UI chrome. The icon lives in a FIXED
+  28px box: art that sized itself would push into the label on the tall
+  samples and leave a gap on the short ones.
+- **Tracks are `minmax(76px, 1fr)`** so four choices still fit one phone
+  row. Adding previews to a 112px minimum wrapped the row 3+1.
+
 ## Tile grids (stable geometry — required for every tile board)
 
 Tile geometry must never depend on tile *content or state* — revealing a
 number, flipping a card, or pressing a tile must not move or resize any
 other tile. Concretely:
 
-- **Pin both grid axes.** `grid-template-columns: repeat(n, 1fr)` plus
-  either `grid-auto-rows: 1fr` on the board (when the board carries
+- **Pin both grid axes** with `repeat(n, minmax(0, 1fr))` plus either
+  `grid-auto-rows: 1fr` on the board (when the board carries
   `aspect-ratio`) or `aspect-ratio: 1` on the tile itself. Never leave
   rows as implicit content-sized tracks: a row of empty tiles renders
   shorter than a row with digits, and the board visibly deforms as tiles
   fill in (the original Minesweeper bug).
+- **`minmax(0, 1fr)`, never bare `1fr`** — and give the tile `min-width: 0;
+  min-height: 0` too. A `1fr` track keeps `min-width: auto`, so a tile
+  whose content has a large intrinsic size pushes every column past its
+  share and the whole board overflows the page. Text faces never trigger
+  it; the moment Memory Match's cards held images they did. Same trap as
+  the toolbars (see Tool buttons), one layer down.
 - **State classes only change paint, not layout**: background, color,
   border-*color*, opacity, transform, box-shadow. Never border-width,
   padding, font-size, or display between states — keep the border always

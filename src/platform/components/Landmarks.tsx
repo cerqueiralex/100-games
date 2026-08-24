@@ -19,6 +19,7 @@ import {
   CARD_H,
   CARD_W,
   drawCardChrome,
+  drawFooterWithAvatar,
   EMOJI_FONT,
   FONT,
   hexToRgb,
@@ -26,6 +27,7 @@ import {
   ShareImageModal
 } from './ShareCard';
 import { sfx } from '../audio';
+import { loadAvatarSprite } from '../design/avatars';
 
 /**
  * Landmarks — the profile trophy collection. Every landmark is always
@@ -294,7 +296,7 @@ function renderLandmarkCard(
   // footer
   ctx.fillStyle = alpha(t.text, 0.6);
   ctx.font = `600 33px ${FONT}`;
-  ctx.fillText(`${player.emoji} ${player.name}  ·  100 GAMES`, W / 2, 1256);
+  drawFooterWithAvatar(ctx, player.emoji, `${player.name}  ·  100 GAMES`, W / 2, 1256);
 
   return canvas;
 }
@@ -455,12 +457,15 @@ export function LandmarksSection({
 
       {sharing && progress.landmarks[sharing.id] && (
         <ShareImageModal
+          // decode the sprite avatar first, then draw (see ShareCard)
           render={() =>
-            renderLandmarkCard(
-              sharing,
-              progress.landmarks[sharing.id].at,
-              landmarkMeter(sharing, progress, streak).total,
-              { name: profile.name, emoji: profile.emoji }
+            loadAvatarSprite(profile.emoji).then(() =>
+              renderLandmarkCard(
+                sharing,
+                progress.landmarks[sharing.id].at,
+                landmarkMeter(sharing, progress, streak).total,
+                { name: profile.name, emoji: profile.emoji }
+              )
             )
           }
           filename="100-games-landmark.png"

@@ -3575,6 +3575,183 @@ console.log('— Peg Solitaire —');
     );
 }
 
+// ---------------------------------------------------------------------------
+// Game options (GameDefinition.options) + Memory Match's card themes
+// ---------------------------------------------------------------------------
+console.log('— Game options & Memory Match themes —');
+{
+  const { GAMES } = await import('../src/platform/registry');
+  const { MEMORY_THEMES, MEMORY_THEME_LIST } = await import(
+    '../src/games/memory-match/logic/themes'
+  );
+
+  let ok = true;
+  const bad = (msg: string) => {
+    failed = true;
+    ok = false;
+    console.error(`✗ ${msg}`);
+  };
+
+  /* Any game may declare setup-screen options; these hold for all of them.
+     A default that names no choice would put the player on a value the game
+     cannot resolve, and duplicate ids would make the picker unclickable. */
+  let optionCount = 0;
+  for (const game of GAMES) {
+    for (const def of game.options ?? []) {
+      optionCount++;
+      if (def.choices.length < 2)
+        bad(`${game.id}/${def.id} offers ${def.choices.length} choice(s) — a picker needs 2+`);
+      const ids = def.choices.map((c) => c.id);
+      if (new Set(ids).size !== ids.length) bad(`${game.id}/${def.id} has duplicate choice ids`);
+      if (!ids.includes(def.defaultChoice))
+        bad(`${game.id}/${def.id} defaults to "${def.defaultChoice}", which is not a choice`);
+      if (!def.name) bad(`${game.id}/${def.id} has no name for its setup-screen heading`);
+    }
+    const optIds = (game.options ?? []).map((o) => o.id);
+    if (new Set(optIds).size !== optIds.length) bad(`${game.id} has duplicate option ids`);
+  }
+
+  /* THE PLAYER-FACING INVARIANT for Memory Match: a theme must be able to
+     deal the hardest board with every pair DISTINCT. With fewer faces than
+     pairs the deck would contain the same face four times, and either card
+     of one pair would "match" either card of the other — a board that
+     cannot be completed as the player sees it. Checking the pool size alone
+     would not prove that, so the real deal is run. */
+  const MAX_PAIRS = 28; // extreme, from CONFIG in MemoryMatchGame.tsx
+  const memory = GAMES.find((g) => g.id === 'memory-match')!;
+  const themeOption = (memory.options ?? []).find((o) => o.id === 'theme');
+  if (!themeOption) bad('memory-match no longer offers its card-theme option');
+
+  // the picker must stay DERIVED from the theme table, never a second list
+  if (themeOption) {
+    const offered = themeOption.choices.map((c) => c.id).sort();
+    const defined = MEMORY_THEME_LIST.map((t) => t.id).sort();
+    if (JSON.stringify(offered) !== JSON.stringify(defined))
+      bad(`the theme picker offers [${offered}] but the table defines [${defined}]`);
+  }
+
+  for (const theme of MEMORY_THEME_LIST) {
+    if (new Set(theme.faces).size !== theme.faces.length)
+      bad(`memory theme ${theme.id} lists the same face twice`);
+    if (theme.faces.length < MAX_PAIRS)
+      bad(
+        `memory theme ${theme.id} has ${theme.faces.length} faces; extreme deals ${MAX_PAIRS} pairs`
+      );
+    // deal the hardest board a few times and prove every pair is distinct
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const faces = [...theme.faces].sort(() => Math.random() - 0.5).slice(0, MAX_PAIRS);
+      if (new Set(faces).size !== MAX_PAIRS)
+        bad(`memory theme ${theme.id} dealt a duplicate pair on an extreme board`);
+      for (const f of faces) {
+        if (theme.describe(f) === undefined || theme.describe(f) === '')
+          bad(`memory theme ${theme.id} has no name for face "${f}" (blank screen-reader label)`);
+      }
+    }
+    // an unknown id must fall back, never throw
+    if (theme.describe('definitely-not-a-face') === undefined)
+      bad(`memory theme ${theme.id}.describe() returns undefined for an unknown face`);
+  }
+
+  /* The hand-drawn pixel art. Sprites are authored as rows of characters, so
+     a row one character short silently shifts every pixel after it and the
+     drawing quietly deforms — nothing throws, it just looks wrong. Rows must
+     therefore be a clean rectangle, every character must be in the palette,
+     and no sprite may be blank. */
+  {
+    const { ZODIAC_ART } = await import('../src/games/memory-match/logic/zodiacArt');
+    const { cardSprite } = await import('../src/games/memory-match/logic/cardArt');
+    const { spriteSize } = await import('../src/games/memory-match/logic/pixelArt');
+    const { MEMORY_THEMES } = await import('../src/games/memory-match/logic/themes');
+
+    const checkSprite = (name: string, sprite: { palette: Record<string, string>; rows: string[] }) => {
+      const { w, h, ragged } = spriteSize(sprite);
+      if (ragged) bad(`pixel sprite ${name} has rows of different lengths (the art is deformed)`);
+      if (w === 0 || h === 0) bad(`pixel sprite ${name} is empty`);
+      let lit = 0;
+      for (const row of sprite.rows) {
+        for (const ch of row) {
+          if (ch === '.' || ch === ' ') continue;
+          if (!sprite.palette[ch]) {
+            bad(`pixel sprite ${name} uses "${ch}", which is not in its palette`);
+            return;
+          }
+          lit++;
+        }
+      }
+      if (lit < 12) bad(`pixel sprite ${name} has only ${lit} lit pixels — it would look blank`);
+    };
+
+    for (const [id, sprite] of Object.entries(ZODIAC_ART)) checkSprite(`zodiac/${id}`, sprite);
+    for (const id of MEMORY_THEMES.cards.faces) checkSprite(`cards/${id}`, cardSprite(id));
+
+    /* Two faces that draw the SAME picture would make a board unwinnable as
+       the player sees it: either card of one pair "matches" either card of
+       the other, and the two pairs are indistinguishable. */
+    const seen = new Map<string, string>();
+    const key = (s: { palette: Record<string, string>; rows: string[] }) =>
+      JSON.stringify([s.rows, s.palette]);
+    for (const [id, sprite] of Object.entries(ZODIAC_ART)) {
+      const k = key(sprite);
+      const dup = seen.get(k);
+      if (dup) bad(`zodiac faces "${dup}" and "${id}" draw exactly the same picture`);
+      seen.set(k, id);
+    }
+    const cardsSeen = new Map<string, string>();
+    for (const id of MEMORY_THEMES.cards.faces) {
+      const k = key(cardSprite(id));
+      const dup = cardsSeen.get(k);
+      if (dup) bad(`card faces "${dup}" and "${id}" draw exactly the same picture`);
+      cardsSeen.set(k, id);
+    }
+  }
+
+  // the Pokémon theme promises the original 151, and every sprite it names
+  // has to exist on disk — a missing file is a permanently blank card
+  {
+    const { existsSync } = (await import('node:fs')) as unknown as {
+      existsSync: (p: string) => boolean;
+    };
+    const poke = MEMORY_THEMES.pokemon;
+    if (poke.faces.length !== 151)
+      bad(`the Pokémon theme lists ${poke.faces.length} faces, expected the 151 of gen 1`);
+    const missing = poke.faces.filter(
+      (id) => !existsSync(new URL(`../public/pokemon/${id}.png`, import.meta.url).pathname)
+    );
+    if (missing.length > 0)
+      bad(`${missing.length} Pokémon sprite(s) missing from public/pokemon: ${missing.slice(0, 6)}`);
+
+    /* Profile avatars draw from the same sprite folder. The compatibility
+       guarantee is that ONE field holds both kinds: a value with no
+       "pokemon:" prefix is an emoji, which is what every profile and backup
+       written before sprites existed contains. If an emoji were ever
+       mistaken for a sprite, those profiles would render a broken image. */
+    const { POKEMON_AVATARS, pokemonAvatarValue, isSpriteAvatar, avatarSpriteUrl, avatarLabel } =
+      await import('../src/platform/design/avatars');
+    if (POKEMON_AVATARS.length < 4)
+      bad(`only ${POKEMON_AVATARS.length} Pokémon avatars — the picker row expects a handful`);
+    for (const a of POKEMON_AVATARS) {
+      const value = pokemonAvatarValue(a.id);
+      if (!isSpriteAvatar(value)) bad(`avatar ${a.name} does not round-trip through its stored value`);
+      if (avatarLabel(value) !== a.name) bad(`avatar ${a.id} has no name for screen readers`);
+      const url = avatarSpriteUrl(value);
+      if (!url) bad(`avatar ${a.name} resolves to no sprite url`);
+      if (!existsSync(new URL(`../public/pokemon/${a.id}.png`, import.meta.url).pathname))
+        bad(`avatar ${a.name} (#${a.id}) has no sprite in public/pokemon`);
+      if (!poke.faces.includes(String(a.id)))
+        bad(`avatar ${a.name} is not one of the 151 the sprite folder holds`);
+    }
+    for (const emoji of ['🎮', '🦊', '🏆', '', 'pokemon:9999']) {
+      if (isSpriteAvatar(emoji)) bad(`"${emoji}" was treated as a sprite avatar`);
+      if (avatarSpriteUrl(emoji) !== null) bad(`"${emoji}" resolved to a sprite url`);
+    }
+  }
+
+  if (ok)
+    console.log(
+      `  ✓ ${optionCount} game option(s) with valid defaults; ${MEMORY_THEME_LIST.length} memory themes, each dealing ${MAX_PAIRS} distinct pairs, picker derived from the table, all 151 sprites present; sprite avatars resolve and emoji avatars are never mistaken for them`
+    );
+}
+
 console.log('— Landmark catalogue (streaks & profile trophies) —');
 {
   // THE SYNC RULE: the landmark catalogue must derive entirely from the

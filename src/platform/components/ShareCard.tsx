@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RankTier } from '../progress/xp';
+import { avatarSprite, loadAvatarSprite } from '../design/avatars';
 import {
   RANK_BADGE,
   RANK_GLOSS,
@@ -458,9 +459,52 @@ export function renderShareCard(d: ShareData): HTMLCanvasElement {
   });
   ctx.fillStyle = dim(0.6);
   ctx.font = `600 32px ${FONT}`;
-  ctx.fillText(`${d.playerEmoji} ${d.playerName}  ·  ${date}`, W / 2, 1234);
+  drawFooterWithAvatar(ctx, d.playerEmoji, `${d.playerName}  ·  ${date}`, W / 2, 1234);
 
   return canvas;
+}
+
+/**
+ * The footer line, with a sprite avatar drawn beside the text when the
+ * player has one.
+ *
+ * The sprite must already be decoded — `ShareCardModal` awaits
+ * `loadAvatarSprite` before rendering, because `drawImage` with a
+ * half-loaded image draws nothing at all and there is no way to notice from
+ * inside a synchronous render. If it is not there, the emoji/text form is
+ * used: a card missing its avatar beats a card that never renders.
+ *
+ * The whole line is measured first and centred as a unit, so adding a
+ * picture does not shove the name off centre.
+ */
+export function drawFooterWithAvatar(
+  ctx: CanvasRenderingContext2D,
+  avatarValue: string,
+  text: string,
+  cx: number,
+  y: number
+) {
+  const sprite = avatarSprite(avatarValue);
+  if (!sprite) {
+    ctx.fillText(`${avatarValue} ${text}`, cx, y);
+    return;
+  }
+  const box = 44;
+  const gap = 12;
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = 'left';
+  const textW = ctx.measureText(text).width;
+  const startX = cx - (box + gap + textW) / 2;
+  // sprites are pixel art: keep the browser from smoothing them on scale
+  const prevSmoothing = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = false;
+  const scale = Math.min(box / sprite.width, box / sprite.height);
+  const w = sprite.width * scale;
+  const h = sprite.height * scale;
+  ctx.drawImage(sprite, startX + (box - w) / 2, y - box / 2 - 6 + (box - h) / 2, w, h);
+  ctx.imageSmoothingEnabled = prevSmoothing;
+  ctx.fillText(text, startX + box + gap, y);
+  ctx.textAlign = prevAlign;
 }
 
 /** Generic share-image viewer: renders a canvas once, then offers the
@@ -471,7 +515,9 @@ export function ShareImageModal({
   alt,
   onClose
 }: {
-  render: () => HTMLCanvasElement;
+  /** may be async — a card whose art needs decoding first (sprite avatars)
+      awaits it, so the canvas is only drawn once everything is ready */
+  render: () => HTMLCanvasElement | Promise<HTMLCanvasElement>;
   filename: string;
   alt: string;
   onClose: () => void;
@@ -482,7 +528,10 @@ export function ShareImageModal({
 
   useEffect(() => {
     let url: string | null = null;
-    render().toBlob((b) => {
+    let cancelled = false;
+    void Promise.resolve(render()).then((canvas) => {
+      if (cancelled) return;
+      canvas.toBlob((b) => {
       if (!b) return;
       blobRef.current = b;
       url = URL.createObjectURL(b);
@@ -491,8 +540,10 @@ export function ShareImageModal({
         const file = new File([b], filename, { type: 'image/png' });
         setShareSupported(navigator.canShare({ files: [file] }));
       }
-    }, 'image/png');
+      }, 'image/png');
+    });
     return () => {
+      cancelled = true;
       if (url) URL.revokeObjectURL(url);
     };
     // render once on mount — the modal is remounted per card
@@ -549,7 +600,8 @@ export function ShareImageModal({
 export function ShareCardModal({ data, onClose }: { data: ShareData; onClose: () => void }) {
   return (
     <ShareImageModal
-      render={() => renderShareCard(data)}
+      // decode the sprite avatar first, then draw — see drawFooterWithAvatar
+      render={() => loadAvatarSprite(data.playerEmoji).then(() => renderShareCard(data))}
       filename="100-games-win.png"
       alt="Your win card"
       onClose={onClose}

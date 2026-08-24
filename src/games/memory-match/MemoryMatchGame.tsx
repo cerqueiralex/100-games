@@ -3,14 +3,7 @@ import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { EyeIcon } from '../../platform/design/icons';
 import { PadTool } from '../../platform/components/ui';
-
-/* Card faces are game content (like avatars), not UI chrome — emojis allowed. */
-const FACES = [
-  '🐶', '🦊', '🐼', '🐸', '🦉', '🐙', '🦋', '🌵', '🍕',
-  '🍩', '🚀', '⚽', '🎲', '🎧', '🌙', '⭐', '🔑', '🎈',
-  '🍄', '🐝', '🦀', '🐬', '🍓', '🥑', '🌈', '🔥', '🎁',
-  '🛸', '🧲', '🎹', '⚓', '🧊'
-];
+import { memoryTheme, type MemoryTheme } from './logic/themes';
 
 interface Config {
   cols: number;
@@ -32,12 +25,22 @@ const MISMATCH_PENALTY = 10;
 const PEEK_PENALTY = 25;
 const STREAK_BONUS = 10;
 
-function buildDeck(pairs: number): string[] {
-  const faces = [...FACES].sort(() => Math.random() - 0.5).slice(0, pairs);
+/**
+ * `pairs` distinct faces drawn from the theme, each twice, shuffled.
+ *
+ * The theme's pool is always larger than the biggest tier (validate proves
+ * it), so this can never deal the same face twice — two identical pairs on
+ * one board would make it unwinnable, since either card of one pair would
+ * "match" either card of the other.
+ */
+function buildDeck(pairs: number, theme: MemoryTheme): string[] {
+  const faces = [...theme.faces].sort(() => Math.random() - 0.5).slice(0, pairs);
   return [...faces, ...faces].sort(() => Math.random() - 0.5);
 }
 
 interface MemorySave {
+  /** the theme the deck was dealt from, so a resume draws the same cards */
+  theme?: string;
   deck: string[];
   matched: boolean[];
   errors: number;
@@ -55,7 +58,8 @@ export function MemoryMatchGame({
   elapsedSec,
   events,
   savedState,
-  registerSnapshot
+  registerSnapshot,
+  options
 }: GameProps) {
   const cfg = CONFIG[difficulty];
   // old-format saves may lack `matched` — treat them as no save
@@ -63,8 +67,13 @@ export function MemoryMatchGame({
     savedState && Array.isArray((savedState as MemorySave).matched)
       ? (savedState as MemorySave)
       : undefined;
+  /* The save's own theme wins over the current pick: its deck holds face
+     ids from that theme, and the shell restores the option alongside it.
+     A save from before themes existed has none, and its emoji ids are
+     exactly the classic theme's — so it resumes untouched. */
+  const theme = memoryTheme(saved?.theme ?? options.theme);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const deck = useMemo(() => saved?.deck ?? buildDeck(cfg.pairs), [cfg.pairs]);
+  const deck = useMemo(() => saved?.deck ?? buildDeck(cfg.pairs, theme), [cfg.pairs, theme.id]);
 
   const [matched, setMatched] = useState<boolean[]>(() =>
     saved ? [...saved.matched] : new Array(cfg.pairs * 2).fill(false)
@@ -191,6 +200,7 @@ export function MemoryMatchGame({
 
   useEffect(() => {
     registerSnapshot(() => ({
+      theme: theme.id,
       deck,
       matched,
       errors,
@@ -217,8 +227,12 @@ export function MemoryMatchGame({
       </div>
 
       <div
-        className="mm-board"
-        style={{ gridTemplateColumns: `repeat(${cfg.cols}, 1fr)` }}
+        className={`mm-board ${theme.boardClass ?? ''}`}
+        /* minmax(0, 1fr), never plain 1fr: a `1fr` track keeps min-width:auto,
+           so a face with a large intrinsic size (the sprite themes' images)
+           pushes every column wider than its share and the board overflows
+           the page — the same trap the toolbars hit (QA ledger). */
+        style={{ gridTemplateColumns: `repeat(${cfg.cols}, minmax(0, 1fr))` }}
         role="grid"
       >
         {deck.map((face, i) => {
@@ -228,9 +242,13 @@ export function MemoryMatchGame({
               key={i}
               className={`mm-card ${up ? 'up' : ''} ${matched[i] ? 'matched' : ''}`}
               onClick={() => flip(i)}
-              aria-label={up ? face : 'Hidden card'}
+              aria-label={up ? theme.describe(face) : 'Hidden card'}
             >
-              {up ? <span className="mm-face">{face}</span> : <span className="mm-back" />}
+              {up ? (
+                <span className="mm-face">{theme.render(face)}</span>
+              ) : (
+                <span className="mm-back" />
+              )}
             </button>
           );
         })}

@@ -123,6 +123,20 @@ function validSettings(raw: unknown): PlatformSettings | null {
       }
     }
   }
+  /* Per-game option choices (see GameOptionDef). Only string→string pairs
+     survive; an unknown choice id is harmless because resolveOptions falls
+     back to the option's default when the game no longer offers it. */
+  const options: PlatformSettings['gameOptions'] = {};
+  if (isObj(raw.gameOptions)) {
+    for (const [gameId, picks] of Object.entries(raw.gameOptions)) {
+      if (!isObj(picks)) continue;
+      const clean: Record<string, string> = {};
+      for (const [optId, choice] of Object.entries(picks)) {
+        if (typeof choice === 'string') clean[optId] = choice;
+      }
+      if (Object.keys(clean).length > 0) options[gameId] = clean;
+    }
+  }
   return {
     ...DEFAULT_SETTINGS,
     theme: THEMES.includes(raw.theme as ThemeId) ? (raw.theme as ThemeId) : DEFAULT_SETTINGS.theme,
@@ -130,6 +144,7 @@ function validSettings(raw: unknown): PlatformSettings | null {
     volume: Math.min(1, Math.max(0, num(raw.volume, DEFAULT_SETTINGS.volume))),
     gameAssists: assists,
     lastDifficulty: lastDiff,
+    gameOptions: options,
     favorites: strings(raw.favorites)
   };
 }

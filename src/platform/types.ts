@@ -28,6 +28,42 @@ export interface AssistFeature {
   defaultOn: boolean;
 }
 
+/** One selectable value of a game option. */
+export interface GameOptionChoice {
+  id: string;
+  label: string;
+  /** one line under the picker explaining what this choice changes */
+  description?: string;
+  /**
+   * A small illustration above the label — a sample of what this choice
+   * looks like, which for a cosmetic option says more than its name does.
+   * Game CONTENT art (a Pokémon, a card), so it may be colourful; the
+   * monochrome-icon rule covers UI chrome, not previews of the thing being
+   * chosen.
+   */
+  icon?: ReactNode;
+}
+
+/**
+ * A pick-one setting a game contributes to its own setup screen, beside the
+ * difficulty picker — Memory Match's card theme is the first.
+ *
+ * Deliberately NOT an assist: an assist makes the same game easier and is
+ * recorded against the clean-win rule, while an option changes what the
+ * board is made of and costs nothing. Choosing Pokémon cards must never
+ * make a win "helped". The choice persists per game like `lastDifficulty`
+ * and reaches the game through `GameProps.options`.
+ */
+export interface GameOptionDef {
+  id: string;
+  /** the section heading on the setup screen */
+  name: string;
+  description?: string;
+  choices: GameOptionChoice[];
+  /** must be one of `choices` — validate enforces it */
+  defaultChoice: string;
+}
+
 /** Live stats a game reports upward while being played. */
 export interface LiveStats {
   score: number;
@@ -64,6 +100,13 @@ export interface GameProps {
   difficulty: Difficulty;
   /** assistId -> enabled, resolved from settings for this session. */
   assists: Record<string, boolean>;
+  /**
+   * optionId -> chosen choice id, resolved from settings for this session
+   * (see `GameDefinition.options`). Fixed for the whole run: unlike an
+   * assist, an option decides how the board is BUILT, so changing it
+   * mid-game would swap the content under the player.
+   */
+  options: Record<string, string>;
   paused: boolean;
   elapsedSec: number;
   events: GameEvents;
@@ -111,6 +154,12 @@ export interface GameSave {
    * screen claims they are playing.
    */
   daily?: string;
+  /**
+   * The game options this save was made under (see `GameDefinition.options`).
+   * Restored with the save, because a Pokémon deck resumed under the zodiac
+   * theme would be a board the screen cannot draw.
+   */
+  options?: Record<string, string>;
 }
 
 /**
@@ -193,6 +242,11 @@ export interface GameDefinition {
   /** The category this game belongs to (menu filter + profile stats). */
   category: CategoryId;
   assistFeatures: AssistFeature[];
+  /**
+   * Pick-one settings shown on this game's setup screen under the
+   * difficulty picker (see `GameOptionDef`). Omit when a game has none.
+   */
+  options?: GameOptionDef[];
   component: ComponentType<GameProps>;
   scoringNote: string;
   /** Required: every game ships an illustrated how-to-play (3–6 steps). */
@@ -250,6 +304,8 @@ export interface PlatformSettings {
   gameAssists: Record<string, Record<string, boolean>>;
   /** gameId -> last chosen difficulty */
   lastDifficulty: Record<string, Difficulty>;
+  /** gameId -> optionId -> chosen choice id (see `GameOptionDef`) */
+  gameOptions: Record<string, Record<string, string>>;
   /** pinned game ids, shown in their own section at the top of the menu */
   favorites: string[];
 }

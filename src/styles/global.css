@@ -952,6 +952,99 @@ p {
   color: var(--text);
 }
 
+/* Game options (GameDefinition.options) — the setup screen's pick-one rows.
+   Same plate and press as the difficulty picker so the two read as one
+   family, but wider tracks: an option's labels are words, not tiers.
+   Deliberately NOT reusing .difficulty-btn — a beaten-tier seal has no
+   meaning here, and sharing the class would invite one. */
+/* narrow enough that four choices still fit one phone row — adding the
+   preview icons pushed the old 112px minimum into a 3+1 wrap */
+.option-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+  gap: 8px;
+}
+
+.option-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 13px 8px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  box-shadow: inset 0 -3px 0 var(--edge);
+  transition: all 0.15s;
+}
+
+.option-btn:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
+}
+
+.option-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* A sample of the choice, not a UI glyph — a fixed box so a wide sprite and
+   a tall one leave the buttons exactly the same height. The box is what
+   keeps art off the label: an image that sized itself would push into the
+   text on the tall sprites and clear it on the short ones. */
+.option-btn-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 7px;
+  overflow: hidden;
+}
+
+.option-btn-icon > * {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* an emoji preview is TEXT: it has no intrinsic box for max-width to clamp,
+   so it has to be sized to fit the 28px icon box or the glyph is clipped */
+.option-btn-icon .mm-emoji {
+  font-size: 23px;
+  line-height: 1;
+}
+
+.option-btn-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+/* the card-deck preview shows its ink on card stock, since ink alone on the
+   button would be a floating pip rather than a card */
+.option-card-chip {
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 27px;
+  border-radius: 3px;
+  background: #f6f3ea;
+  border: 1px solid #cdc6b4;
+}
+
+.option-btn-label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.option-btn-sub {
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
 /* completed on this tier: 3px green ring (1px border + 2px inset ring so
    geometry never changes between states) + the top-left star seal. Green
    is semantic --good, never the accent, and beats the active accent
@@ -2174,6 +2267,71 @@ p {
   border-color: var(--accent);
 }
 
+/* A sprite choice needs a fixed box: emoji buttons are sized by their line,
+   and an image would otherwise make its row taller than the emoji rows.
+   The sprite is pinned by INSETS rather than sized at 100%: inside a
+   <button> a percentage height resolves against no definite box and falls
+   back to auto, so the image's own aspect ratio took over and the taller
+   sprites (Pikachu's ears, Charmander's tail) grew straight out of the
+   button. Insets give a definite box that `object-fit: contain` then fits
+   the picture inside — it cannot overflow. */
+.emoji-btn.sprite {
+  position: relative;
+  display: block;
+  height: 44px;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Sized, not just inset: an absolutely positioned REPLACED element with
+   `height: auto` takes its height from the image's intrinsic ratio and
+   ignores the offsets entirely, so insets alone did not constrain it. A
+   percentage of the (definite) positioned box does. */
+.emoji-btn.sprite .avatar-sprite {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: calc(100% - 10px);
+  height: calc(100% - 10px);
+}
+
+/**
+ * The avatar sprite, wherever an avatar appears (home header, profile hero,
+ * the picker, a backup preview). `contain` inside whatever box the surface
+ * already defines means no caller has to know the sprite's proportions, and
+ * `pixelated` keeps 96px pixel art crisp when a surface draws it larger.
+ */
+.avatar-sprite {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* hard caps, not just a width: an <img> carries its own intrinsic size, so
+     a surface that renders an Avatar without sizing its plate would be
+     stretched by the picture instead of clipping it. These make the sprite
+     incapable of breaking any layout it is dropped into. */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* the round/rounded avatar plates keep a margin, so the sprite sits IN the
+   badge rather than being clipped by its corners */
+.home-avatar,
+.profile-avatar,
+.import-avatar {
+  overflow: hidden;
+}
+
+.home-avatar .avatar-sprite,
+.profile-avatar .avatar-sprite,
+.import-avatar .avatar-sprite {
+  width: 84%;
+  height: 84%;
+}
+
 /* ===== settings ===== */
 
 .theme-row {
@@ -2894,6 +3052,11 @@ a.settings-action {
   aspect-ratio: 1;
   display: grid;
   place-items: center;
+  /* the card is a grid item AND a grid container; both default to
+     min-*: auto, which lets an oversized face stretch the whole board */
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-s);
@@ -2919,7 +3082,15 @@ a.settings-action {
   border-color: var(--accent);
 }
 
+/* The face fills the card so every theme centres inside the SAME box —
+   card geometry is fixed and only paint changes (DESIGN.md "Tile grids"). */
 .mm-face {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   font-size: clamp(20px, 7vw, 34px);
   line-height: 1;
 }
@@ -2932,6 +3103,78 @@ a.settings-action {
 
 .board-hidden .mm-board {
   visibility: hidden;
+}
+
+/* ---- card themes (games/memory-match/logic/themes.tsx) ----
+   Theme art is game CONTENT, so it keeps its own fixed colours (card-stock
+   white, suit red, element hues) the same way Reversi's felt and Gridlock's
+   asphalt do — the tokens rule covers UI chrome, not the pictures. */
+
+.mm-emoji {
+  line-height: 1;
+}
+
+/* Pokémon: Generation V pixel sprites.
+   `pixelated` is load-bearing — the source art is 96px and the card is
+   bigger than that on most screens, so the browser's default smoothing
+   would blur hand-placed pixels into soup.
+   The sprite files are TRIMMED to their artwork (see the note in
+   logic/themes.tsx): every 96×96 sprite arrived with its own amount of
+   transparent padding, so `contain` sized Diglett at a third of Nidoking
+   and the small ones were unreadable on an extreme board. Cropped to the
+   real bounds, `contain` makes every sprite fill the same box. */
+.mm-sprite {
+  /* the safe inset: trimmed sprites fill their box exactly, so without a
+     margin the art runs into the card's rounded corners and its edge */
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Hand-drawn pixel sprites (zodiac signs, playing cards). The SVG carries
+   shape-rendering: crispEdges, so these scale to any card size without ever
+   softening — the whole point of authoring them as pixels. */
+.mm-pixel {
+  width: 78%;
+  height: 78%;
+  display: block;
+}
+
+/* the deck sits tighter still: a playing card's ink is meant to float in a
+   margin of stock, and at 16 pixels wide the pips otherwise touch the edge */
+.mm-theme-cards .mm-pixel {
+  width: 66%;
+  height: 72%;
+}
+
+/* Zodiac: night sky under every app theme. The sprites are drawn with a
+   dark ink outline and lit fills, which needs a dark ground — on the light
+   theme the same art on a pale card loses its outlines entirely. Fixed
+   content colours, like the card stock below. */
+.mm-theme-zodiac .mm-card.up {
+  background: #141c2e;
+  border-color: #2b3856;
+}
+
+.mm-theme-zodiac .mm-card.matched {
+  background: #17301f;
+  border-color: var(--good);
+}
+
+/* Card deck: a real card is ink on white stock, and that is also what keeps
+   the black suits legible on the black theme — a themed surface would make
+   spades invisible. */
+.mm-theme-cards .mm-card.up {
+  background: #f6f3ea;
+  border-color: #cdc6b4;
+}
+
+.mm-theme-cards .mm-card.matched {
+  background: #dff0e2;
+  border-color: var(--good);
 }
 
 /* ===== simon ===== */

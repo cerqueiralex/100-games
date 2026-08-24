@@ -1,4 +1,11 @@
-import type { GameResult, GameSave, PlatformSettings, Profile, Difficulty } from './types';
+import type {
+  Difficulty,
+  GameOptionDef,
+  GameResult,
+  GameSave,
+  PlatformSettings,
+  Profile
+} from './types';
 
 const KEYS = {
   settings: '100games.v1.settings',
@@ -32,6 +39,7 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   volume: 0.6,
   gameAssists: {},
   lastDifficulty: {},
+  gameOptions: {},
   favorites: []
 };
 
@@ -139,4 +147,24 @@ export function resolveAssists(
 
 export function lastDifficultyFor(settings: PlatformSettings, gameId: string): Difficulty {
   return settings.lastDifficulty[gameId] ?? 'easy';
+}
+
+/**
+ * The game's option choices for this session, falling back to each option's
+ * default. A stored choice that the game no longer offers is DROPPED rather
+ * than passed through — a theme removed in an update would otherwise leave
+ * the player on a board nothing knows how to draw.
+ */
+export function resolveOptions(
+  settings: PlatformSettings,
+  gameId: string,
+  defs: GameOptionDef[] | undefined
+): Record<string, string> {
+  const saved = settings.gameOptions[gameId] ?? {};
+  const out: Record<string, string> = {};
+  for (const def of defs ?? []) {
+    const pick = saved[def.id];
+    out[def.id] = def.choices.some((c) => c.id === pick) ? pick : def.defaultChoice;
+  }
+  return out;
 }

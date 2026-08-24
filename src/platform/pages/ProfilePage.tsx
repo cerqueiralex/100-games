@@ -10,6 +10,7 @@ import { LevelHero } from '../components/Level';
 import { LandmarksSection } from '../components/Landmarks';
 import { DailyHistorySection } from '../components/DailyChallenge';
 import { dailyStreakInfo, loadDaily } from '../daily/store';
+import { Avatar, POKEMON_AVATARS, pokemonAvatarValue } from '../design/avatars';
 import { CalendarPicker, Chip, Dropdown, Modal, StatCard } from '../components/ui';
 import { ActivityChart, CategoryBarChart, GamesPieChart, TrendChart } from '../components/charts';
 import type { CategoryId, GameResult } from '../types';
@@ -147,7 +148,7 @@ export function ProfilePage() {
     <div className="screen">
       <header className="profile-header">
         <button className="profile-avatar" onClick={() => setEditing(true)} aria-label="Edit profile">
-          {profile.emoji}
+          <Avatar value={profile.emoji} />
         </button>
         <div>
           <h1 className="profile-name">{profile.name}</h1>
@@ -350,6 +351,26 @@ export function ProfilePage() {
               {e}
             </button>
           ))}
+        </div>
+        {/* Sprite avatars sit in their own labelled row: they are pictures
+            rather than glyphs, so mixing them into the emoji grid would put
+            two different kinds of art on one line. */}
+        <label className="field-label">Pokémon</label>
+        <div className="emoji-grid">
+          {POKEMON_AVATARS.map((p) => {
+            const value = pokemonAvatarValue(p.id);
+            return (
+              <button
+                key={p.id}
+                className={`emoji-btn sprite ${profile.emoji === value ? 'active' : ''}`}
+                onClick={() => updateProfile({ emoji: value })}
+                title={p.name}
+                aria-label={p.name}
+              >
+                <Avatar value={value} />
+              </button>
+            );
+          })}
         </div>
         <div className="modal-actions">
           <button

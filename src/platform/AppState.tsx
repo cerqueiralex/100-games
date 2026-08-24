@@ -27,6 +27,8 @@ interface AppState {
   progress: PlayerProgress;
   updateSettings: (patch: Partial<PlatformSettings>) => void;
   setGameAssist: (gameId: string, assistId: string, on: boolean) => void;
+  /** pick a value for one of a game's setup-screen options (see GameOptionDef) */
+  setGameOption: (gameId: string, optionId: string, choiceId: string) => void;
   updateProfile: (patch: Partial<Profile>) => void;
   /** records the play and returns the XP it earned (see progress/xp.ts) */
   recordResult: (result: GameResult, daily?: DailyProgressInfo) => XpAward;
@@ -73,6 +75,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             gameAssists: {
               ...prev.gameAssists,
               [gameId]: { ...prev.gameAssists[gameId], [assistId]: on }
+            }
+          };
+          saveSettings(next);
+          return next;
+        });
+      },
+      setGameOption: (gameId, optionId, choiceId) => {
+        setSettings((prev) => {
+          const next: PlatformSettings = {
+            ...prev,
+            gameOptions: {
+              ...prev.gameOptions,
+              [gameId]: { ...prev.gameOptions[gameId], [optionId]: choiceId }
             }
           };
           saveSettings(next);
