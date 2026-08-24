@@ -21,7 +21,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # full history: the app's PATCH number is the commit count, and the
+      # default shallow checkout (depth 1) would stamp every build as x.y.1
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

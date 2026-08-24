@@ -3672,6 +3672,64 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
     );
 }
 
+// ---------------------------------------------------------------------------
+// Versioning stays derived from git (see CLAUDE.md "Versioning")
+// ---------------------------------------------------------------------------
+console.log('— Version stamp —');
+{
+  // same idiom as `process` above: this script only runs under tsx, and the
+  // repo deliberately carries no @types/node
+  const { readFileSync } = (await import('node:fs')) as {
+    readFileSync: (path: string, encoding: string) => string;
+  };
+
+  let ok = true;
+  const bad = (msg: string) => {
+    failed = true;
+    ok = false;
+    console.error(`✗ ${msg}`);
+  };
+
+  const read = (p: string) => {
+    try {
+      return readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8');
+    } catch {
+      bad(`could not read ${p}`);
+      return '';
+    }
+  };
+
+  // 1. a malformed package version silently poisons the derived minor
+  //    (Number('x') + features = NaN → "1.NaN.44")
+  const pkgVersion = String(JSON.parse(read('package.json')).version ?? '');
+  if (!/^\d+\.\d+\.\d+$/.test(pkgVersion)) {
+    bad(`package.json version "${pkgVersion}" is not MAJOR.MINOR.PATCH integers`);
+  }
+
+  // 2. the displayed version must come from the build stamp. A hardcoded
+  //    literal is how it silently drifted from the deployed commit before.
+  const settings = read('src/platform/pages/SettingsPage.tsx');
+  if (!settings.includes('VERSION_LABEL')) {
+    bad('SettingsPage no longer renders VERSION_LABEL — the version must come from the build stamp');
+  }
+  const literal = settings.match(/v\d+\.\d+(\.\d+)?/);
+  if (literal) {
+    bad(`SettingsPage hardcodes the version literal "${literal[0]}" — render VERSION_LABEL instead`);
+  }
+
+  // 3. CI must clone the full history: actions/checkout defaults to depth 1,
+  //    where the commit/feature counts collapse and EVERY deploy ships x.y.1
+  const workflow = read('.github/workflows/deploy.yml');
+  if (!/fetch-depth:\s*0/.test(workflow)) {
+    bad('deploy workflow lost `fetch-depth: 0` — a shallow clone stamps every build x.y.1');
+  }
+
+  if (ok)
+    console.log(
+      `  ✓ package version ${pkgVersion} well-formed, settings renders the build stamp (no hardcoded literal), CI clones full history`
+    );
+}
+
 if (failed) {
   console.error('\nValidation FAILED');
   throw new Error('validation failed');

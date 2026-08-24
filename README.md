@@ -109,6 +109,50 @@ npm run check      # typecheck only
 npm run validate   # verify all hand-authored/generated game content (see below)
 ```
 
+## Versioning
+
+The bottom of Settings shows the build you are running, e.g.
+
+> **v1.1.45-prod** · build `5f2a1c9` · 23 Aug 2026
+
+It is `MAJOR.MINOR.PATCH` — three independent whole numbers, not a
+decimal, so 1.9 is followed by 1.10 (never 2.0 just because 9 ran out).
+**Nothing is bumped by hand to ship a release**; the version is derived
+from git history at build time:
+
+| part | meaning | where it comes from |
+| --- | --- | --- |
+| **MAJOR** | a redesign, or a change that breaks saved data | `package.json` — the one judgement call |
+| **MINOR** | games and features launched | automatic: the number of `feat:` commits |
+| **PATCH** | every change | automatic: the commit count |
+
+The trailing `-prod` / `-dev` says which channel the build came from, so a
+locally built bundle is never mistaken for the deployed one.
+
+**How MINOR bumps itself.** A commit that launches a new game or a
+user-facing feature is prefixed `feat:` ([Conventional
+Commits](https://www.conventionalcommits.org)):
+
+```bash
+git commit -m "feat: add Wordle"        # 1.1.x → 1.2.x
+git commit -m "fix: crash on resume"    # 1.2.4 → 1.2.5, minor untouched
+```
+
+Everything else — fixes, polish, refactors, docs — leaves MINOR alone and
+just advances PATCH. So the version moves the moment the work lands, and
+a feature can never disagree with the number that shipped it. Audit what
+counted with `git log -E --grep='^feat(\(.+\))?!?: '`.
+
+MAJOR stays in `package.json` because "is this a redesign?" is not
+something a script can decide. Note that `package.json`'s minor is a
+**base** the feature count is added to — bumping it by hand to mark a
+release would double-count.
+
+The short sha names the exact commit for a bug report, and the date is the
+commit's, so rebuilding the same commit produces the same stamp. An
+installed PWA shows the version **it has cached**, which is the point: it
+answers "which build is on this phone", not "what is on GitHub".
+
 ## Playing on your iPhone
 
 **Same Wi-Fi (quick test):** run `npm run dev`, note the "Network" URL it prints (e.g. `http://192.168.1.x:5173`), and open it in Safari on your iPhone.
@@ -144,6 +188,9 @@ src/
     stats.ts             ← statistics engine (win rate, streaks, best times…)
     progress/            ← play-streak + landmark (trophy) store — permanent,
                             derived from the registry so new games auto-sync
+    version.ts           ← the build stamp shown in Settings (MAJOR from
+                            package.json, MINOR = `feat:` commits, PATCH =
+                            commit count — see Versioning above)
     audio.ts             ← WebAudio sound effects and tones (no assets)
     AppState.tsx         ← app-wide state provider (settings/profile/history)
     components/

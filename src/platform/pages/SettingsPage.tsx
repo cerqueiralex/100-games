@@ -4,6 +4,7 @@ import { Modal, Toggle } from '../components/ui';
 import { applyBackup, exportBackup, parseBackup, type ParseResult } from '../backup';
 import { ExportIcon, ImportIcon, TrashIcon, WarnIcon } from '../design/icons';
 import { sfx } from '../audio';
+import { buildLine, VERSION_LABEL } from '../version';
 import type { AccentId, ThemeId } from '../types';
 
 const THEMES: { id: ThemeId; name: string; desc: string }[] = [
@@ -187,7 +188,12 @@ export function SettingsPage() {
         </div>
       </section>
 
-      <p className="about-note">100 Games · v0.1 · built as a PWA — install it from your browser menu.</p>
+      <p className="about-note">100 Games · built as a PWA — install it from your browser menu.</p>
+      {/* selectable: this is the line a player reads back when reporting a bug */}
+      <p className="about-version">
+        <span className="about-version-num">{VERSION_LABEL}</span>
+        {buildLine() && <span className="about-build"> · {buildLine()}</span>}
+      </p>
 
       <Modal
         open={confirm !== null}
