@@ -91,7 +91,7 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 - **Landmarks**: a trophy collection on the profile — play your first game, streak milestones (1–3 weeks, 1 month, bimester, trimester, quadrimester, semester, a full year), play every game, beat every game on each difficulty, and master each category. Locked trophies show in black & white behind a padlock with live progress ("41/67"); unlocked ones color in with their date and can be shared as a designed 1080×1350 card. Trophies are permanent — once earned they're never taken back, and they survive a history wipe
 - **Profile**: name + avatar, totals across games
 - **Share cards**: on any win, generate a 1080×1350 PNG win card — native share sheet on iPhone (WhatsApp etc.), download or long-press-copy anywhere
-- **Themes**: 3 surface themes (pure black / dim / warm-paper light) × 6 accent colors (orange default, blue, green, red, purple, and a black & white monochrome) that recolor every tool in every game
+- **Themes**: 3 surface themes — pure black, dim, and warm-paper light — for playing at night or in daylight. The palette is monochrome ink plus one orange, reserved for progression (level, XP, streak)
 - **Progress charts** on the profile: a most-played donut and a 30-day stacked activity timeline (both capped to the top games, tail folded into "Other"), and a per-game improvement trend (score / win time / win % / errors)
 - **Pinned favorites**: star any game to move it into a Pinned section at the top of the menu
 - **Search** on the home page to find games as the catalog grows, plus a category filter that scrolls sideways on one line (arrows and edge fades show when there's more) so the list keeps the screen
@@ -114,7 +114,7 @@ npm run validate   # verify all hand-authored/generated game content (see below)
 
 The bottom of Settings shows the build you are running, e.g.
 
-> **v1.1.45-prod** · build `5f2a1c9` · 23 Aug 2026
+> **v1.5.47-prod** · build `5f2a1c9` · 23 Aug 2026
 
 It is `MAJOR.MINOR.PATCH` — three independent whole numbers, not a
 decimal, so 1.9 is followed by 1.10 (never 2.0 just because 9 ran out).
@@ -124,7 +124,7 @@ from git history at build time:
 | part | meaning | where it comes from |
 | --- | --- | --- |
 | **MAJOR** | a redesign, or a change that breaks saved data | `package.json` — the one judgement call |
-| **MINOR** | games and features launched | automatic: the number of `feat:` commits |
+| **MINOR** | games and features launched | automatic: `feat:` commits since the version was last set |
 | **PATCH** | every change | automatic: the commit count |
 
 The trailing `-prod` / `-dev` says which channel the build came from, so a
@@ -145,9 +145,10 @@ a feature can never disagree with the number that shipped it. Audit what
 counted with `git log -E --grep='^feat(\(.+\))?!?: '`.
 
 MAJOR stays in `package.json` because "is this a redesign?" is not
-something a script can decide. Note that `package.json`'s minor is a
-**base** the feature count is added to — bumping it by hand to mark a
-release would double-count.
+something a script can decide. Editing that version is also how you
+re-base MAJOR.MINOR deliberately: the feature count restarts from the
+commit that changed it, so what you write in `package.json` is literally
+what the app shows on the next build.
 
 The short sha names the exact commit for a bug report, and the date is the
 commit's, so rebuilding the same commit produces the same stamp. An
@@ -176,7 +177,7 @@ paths so they survive subpath hosting.
 src/
   platform/              ← everything shared by ALL games
     design/              ← DESIGN SYSTEM — the rules every feature must follow
-      tokens.css         ← all colors: surface themes, accent themes, radii
+      tokens.css         ← all colors: surface themes, the fixed accent, radii
       effects.css        ← the shared flat card surface (one rule, whole app)
       icons.tsx          ← every UI icon (monochrome SVG, inherits theme color)
       gameIcons.tsx      ← game identity icons (colorful sticker SVGs, home cards)

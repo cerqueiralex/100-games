@@ -3772,6 +3772,40 @@ console.log('— Player XP & levels —');
 }
 
 // ---------------------------------------------------------------------------
+// The palette stays monochrome ink + one (see DESIGN.md "Color rules")
+// ---------------------------------------------------------------------------
+console.log('— Monochrome palette —');
+{
+  const { readFileSync } = (await import('node:fs')) as {
+    readFileSync: (path: string, encoding: string) => string;
+  };
+  const read = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8');
+
+  let ok = true;
+  const bad = (msg: string) => {
+    failed = true;
+    ok = false;
+    console.error(`✗ ${msg}`);
+  };
+
+  const tokens = read('src/platform/design/tokens.css');
+  // the six-way accent picker was removed on purpose: it multiplied every
+  // surface to check for one bit of taste. Reintroducing it silently would
+  // undo that, so the rule is enforced rather than merely written down.
+  if (/\[data-accent/.test(tokens)) bad('tokens.css defines a [data-accent] theme again');
+  if (!/--accent:/.test(tokens)) bad('tokens.css no longer defines --accent');
+  if (!/--xp:/.test(tokens)) bad('tokens.css no longer defines --xp (the one secondary color)');
+  if (/dataset\.accent/.test(read('src/platform/AppState.tsx').replace(/\/\/.*/g, '')))
+    bad('AppState sets data-accent again');
+  // match the SETTING, not the --accent token (which types.ts mentions in
+  // a comment about tutorial art and must keep mentioning)
+  if (/AccentId|accent\s*:\s*[A-Za-z]/.test(read('src/platform/types.ts')))
+    bad('PlatformSettings carries an accent field again');
+
+  if (ok) console.log('  ✓ one fixed accent + --xp, no data-accent theme, no accent setting');
+}
+
+// ---------------------------------------------------------------------------
 // Versioning stays derived from git (see CLAUDE.md "Versioning")
 // ---------------------------------------------------------------------------
 console.log('— Version stamp —');

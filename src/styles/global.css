@@ -1930,37 +1930,6 @@ p {
   font-weight: 650;
 }
 
-.accent-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.accent-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
-  padding: 13px 2px;
-  border-radius: var(--radius-m);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-dim);
-}
-
-.accent-btn.active {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--text);
-}
-
-.accent-dot {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
-}
-
 .theme-desc {
   font-size: 10.5px;
   color: var(--text-dim);
@@ -22408,23 +22377,25 @@ button.bs-ship-row.dock.placed {
 
 /* ---- XP earned (results modal) ---- */
 
+/* deliberately compact: the award is a footnote to the result, not a
+   second headline competing with "Puzzle complete!" */
 .xp-earned {
-  margin: 14px 0 4px;
-  padding: 12px;
-  border-radius: var(--radius-m);
+  margin: 10px 0 2px;
+  padding: 7px 10px;
+  border-radius: var(--radius-s);
   background: var(--xp-soft);
-  border: 1px solid color-mix(in srgb, var(--xp) 38%, transparent);
+  border: 1px solid color-mix(in srgb, var(--xp) 32%, transparent);
 }
 
 .xp-earned-total {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .xp-earned-num {
-  font-size: 30px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--xp);
   line-height: 1;
@@ -22432,7 +22403,7 @@ button.bs-ship-row.dock.placed {
 }
 
 .xp-earned-unit {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--xp);
   letter-spacing: 0.04em;
@@ -22440,11 +22411,11 @@ button.bs-ship-row.dock.placed {
 
 .xp-earned-list {
   list-style: none;
-  margin: 10px 0 0;
+  margin: 5px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .xp-earned-list li {
@@ -22452,7 +22423,7 @@ button.bs-ship-row.dock.placed {
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  font-size: 12.5px;
+  font-size: 11px;
   color: var(--text-dim);
 }
 

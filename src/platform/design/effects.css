@@ -23,7 +23,6 @@
 .settings-info-row,
 .settings-action,
 .theme-btn,
-.accent-btn,
 .dropdown-btn,
 .history-row,
 .ttt-score {
@@ -42,7 +41,6 @@
 :root[data-theme='light'] .settings-info-row,
 :root[data-theme='light'] .settings-action,
 :root[data-theme='light'] .theme-btn,
-:root[data-theme='light'] .accent-btn,
 :root[data-theme='light'] .dropdown-btn,
 :root[data-theme='light'] .history-row,
 :root[data-theme='light'] .ttt-score {

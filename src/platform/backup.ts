@@ -1,4 +1,4 @@
-import type { Difficulty, GameResult, PlatformSettings, Profile, ThemeId, AccentId } from './types';
+import type { Difficulty, GameResult, PlatformSettings, Profile, ThemeId } from './types';
 import { DIFFICULTIES } from './types';
 import {
   DEFAULT_PROFILE,
@@ -21,13 +21,14 @@ import { normalizeProgress, type PlayerProgress } from './progress/progress';
  * An imported file is UNTRUSTED input (hand-edited, from an older build, or
  * simply the wrong file), so nothing here casts and hopes: every section is
  * validated field by field, malformed history rows are dropped rather than
- * poisoning the log, and unknown theme/accent values can never brick the UI.
+ * poisoning the log, and an unknown theme can never brick the UI. A file
+ * from an older build may still carry an `accent` — it is simply ignored,
+ * along with any other field this build no longer knows.
  * Parsing is separate from applying so the UI can preview what's in the file
  * before the player agrees to replace what's on the device.
  */
 
 const THEMES: ThemeId[] = ['black', 'dim', 'light'];
-const ACCENTS: AccentId[] = ['orange', 'blue', 'green', 'red', 'purple', 'white'];
 const PROGRESS_KEY = 'progress';
 
 export interface BackupPayload {
@@ -120,9 +121,6 @@ function validSettings(raw: unknown): PlatformSettings | null {
   return {
     ...DEFAULT_SETTINGS,
     theme: THEMES.includes(raw.theme as ThemeId) ? (raw.theme as ThemeId) : DEFAULT_SETTINGS.theme,
-    accent: ACCENTS.includes(raw.accent as AccentId)
-      ? (raw.accent as AccentId)
-      : DEFAULT_SETTINGS.accent,
     soundEnabled: typeof raw.soundEnabled === 'boolean' ? raw.soundEnabled : true,
     volume: Math.min(1, Math.max(0, num(raw.volume, DEFAULT_SETTINGS.volume))),
     gameAssists: assists,

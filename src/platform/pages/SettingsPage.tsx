@@ -5,22 +5,12 @@ import { applyBackup, exportBackup, parseBackup, type ParseResult } from '../bac
 import { ExportIcon, ImportIcon, TrashIcon, WarnIcon } from '../design/icons';
 import { sfx } from '../audio';
 import { buildLine, VERSION_LABEL } from '../version';
-import type { AccentId, ThemeId } from '../types';
+import type { ThemeId } from '../types';
 
 const THEMES: { id: ThemeId; name: string; desc: string }[] = [
   { id: 'black', name: 'Pure black', desc: 'True black, easy on OLED screens' },
   { id: 'dim', name: 'Dim', desc: 'Soft dark gray' },
   { id: 'light', name: 'Light', desc: 'For bright rooms' }
-];
-
-/** Swatch colors mirror the accent tokens in src/platform/design/tokens.css. */
-const ACCENTS: { id: AccentId; name: string; color: string }[] = [
-  { id: 'orange', name: 'Orange', color: '#ff9f0a' },
-  { id: 'blue', name: 'Blue', color: '#0a84ff' },
-  { id: 'green', name: 'Green', color: '#30d158' },
-  { id: 'red', name: 'Red', color: '#ff453a' },
-  { id: 'purple', name: 'Purple', color: '#bf5af2' },
-  { id: 'white', name: 'B & W', color: '#ffffff' }
 ];
 
 export function SettingsPage() {
@@ -68,25 +58,6 @@ export function SettingsPage() {
               <span className="theme-dot" />
               <span className="theme-name">{t.name}</span>
               <span className="theme-desc">{t.desc}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="setup-section">
-        <h3 className="section-title">Theme color</h3>
-        <p className="section-note">
-          Colors every tool in every game — highlights, hints, selections and toggles.
-        </p>
-        <div className="accent-row">
-          {ACCENTS.map((a) => (
-            <button
-              key={a.id}
-              className={`accent-btn ${settings.accent === a.id ? 'active' : ''}`}
-              onClick={() => updateSettings({ accent: a.id })}
-            >
-              <span className="accent-dot" style={{ background: a.color }} />
-              {a.name}
             </button>
           ))}
         </div>

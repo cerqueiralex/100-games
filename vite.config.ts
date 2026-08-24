@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { defineConfig } from 'vite';
+import { readFileSync, watch as watchFile } from 'node:fs';
+import { resolve } from 'node:path';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -13,9 +14,18 @@ import { VitePWA } from 'vite-plugin-pwa';
  *
  *   MAJOR  package.json — the one editorial part (a redesign, or a change
  *          that breaks saved data; both are judgement calls)
- *   MINOR  package.json's minor as a BASE plus the number of `feat:`
- *          commits, so launching a game or a feature bumps it by itself
+ *   MINOR  package.json's minor, plus the `feat:` commits made SINCE that
+ *          version line was last edited, so launching a game or a feature
+ *          bumps it by itself
  *   PATCH  the commit count — every push mints a new version
+ *
+ * Counting features from the version line's own last edit is what keeps
+ * package.json HONEST: whatever you write there is exactly what the app
+ * shows on the next build, and each later `feat:` adds one. (Counting all
+ * feats ever would make the file read 1.5.0 while the app said 1.6 — the
+ * kind of quiet disagreement this whole module exists to prevent.) Don't
+ * re-base the version in the same commit as a feature: the anchor is that
+ * commit, so its own `feat:` would not be counted.
  *
  * The `feat:` convention is Conventional Commits, and CLAUDE.md's
  * versioning rule is what keeps it honest: a commit that launches a game
@@ -37,11 +47,16 @@ function git(cmd: string, fallback: string): string {
 /** Conventional-Commits feature subjects: `feat: …`, `feat(games): …`, `feat!: …` */
 const FEAT_GREP = String.raw`^feat(\(.+\))?!?: `;
 
+/** last commit that edited package.json's `"version":` line */
+const VERSION_ANCHOR = String.raw`git log -1 --format=%H -G'^\s*"version":' -- package.json`;
+
 function buildStamp() {
   const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
   const [major = '0', minorBase = '0'] = String(pkg.version ?? '0.0').split('.');
   const commits = git('git rev-list --count HEAD', '0');
-  const features = git(`git rev-list --count -E --grep='${FEAT_GREP}' HEAD`, '0');
+  const anchor = git(VERSION_ANCHOR, '');
+  const since = anchor ? `${anchor}..HEAD` : 'HEAD';
+  const features = git(`git rev-list --count -E --grep='${FEAT_GREP}' ${since}`, '0');
   const minor = Number(minorBase) + Number(features);
   // -uno: untracked scratch files (backlog.txt) must not mark a build dirty
   const dirty = git('git status --porcelain -uno', '') !== '';
@@ -55,6 +70,36 @@ function buildStamp() {
   };
 }
 
+/**
+ * The stamp is computed once, when this config loads. A dev server left
+ * running therefore keeps serving the version from whenever it started —
+ * which is exactly how Settings came to show a version that matched
+ * neither package.json nor the commit count. Restarting the server on a
+ * commit (or a hand-edited version) re-runs the config, so what dev shows
+ * is always what a build right now would produce.
+ */
+function restampOnGitChange(): Plugin {
+  return {
+    name: 'restamp-on-git-change',
+    apply: 'serve',
+    configureServer(server) {
+      let pending: ReturnType<typeof setTimeout> | undefined;
+      for (const file of ['.git/logs/HEAD', 'package.json']) {
+        try {
+          // fs.watch, not server.watcher: Vite's watcher ignores **/.git/**
+          const watcher = watchFile(resolve(file), () => {
+            clearTimeout(pending); // editors/git write in bursts
+            pending = setTimeout(() => void server.restart(), 150);
+          });
+          server.httpServer?.on('close', () => watcher.close());
+        } catch {
+          // no .git (source tarball) — nothing to watch, stamp stays fixed
+        }
+      }
+    }
+  };
+}
+
 export default defineConfig({
   define: {
     __APP_BUILD__: JSON.stringify(buildStamp())
@@ -63,6 +108,7 @@ export default defineConfig({
   // sets VITE_BASE; local dev and LAN play keep the root path.
   base: process.env.VITE_BASE ?? '/',
   plugins: [
+    restampOnGitChange(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',

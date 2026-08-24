@@ -14,9 +14,17 @@ This folder is the single source of truth for the platform's look and feel.
 
 ## Philosophy
 
-Minimalist, content-first, all-black by default. One accent color at a time.
-Chrome (headers, tabs, borders) stays neutral; the accent is reserved for
-interactive state and game assists so it always means something.
+Minimalist, content-first, all-black by default. The palette is
+MONOCHROME INK PLUS ONE: `--accent` is white (near-black on the light
+theme) and paints interactive state; `--xp` (orange) is the single
+secondary color and belongs to progression. Chrome (headers, tabs,
+borders) stays neutral, so both colors always mean something.
+
+The accent used to be a six-way user setting. It was removed: six pickable
+hues multiplied every surface that had to be checked, for one bit of taste,
+and the monochrome option was the one that kept the whole 67-game library
+legible on all three surface themes. Do NOT reintroduce a color picker —
+add meaning with the tokens that already exist.
 
 ## Color rules
 
@@ -28,12 +36,11 @@ interactive state and game assists so it always means something.
    warm off-white cards, dark-grey text — keep any new light-theme value
    in that warm family. `AppState` mirrors the active theme's `--bg` into
    `<meta name="theme-color">` so browser/PWA chrome follows along.
-3. **Accent themes** (`data-accent`: `orange` (default) | `blue` | `green` |
-   `red` | `purple` | `white` for monochrome black & white) control every
-   tool color across all games: toggle
-   active states, hint buttons, selections, same-number highlight, crossword
-   word highlight, difficulty pills, share button.
-   Both attributes live on `<html>` and are set by `AppState` from settings.
+3. **The accent is fixed, not a setting**: `--accent` is white on the dark
+   surfaces and near-black on light, and it controls every tool color across
+   all games (toggle active states, hint buttons, selections, same-number
+   highlight, crossword word highlight, difficulty pills, share button).
+   Only `data-theme` lives on `<html>`, set by `AppState` from settings.
 4. **Semantic colors are fixed**: `--good` (green) = success/clean win,
    `--bad` (red) = errors/danger, `--warn` (yellow), `--xp` (orange) =
    progression — player level, XP and streak, the app's secondary color.
@@ -42,11 +49,11 @@ interactive state and game assists so it always means something.
 5. Derived tints (`--accent-soft`, `--cell-same`) are computed in
    `tokens.css` via `color-mix` — use them, don't re-mix inline.
 
-### Adding an accent theme
+### Adding a surface theme
 
-One block in `tokens.css` (`:root[data-accent='x'] { --accent: #hex; }`),
-one entry in `ACCENTS` in `SettingsPage.tsx`, one value in the `AccentId`
-type. Nothing else — every component already inherits.
+One block in `tokens.css` (`:root[data-theme='x'] { … }`) defining the
+surface/text/edge tokens plus `--accent`, and one entry in `THEMES` in
+`SettingsPage.tsx`. Nothing else — every component already inherits.
 
 ## Icons
 
@@ -81,7 +88,7 @@ The play-streak flame (`components/Streak.tsx`) and the landmark trophy
 art (`components/Landmarks.tsx`) are game CONTENT, like memory-card
 faces: sticker-style SVGs colored from the **content palette
 (`--play-*` tokens) with `--ink` outlines**, so they stay colorful and
-identical across accent themes — no opt-out needed, everything is
+identical on every surface theme — no opt-out needed, everything is
 tokens. Rules:
 
 - The streak's identity color is fixed `--play-7` orange; each landmark
@@ -127,9 +134,9 @@ which players read as "something broke", not "I won". The rules:
 ### Player level & XP (the progression surfaces)
 
 Progression has ONE color: `--xp`, the streak orange (`--play-7`). It is a
-**semantic** token, so like `--good`/`--bad` it never follows the accent —
-a level must read the same whichever theme color the player picked, and it
-sits beside the streak flame, which is that same orange. Use `--xp` for
+**semantic** token: the accent is monochrome ink, so `--xp` is the one
+color the app spends on progression, and it sits beside the streak flame,
+which is that same orange. Use `--xp` for
 every XP number, ring, bar and highlight; `--xp-soft` for the tinted panel
 behind an award. Never re-mix the orange inline.
 
@@ -172,7 +179,7 @@ never recomputed from capped history:
   profile's high-score tiles. Adding a third surface reuses these two
   classes rather than inventing a variant.
 - **Green is semantic** (`--good`), never the accent — completion means
-  the same thing in every accent theme, and the green ring is declared
+  the same thing on every theme, and the green ring is declared
   after `.active` so it still reads on the selected difficulty.
 - **The ring must not change geometry**: it is a 1px border plus a 2px
   `inset 0 0 0 2px` ring, so an unbeaten and a beaten tile occupy exactly
@@ -474,6 +481,6 @@ the current sequence/trial rather than mid-animation.
 ## Games
 
 Games must consume `GameProps` and express all their UI with these tokens
-and icons, so a new accent or surface theme restyles every game with zero
+and icons, so a new surface theme restyles every game with zero
 game-side changes. Game-specific CSS belongs in `global.css` under a clearly
 marked section, still token-only.
