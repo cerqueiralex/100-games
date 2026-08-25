@@ -216,7 +216,99 @@ they gain enforcement, delete entries obsoleted by code removal.
   and board grids) where intrinsic content size beat the layout that was
   supposed to bound it, and all three looked fine until content changed.
 
+- **2026-08-24 · design/tokens · a SEMANTIC token and the literal value it
+  resolves to are not interchangeable — and the difference is invisible
+  until the token moves.** `--xp` was `var(--play-7)`, so four progression
+  surfaces (the home streak count, the profile streak count, the week-row
+  check disc, its dashed today-border) were painted `var(--play-7)`
+  directly, plus a fifth on the daily calendar cell. Identical output,
+  zero visual difference — until the profile color made `--xp` movable,
+  and the first player who picked green got a green flame beside an orange
+  number and an orange disc. Same class as the hardcoded rims:
+  `--xp-rim`/`--xp-deep` had been mixed toward a fixed dark ORANGE
+  (`#6b3200`, `#7a3d00`), which is invisible while orange is the only
+  progression color and turns every other hue muddy the moment one is
+  picked; they mix toward black now. Rule: paint a surface with the token
+  that carries its MEANING, never the one that happens to look the same
+  today, and derive a token's relatives from the token itself.
+  Validate-enforced: the "Profile color" block scans every rule whose
+  selector is a progression surface (`.streak-*`, `.week-day*`, `.level-*`,
+  `.xp-*`, `.daily-cell`) and fails on any `var(--play-N)` in its body, and
+  rejects a hue-specific hex mixed into `--xp`.
+
+- **2026-08-24 · design/color · a user-pickable color needs a contrast
+  floor against every theme, applied as a LIGHTNESS nudge.** Two of the six
+  requested profile colors were unusable as given: deep teal `#043f52` is
+  1.9:1 on the black theme (invisible 4px frame, unreadable level number)
+  and yellow is 1.3:1 on the warm-paper light theme. `profileHex` now walks
+  the lightness away from the background until the color clears 3:1 (the
+  WCAG non-text-UI bar), never touching hue or saturation, so the picked
+  color survives. Rule: never paint a user-chosen color raw on a surface
+  the user didn't choose it against — nudge it, and assert the ratio rather
+  than the mechanism. Validate-enforced, both directions, plus that a color
+  already clear of the bar is passed through untouched. (The teal was later
+  dropped from the picker for layout reasons, so no shipped color exercises
+  the LIFT branch any more — which is why the nudge was split out as the
+  exported `legibleOn` and validate proves the lift on a raw hex. An
+  untested branch is one that has already rotted.)
+
+- **2026-08-24 · design/art · type placed on art needs the art measured,
+  and an outline if it crosses more than one ground.** The swept-games
+  crown badge took THREE tries, each shipped and each rejected on sight.
+  (1) Digits inside the crown's band, reasoning from `FlameArt`, which
+  prints a streak length inside its white drop — but a flame is a fat
+  teardrop with a big soft middle and a crown is mostly points and gaps, so
+  the band left roughly 8px of height and the number was illegible.
+  (2) Crown above, number below, each with half the badge: readable, but it
+  halved the crown and the mark stopped looking like the one on the game
+  cards — solving legibility by destroying the identity. (3) The number
+  overlaid across the full-height crown: legible, and it broke the crown's
+  shape. All three failed the same way — the count does not belong INSIDE
+  the art. It is its own bubble now, hanging off the bottom-right like a
+  notification count, in the same material as the disc (`--xp` fill,
+  `--xp-rim` ring, extruded edge) with `--ink` digits. Rules: measure the
+  interior of the specific shape before putting type in it; never buy
+  legibility by shrinking the thing that carries the meaning; when a count
+  and an emblem compete for the same 38px, separate them instead of nesting
+  them. The digits are WHITE, matching the crown, which is a deliberate
+  call by the owner after the contrast was put on the table (~3.5:1 on
+  purple and blue, ~2.1:1 on the default orange, ~1.4:1 on yellow) — the
+  bubble matching the crown was worth more than the ratio, and the digits
+  are sized/weighted up to compensate. Recorded because the escape hatch
+  matters if it ever bites: deepen the FILL to `--xp-deep` (validate proves
+  that clears 4:1 for every picker color), never darken the ink, which is
+  exactly what would stop the bubble matching the crown. Validate also
+  fails on any `<text>` inside the crown SVG.
+
+- **2026-08-24 · design/charts · "distinguishable" and "a palette" are
+  different goals, and optimising for the first destroys the second.** The
+  first chart ramp interleaved its lightness ladder so neighbouring donut
+  slices and bar rows would never sit next to their nearest match — maximum
+  local contrast, and it read as two alternating colors rather than one
+  gradient. A wide analogous hue sweep (±23°) compounded it by walking
+  yellow out to tan at one end and lime at the other, so the charts stopped
+  looking like the color that was picked. `chartRamp` is monotonic with a
+  ±9° sweep and flat saturation now. Rule: in an ORDERED chart, neighbours
+  are meant to be close — the legend carries identity, the ramp carries
+  rank. Validate-enforced: strictly monotonic lightness, every step a
+  distinct color on the picked hue (≤12° drift), all readable on the card.
+
 ## Watch items (re-check every QA — not yet machine-enforced)
+
+- **2026-08-24 · tooling · a file-scanning validate check must scan CODE,
+  and must exempt deliberate reuse — prove it on the real file before
+  trusting a red.** Two of these fired on correct code the same day. A
+  scan for "the profile hexes must not appear in CSS" flagged five of
+  them, because they deliberately reuse `--play-*` values — that reuse is
+  what keeps the app one family, and the palette owns those hexes; it now
+  skips any hex the `--play-N` table already defines. A scan for "the
+  badge panel must not render locked state" flagged the panel's own
+  doc comment explaining why it doesn't — it now strips comments and looks
+  for a `locked` **class**, not the word. Rule: when adding a grep-shaped
+  check, run it against the current file FIRST (it must pass), then
+  against a deliberately broken copy (it must fail). A check that cries
+  wolf on correct code is worse than no check — it is the one everybody
+  learns to work around.
 
 - **2026-08-24 · data · a retroactive backfill must count the RIGHT
   source, and run exactly once.** Adding the lifetime `plays`/`cleanWins`

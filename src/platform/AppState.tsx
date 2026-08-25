@@ -11,6 +11,7 @@ import {
   saveSettings
 } from './storage';
 import { configureAudio } from './audio';
+import { applyProfileColor } from './design/profileColors';
 import {
   loadProgress,
   recordProgress,
@@ -49,11 +50,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     configureAudio(settings.soundEnabled, settings.volume);
     document.documentElement.dataset.theme = settings.theme;
-    // no data-accent: the accent is monochrome and fixed (see tokens.css)
+    // no data-accent: the accent is monochrome and fixed (see tokens.css).
+    // The profile color is a different thing entirely — it paints only the
+    // player's own chrome (--xp and the profile frames), never a game tool,
+    // and it depends on the surface theme, so it is re-applied with it.
+    applyProfileColor(document.documentElement, profile.color, settings.theme);
     // browser/PWA chrome follows the active surface theme
     const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg);
-  }, [settings.soundEnabled, settings.volume, settings.theme]);
+  }, [settings.soundEnabled, settings.volume, settings.theme, profile.color]);
 
   const value = useMemo<AppState>(
     () => ({

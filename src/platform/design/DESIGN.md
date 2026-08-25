@@ -23,8 +23,16 @@ borders) stays neutral, so both colors always mean something.
 The accent used to be a six-way user setting. It was removed: six pickable
 hues multiplied every surface that had to be checked, for one bit of taste,
 and the monochrome option was the one that kept the whole 67-game library
-legible on all three surface themes. Do NOT reintroduce a color picker —
-add meaning with the tokens that already exist.
+legible on all three surface themes. **Do NOT reintroduce an accent
+picker** — no setting may repaint `--accent`, because that is the token
+every game's tools read, and 67 games × 6 hues × 3 themes is the surface
+that made it unmaintainable.
+
+The **profile color** (below) is the deliberate exception, and it is drawn
+exactly there: it retunes `--xp` and the player's own frames and charts —
+one token, on three screens nobody plays on — and never touches a game
+board. That is the line. A new color setting is allowed only if it stays on
+the same side of it.
 
 ## Color rules
 
@@ -91,8 +99,10 @@ faces: sticker-style SVGs colored from the **content palette
 identical on every surface theme — no opt-out needed, everything is
 tokens. Rules:
 
-- The streak's identity color is fixed `--play-7` orange; each landmark
-  carries a content-palette `slot` on its def (`--lm` on the card).
+- The streak flame burns in `--xp` (orange by default — the player's
+  profile color once they pick one), so the flame, the level ring and the
+  XP bar always agree; each landmark carries a content-palette `slot` on
+  its def (`--lm` on the card), fixed, because a trophy is its own thing.
 - **Locked landmarks stay fully visible** — same art, same geometry —
   rendered black & white at soft opacity via a CSS
   `filter: grayscale(1)` on the art plate only, behind a `LockIcon`
@@ -104,6 +114,16 @@ tokens. Rules:
   only in their CSS); the shareable landmark card reuses the win card's
   canvas chrome (`drawCardChrome` + `ShareImageModal` in ShareCard.tsx)
   so every shared image stays one family.
+- **Two surfaces, two jobs.** The gallery (`LandmarksSection`) is the
+  CHECKLIST — the whole catalogue, locked art included, with live meters;
+  it is what tells a player what to chase. `LandmarkBadges`, the row at
+  the foot of the level card, is the DISPLAY CASE: unlocked only, in
+  catalogue order (not newest-first, so the families stay grouped and a
+  wall of unlabelled 26px art still reads as a collection), rendering
+  nothing at all when nothing is earned. Never let the case grow locked
+  plates or meters — it would become a second, worse copy of the gallery,
+  and its "badges earned" count would stop being a count of what you own.
+  Validate-enforced.
 
 ### Share cards follow the player's theme
 
@@ -151,12 +171,20 @@ which players read as "something broke", not "I won". The rules:
 
 ### Player level & XP (the progression surfaces)
 
-Progression has ONE color: `--xp`, the streak orange (`--play-7`). It is a
+Progression has ONE color: `--xp`, orange (`--play-7`) by default. It is a
 **semantic** token: the accent is monochrome ink, so `--xp` is the one
 color the app spends on progression, and it sits beside the streak flame,
-which is that same orange. Use `--xp` for
-every XP number, ring, bar and highlight; `--xp-soft` for the tinted panel
-behind an award. Never re-mix the orange inline.
+which burns in it. Use `--xp` for every XP number, ring, bar and
+highlight; `--xp-soft` for the tinted panel behind an award; `--xp-rim`
+for the darker rim on an extruded `--xp` fill and `--xp-deep` where white
+ink has to sit on it. **Never re-mix `--xp` inline** — and never mix it
+toward a darker *orange*: the rims did exactly that (`#6b3200`,
+`#7a3d00`), which is invisible while orange is the only progression color
+and turns every other profile color muddy the moment one is picked. The
+rim tokens mix toward black, which works for any hue. Validate-enforced.
+
+`--xp` is also the one token the player may retune, through their profile
+color (below).
 
 Three surfaces, and they mirror the streak's shapes on purpose (they are
 neighbours in the header and on the profile):
@@ -168,8 +196,15 @@ neighbours in the header and on the profile):
   matched as the header tightens.
 - **`LevelHero`** — the profile's FIRST section, above the streak. The
   level is the number inside the dial (centred on top), then the XP bar,
-  then the numbers. The level is printed once: a dial that shows "7" over a
-  caption reading "Level 7" is a duplicated readout, not emphasis.
+  then the numbers, then the rank ladder, then the earned-badge case. The
+  level is printed once: a dial that shows "7" over a caption reading
+  "Level 7" is a duplicated readout, not emphasis. The badge case arrives
+  through a `badges` **slot**, not an import: it lives in Landmarks.tsx,
+  which already imports `RankCrown` from Level.tsx, and pulling
+  `LandmarkArt` back the other way would close a module cycle for a purely
+  visual arrangement. The page composes the two. Each row inside the card
+  is separated by the same `border-top` divider, so the card reads as one
+  panel of stacked rows rather than three cards fused together.
 - **`XpEarned`** — the block inside the results modal. Total in `--xp` with
   one line per source, because an unexplained "+100 XP" reads as a bug
   while "+80 Landmark earned" reads as a reward.
@@ -184,6 +219,67 @@ instead of competing with a statistics table — the same reasoning as the
 win celebration below. It plays `sfx.levelUp()`, deliberately brighter and
 longer than `sfx.win()` so the two events never sound alike, and all of its
 motion is disabled under `prefers-reduced-motion`.
+
+### Profile color (the player's own chrome)
+
+The one color setting the app has, picked in **Profile → Edit**, stored on
+`Profile.color` and defined once in `design/profileColors.ts` — five colors
+plus **Standard**. It is not the removed accent picker returning: read the
+line drawn in Philosophy before extending it.
+
+What it repaints, and nothing else:
+
+- `--xp`, so every progression surface moves together — level ring and
+  number, XP bar, streak flame, streak count, the week row's check discs,
+  the Daily Challenge card and its solved cells.
+- Three **profile frames** — the home header card and the avatar plate on
+  both the home header and the profile page — as a 4px extruded border
+  (`var(--xp)` + `var(--xp-rim)` inset edge), with the padding giving back
+  exactly the 3px the thicker border took so nothing shifts.
+- The profile page's **charts** (categories, most played, activity), via
+  `chartRamp`.
+
+Rules that hold it together:
+
+1. **Standard is the default and a real choice.** `Profile.color` is
+   `undefined` until somebody picks, every painted rule hangs off
+   `[data-profile-color]`, and `--xp` is `var(--profile, var(--play-7))` —
+   so an untouched profile is the app exactly as it shipped, and a player
+   who tries a color can always get that back. The picker shows Standard as
+   four flat quarters of the content palette (the rainbow the charts keep).
+2. **The six hexes live in `profileColors.ts` and nowhere else.**
+   `applyProfileColor` is the only writer of `--profile`; no stylesheet may
+   set it or branch on `[data-profile-color='x']`. Colors that reuse a
+   `--play-*` value do so deliberately — that reuse keeps the app one
+   family, and the palette owns those hexes.
+3. **Every color clears 3:1 against every theme background** (the WCAG bar
+   for non-text UI, which is what these are). `legibleOn` nudges LIGHTNESS
+   only — up on black/dim, down on light — so the picked hue survives;
+   `profileHex` is just that applied to a catalogue entry. Yellow is 1.3:1
+   on warm paper and gets darkened; the lift direction has no shipped color
+   needing it today (the deep teal that did was dropped), which is exactly
+   why `legibleOn` is exported and validate proves the lift on a raw hex —
+   an untested branch is one that has already rotted.
+3b. **The picker is ONE row.** `.color-row` is
+   `repeat(N+1, minmax(0, 1fr))` — a fixed column per catalogue entry plus
+   Standard — so it squeezes instead of wrapping at narrow widths. It was
+   a wrapping flex row, which put the last swatch on a line of its own at
+   most widths and spent a whole row of modal height on it. Validate
+   derives the column count from `PROFILE_COLORS`, so adding a color
+   without widening the grid fails rather than silently wrapping again.
+   Height stays 46px: DESIGN's 44px touch minimum counts one dimension.
+4. **The charts get a gradient, not a scatter.** `chartRamp` is monotonic
+   light→dark with a tight ±9° hue sweep and flat saturation. Do not
+   interleave it to push neighbouring slices apart (it reads as two
+   alternating colors, not a palette) and do not widen the sweep (yellow
+   walks out to tan and lime). Neighbours in a gradient are meant to be
+   close; the legend carries the identity.
+5. **Never paint a progression surface with the raw `--play-7`.** It
+   resolves to the same orange today, which is exactly why four of them
+   stayed literal and turned up orange next to a green flame. Use `--xp`.
+   Validate-enforced.
+
+All five are re-proven by `npm run validate` ("Profile color").
 
 ### Rank crowns (the level ladder)
 
@@ -297,6 +393,48 @@ never recomputed from capped history:
 - Badge glyphs are **flat solid silhouettes**, not linework: at ~18px a
   2px stroke turns to mush, so `CrownIcon` fills its shape (the same trick
   the cipher glyphs use).
+- **Counting them is a marker surface too**, and there are two counters.
+  The profile's "Game crowns" KPI is
+  `GAMES.filter(g => allDifficultiesBeaten(progress, g.id))` scoped to the
+  page's active filter, like every other card in that grid; the
+  `GameCrownBadge` in the level card's top-LEFT corner is the same count
+  unscoped, because that card is identity and must not move when the page
+  below it is filtered. A count derived from `history` would silently
+  drift the moment the 1000-row cap bit or the log was cleared — the whole
+  reason these markers read the permanent store. Validate-enforced against
+  an empty history. Both are labelled/titled "Game crowns", not "Crowns":
+  the rank ladder on the same page has six crowns of its own.
+- **The counted badge is the same material, not a lookalike.**
+  `.crown-badge` and `.game-card-trophy` must declare the same
+  `background: var(--xp)` and `border: 3px solid var(--xp-rim)` — validate
+  compares the two rules — because one mark that means one thing must be
+  made of one thing. Only the size and the number differ, and the level
+  card's two corners face each other: rank crown right, game crowns left,
+  both absolutely positioned so neither costs the card a row.
+- **A count does not go inside the art — it gets its own bubble.** The
+  crown disc stays exactly what it is on a game card (38px, matching the
+  rank crown facing it), and `.crown-badge-count` hangs off its
+  bottom-right the way a notification count hangs off an app icon, in the
+  SAME material as the disc — `--xp` fill, `--xp-rim` ring, extruded
+  bottom edge, white ink — so the two read as one object, which is the
+  whole point of splitting them. White on `--xp` is a deliberate call
+  taken with the numbers on the table (~3.5:1 on purple and blue, ~2.1:1
+  on the default orange, ~1.4:1 on yellow), which is why the digits are
+  sized and weighted up. If a color ever reads badly there, deepen the
+  FILL to `--xp-deep` — never darken the ink, which is exactly what would
+  stop the bubble matching the crown. Three layouts that put the
+  number *in* the crown all shipped and all failed, in three different
+  ways worth remembering: **in the band**, by analogy with `FlameArt`
+  printing a streak length inside its white drop — but a flame is a fat
+  teardrop with a big soft middle and a crown is mostly points and gaps,
+  so the band left about 8px and the digits were illegible; **stacked
+  under a half-height crown** — readable, and it destroyed the silhouette
+  that carries the meaning; **overlaid across the crown** — readable, and
+  it broke the crown's shape. Rules: measure the interior of the specific
+  shape before putting type in it, never buy legibility by shrinking the
+  thing that carries the meaning, and when a count and an emblem compete
+  for the same 38px, separate them instead of nesting them.
+  Validate fails on any `<text>` inside the crown SVG.
 
 ## Components
 

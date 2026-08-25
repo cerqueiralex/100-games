@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useAppState } from '../AppState';
+import { sfx } from '../audio';
 import { GAMES, getGame } from '../registry';
 import { activeCategories, categoryName, gameCategory } from '../categories';
 import { computeStats, formatDate, formatDuration } from '../stats';
@@ -7,15 +8,30 @@ import { allDifficultiesBeaten, beatenDifficulties, computeStreak } from '../pro
 import { CrownIcon, StarIcon } from '../design/icons';
 import { StreakHero } from '../components/Streak';
 import { LevelHero } from '../components/Level';
-import { LandmarksSection } from '../components/Landmarks';
+import { LandmarkBadges, LandmarksSection } from '../components/Landmarks';
 import { DailyHistorySection } from '../components/DailyChallenge';
 import { dailyStreakInfo, loadDaily } from '../daily/store';
 import { Avatar, POKEMON_AVATARS, pokemonAvatarValue } from '../design/avatars';
+import { PROFILE_COLORS, profileHex } from '../design/profileColors';
 import { CalendarPicker, Chip, Dropdown, Modal, StatCard } from '../components/ui';
 import { ActivityChart, CategoryBarChart, GamesPieChart, TrendChart } from '../components/charts';
 import type { CategoryId, GameResult } from '../types';
 
 const EMOJIS = ['🎮', '🦊', '🐼', '🦉', '🐯', '🚀', '🌙', '⚡', '🎯', '🧩', '👾', '🏆'];
+
+/** The "standard" swatch: four flat quarters of the content palette, which is
+    what the charts keep when no profile color is picked. Four fills rather
+    than a gradient, per the flat-surface rule. */
+function StandardSwatch() {
+  return (
+    <svg viewBox="0 0 20 20" width="24" height="24" aria-hidden>
+      <rect x="0" y="0" width="10" height="10" fill="var(--play-1)" />
+      <rect x="10" y="0" width="10" height="10" fill="var(--play-4)" />
+      <rect x="0" y="10" width="10" height="10" fill="var(--play-3)" />
+      <rect x="10" y="10" width="10" height="10" fill="var(--play-5)" />
+    </svg>
+  );
+}
 
 function HistoryRow({ result }: { result: GameResult }) {
   const game = getGame(result.gameId);
@@ -64,7 +80,7 @@ function HistoryRow({ result }: { result: GameResult }) {
 }
 
 export function ProfilePage() {
-  const { profile, updateProfile, history, progress } = useAppState();
+  const { profile, updateProfile, history, progress, settings } = useAppState();
   const [filter, setFilter] = useState<string>('all');
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(profile.name);
@@ -88,6 +104,15 @@ export function ProfilePage() {
       : catScope
         ? GAMES.filter((g) => g.category === catScope)
         : GAMES.filter((g) => g.id === filter);
+
+  /* Games wearing the swept-all-difficulties crown. Two readings, on purpose:
+     the KPI in the statistics grid is SCOPED like every other card there, so
+     it answers "how many in what I'm looking at"; the badge in the level
+     card's corner is the lifetime total, because that card is the player's
+     identity and does not move when they filter the page below it. They
+     agree whenever the scope is "All games". */
+  const crowns = scopeGames.filter((g) => allDifficultiesBeaten(progress, g.id)).length;
+  const totalCrowns = GAMES.filter((g) => allDifficultiesBeaten(progress, g.id)).length;
 
   // most played category across the current scope
   const catCounts = new Map<CategoryId, number>();
@@ -165,9 +190,15 @@ export function ProfilePage() {
         </button>
       </header>
 
-      {/* level is the first section: it summarises everything below it */}
+      {/* level is the first section: it summarises everything below it, and
+          the badge panel at its foot is the display case for what that
+          summary has actually earned */}
       <section className="setup-section">
-        <LevelHero xp={progress.xp} />
+        <LevelHero
+          xp={progress.xp}
+          crowns={totalCrowns}
+          badges={<LandmarkBadges progress={progress} />}
+        />
       </section>
 
       <section className="setup-section">
@@ -235,6 +266,19 @@ export function ProfilePage() {
         <h3 className="section-title">Statistics</h3>
         <div className="stat-grid">
           <StatCard label="Games played" value={stats.played} />
+          {/* The crown a game earns for being beaten on all five tiers: read
+              from the PROGRESS store like every other completion marker,
+              never recomputed from the capped-and-clearable history (see
+              CLAUDE.md "Completion markers"). Named "Game crowns" rather than
+              "Crowns" because the rank ladder on this same page has six
+              crowns of its own, and the hint stays to one line — every other
+              hint in this grid does, and one card growing a third row breaks
+              the row rhythm. */}
+          <StatCard
+            label="Game crowns"
+            value={crowns}
+            hint={`of ${scopeGames.length} ${scopeGames.length === 1 ? 'game' : 'games'}`}
+          />
           <StatCard
             label="Top category"
             value={topCat ? categoryName(topCat[0]) : '—'}
@@ -340,6 +384,43 @@ export function ProfilePage() {
           maxLength={20}
           onChange={(e) => setNameDraft(e.target.value)}
         />
+        {/* Color sits right under the name: it is the player's identity, not a
+            board setting — it paints their frames, their progression color and
+            their charts, and never a game. "Standard" is a real choice, so a
+            player who tries one can always get the shipped look back. */}
+        <label className="field-label">Color</label>
+        <div className="color-row">
+          <button
+            className={`color-swatch ${profile.color ? '' : 'active'}`}
+            onClick={() => {
+              sfx.tap();
+              updateProfile({ color: undefined });
+            }}
+            title="Standard"
+            aria-label="Standard color"
+            aria-pressed={!profile.color}
+          >
+            <span className="color-dot standard">
+              <StandardSwatch />
+            </span>
+          </button>
+          {PROFILE_COLORS.map((c) => (
+            <button
+              key={c.id}
+              className={`color-swatch ${profile.color === c.id ? 'active' : ''}`}
+              style={{ '--sw': profileHex(c.id, settings.theme) } as CSSProperties}
+              onClick={() => {
+                sfx.tap();
+                updateProfile({ color: c.id });
+              }}
+              title={c.name}
+              aria-label={c.name}
+              aria-pressed={profile.color === c.id}
+            >
+              <span className="color-dot" />
+            </button>
+          ))}
+        </div>
         <label className="field-label">Avatar</label>
         <div className="emoji-grid">
           {EMOJIS.map((e) => (

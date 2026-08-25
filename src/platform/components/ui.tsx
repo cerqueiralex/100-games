@@ -346,6 +346,70 @@ export function Modal({
   );
 }
 
+/**
+ * The swept-all-difficulties crown as a standalone ACHIEVEMENT badge, with
+ * the number of games that earned it on a counter bubble beside it.
+ *
+ * Same family as the inline `.game-card-trophy` on game cards — `--xp` disc,
+ * `--xp-rim` border, white crown — so the mark means one thing everywhere;
+ * this is the counted form for the level card.
+ *
+ * The count is its own COUNTER BUBBLE hanging off the bottom-right, the way
+ * an app icon carries a notification count — the crown disc itself is left
+ * exactly as it is on a game card, at the same size as the rank crown facing
+ * it across the level card. Three earlier layouts all failed on the same
+ * mistake, putting the number *into* the art: inside the crown's band (a
+ * flame has a fat middle to print into, a crown is mostly points and gaps,
+ * so the band left ~8px and it was illegible), stacked under a half-height
+ * crown (readable, but it destroyed the silhouette that carries the meaning)
+ * and finally overlaid across the crown (readable, and it broke the crown's
+ * shape). Art and count are separate objects; the bubble is where a count
+ * belongs.
+ *
+ * The bubble is the SAME material as the disc it hangs off — `--xp` fill,
+ * `--xp-rim` ring, extruded bottom edge, white ink — so the two read as one
+ * object, which is the whole point of splitting them. White here is a
+ * deliberate call taken with the contrast known (~3.5:1 on purple and blue,
+ * ~2.1:1 on the default orange, ~1.4:1 on yellow), which is why the digits
+ * are sized and weighted up. If a color ever reads badly, deepen the FILL to
+ * `--xp-deep` rather than darkening the ink — darkening the ink is what stops
+ * the bubble matching the crown.
+ *
+ * Zero renders GREY rather than hidden — the same locked treatment as an
+ * unearned rank crown or landmark plate, so "grey means not yet" only ever
+ * has to be learned once, and a player who has none can still see what there
+ * is to win.
+ */
+export function GameCrownBadge({ count, size = 38 }: { count: number; size?: number }) {
+  const label =
+    count === 0
+      ? 'No game crowns yet — beat a game on all five difficulties'
+      : `${count} ${count === 1 ? 'game' : 'games'} beaten on every difficulty`;
+  return (
+    <span
+      className={`crown-badge-wrap ${count === 0 ? 'locked' : ''}`}
+      title={label}
+      role="img"
+      aria-label={label}
+    >
+      <span className="crown-badge" style={{ width: size, height: size }}>
+        <svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden>
+          <g fill="#fff">
+            <path d="M10 22 22 33 32 12 42 33 54 22 49 47 15 47Z" />
+            <circle cx="10" cy="22" r="5.4" />
+            <circle cx="32" cy="12" r="6" />
+            <circle cx="54" cy="22" r="5.4" />
+            <rect x="14" y="50" width="36" height="7.5" rx="2.2" />
+          </g>
+        </svg>
+      </span>
+      <span className="crown-badge-count" aria-hidden>
+        {count}
+      </span>
+    </span>
+  );
+}
+
 export function StatCard({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {
   return (
     <div className="stat-card fx-card">

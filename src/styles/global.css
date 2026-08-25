@@ -589,7 +589,7 @@ p {
    win must stay distinguishable on every surface (see DESIGN.md
    "Completion markers"). Paint only — the geometry never moves. */
 .daily-cell.completed {
-  background: var(--play-7);
+  background: var(--xp);
   border-color: transparent;
   color: var(--ink);
   --cell-edge: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
@@ -849,10 +849,80 @@ p {
   height: 35px;
   border-radius: 999px;
   background: var(--xp);
-  border: 3px solid color-mix(in srgb, var(--xp) 58%, #6b3200);
+  border: 3px solid var(--xp-rim);
   color: #fff;
   flex-shrink: 0;
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.28);
+}
+
+/* The counted form of the same crown, on the profile card. Shares
+   .game-card-trophy's material exactly — --xp disc, --xp-rim border, white
+   crown, extruded inset edge — because "beaten on every difficulty" must
+   read as one mark wherever it appears (see DESIGN.md "Completion
+   markers"). Only the size differs; the count hangs off it as its own
+   bubble (.crown-badge-count) rather than being drawn into the art. */
+.crown-badge {
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--xp);
+  border: 3px solid var(--xp-rim);
+  /* one notch deeper than the 35px inline trophy: this disc is 38px, and the
+     edge has to stay readable as an edge at that size (candy depth standard) */
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.28);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  /* no padding: the border is the inset, and every px inside is height the
+     count needs to stay readable at this size */
+  padding: 0;
+}
+
+/* the crown plus its counter bubble; relative so the bubble can hang off the
+   bottom-right corner without the disc growing to contain it */
+.crown-badge-wrap {
+  position: relative;
+  display: inline-grid;
+  flex-shrink: 0;
+}
+
+/* The count lives OUTSIDE the art, like a notification badge on an app icon —
+   and it is the SAME material as the disc it hangs off: --xp fill, --xp-rim
+   ring, extruded bottom edge, white ink. White to match the crown beside it:
+   the two read as one object, which is the point. Deliberate tradeoff, made
+   with the numbers on the table — white on --xp is ~3.5:1 for purple/blue
+   but ~2.1:1 on the default orange and ~1.4:1 on yellow, so the digits are
+   sized and weighted up (13px/900) to hold together at the low end. If a
+   color ever reads badly here, deepen THIS fill to --xp-deep rather than
+   darkening the ink, or the bubble stops matching the crown.
+   Three earlier attempts put the number INSIDE the crown and all three broke
+   either its legibility or the crown's silhouette — see DESIGN.md
+   "Completion markers". */
+.crown-badge-count {
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--xp);
+  border: 2px solid var(--xp-rim);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+
+/* none earned yet: the SAME art, greyed — identical to a locked rank crown
+   or landmark plate, never separate art */
+.crown-badge-wrap.locked {
+  filter: grayscale(1);
+  opacity: 0.4;
 }
 
 .fav-btn {
@@ -1612,16 +1682,25 @@ p {
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .profile-sub {
   font-size: 13px;
   color: var(--text-dim);
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* min-width:0 lets a long name ellipsize instead of pushing the crown badge
+   and the Edit button off the card (see .profile-name/.profile-sub) */
 .profile-header > div {
   flex: 1;
+  min-width: 0;
 }
 
 .filter-bar {
@@ -2330,6 +2409,109 @@ p {
 .import-avatar .avatar-sprite {
   width: 84%;
   height: 84%;
+}
+
+/* ===== profile color (Profile → Edit) =====
+   The ONE bit of color taste the app offers — and deliberately not a return
+   of the removed accent picker: --accent stays monochrome ink, so no game
+   tool moves. What changes is the player's own chrome, and only once they
+   pick something: every rule below is gated on [data-profile-color], which
+   <html> only carries after a choice, so the standard profile is the app
+   exactly as it shipped. See design/profileColors.ts and DESIGN.md. */
+
+/* The picker: standard first, then the colors — ONE row, always. A wrapping
+   flex row put the last swatch on a line of its own at most widths, which
+   cost a whole row of modal height to show one swatch. A fixed column count
+   squeezes instead of wrapping, so the row is one line at every viewport;
+   the tracks are minmax(0, 1fr) so they may shrink below their content.
+   Height stays the 44px touch minimum (DESIGN.md counts one dimension). */
+.color-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.color-swatch {
+  width: 100%;
+  height: 46px;
+  border-radius: 14px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 -3px 0 var(--edge);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.color-swatch:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
+}
+
+/* the chosen one wears its OWN color as the ring, so the picker previews the
+   frame it is about to paint */
+.color-swatch.active {
+  border: 3px solid var(--sw, var(--accent));
+}
+
+.color-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: var(--sw);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  display: block;
+}
+
+/* "standard" is four flat quarters of the content palette — the rainbow the
+   charts keep when no color is picked. Flat fills, not a gradient. */
+.color-dot.standard {
+  background: none;
+  box-shadow: none;
+}
+
+/* ---- the painted chrome: 4px extruded frames in the profile color ---- */
+
+:root[data-profile-color] .home-header,
+:root[data-profile-color] .home-avatar,
+:root[data-profile-color] .profile-avatar {
+  border: 4px solid var(--xp);
+  box-shadow: inset 0 -4px 0 var(--xp-rim);
+}
+
+/* the padding gives back exactly the 3px the thicker border took, so turning
+   a color on never moves the header's contents */
+:root[data-profile-color] .home-header {
+  padding: 12px 13px;
+}
+
+/* a thick frame needs MORE clearance, not less: at 84% the sprite's own
+   bounding box lands hard against the 4px border and the avatar reads as
+   cropped. The gap is what makes it a framed picture. */
+:root[data-profile-color] .home-avatar .avatar-sprite,
+:root[data-profile-color] .profile-avatar .avatar-sprite {
+  width: 74%;
+  height: 74%;
+}
+
+/* the emoji avatars need the same room — the glyph is sized in px, so it
+   does not shrink with the plate's content box the way a sprite does */
+:root[data-profile-color] .home-avatar {
+  font-size: 22px;
+}
+
+:root[data-profile-color] .profile-avatar {
+  font-size: 26px;
+}
+
+@media (max-width: 480px) {
+  :root[data-profile-color] .home-header {
+    padding: 11px;
+  }
 }
 
 /* ===== settings ===== */
@@ -22604,7 +22786,11 @@ button.bs-ship-row.dock.placed {
 .streak-chip-num {
   font-size: 17px;
   font-weight: 800;
-  color: var(--play-7);
+  /* --xp, not the raw --play-7 it happens to resolve to: the streak count is
+     PROGRESSION, so it follows the profile color along with the flame beside
+     it. A number left on the literal orange next to a green flame is the bug
+     this token exists to prevent. */
+  color: var(--xp);
   font-variant-numeric: tabular-nums;
 }
 
@@ -22724,7 +22910,7 @@ button.bs-ship-row.dock.placed {
   line-height: 1.05;
   margin-top: 6px;
   letter-spacing: -0.02em;
-  color: var(--play-7);
+  color: var(--xp);
   font-variant-numeric: tabular-nums;
 }
 
@@ -22773,7 +22959,7 @@ button.bs-ship-row.dock.placed {
 }
 
 .week-day.played .week-day-dot {
-  background: var(--play-7);
+  background: var(--xp);
   border-color: transparent;
   color: var(--ink);
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
@@ -22781,7 +22967,7 @@ button.bs-ship-row.dock.placed {
 
 .week-day.today:not(.played) .week-day-dot {
   border-style: dashed;
-  border-color: color-mix(in srgb, var(--play-7) 65%, var(--border));
+  border-color: color-mix(in srgb, var(--xp) 65%, var(--border));
 }
 
 .streak-hero-sub {
@@ -22873,10 +23059,20 @@ button.bs-ship-row.dock.placed {
 }
 
 /* the crown you are wearing, in the level card's corner */
+/* the card's two corner crowns: rank on the right (what your level is worth),
+   swept-game count on the left. Absolute, so neither costs the card a row */
 .level-hero-rank {
   position: absolute;
   top: 12px;
   right: 12px;
+  display: grid;
+  place-items: center;
+}
+
+.level-hero-crowns {
+  position: absolute;
+  top: 12px;
+  left: 12px;
   display: grid;
   place-items: center;
 }
@@ -22999,8 +23195,9 @@ button.bs-ship-row.dock.placed {
   padding: 8px 12px;
   border-radius: var(--radius-s);
   /* deepened so white text clears a readable contrast on it — the flat
-     --xp is too light to carry white ink */
-  background: color-mix(in srgb, var(--xp) 78%, #7a3d00);
+     --xp is too light to carry white ink, and yellow (a profile color) is
+     lighter still, which is why --xp-deep mixes toward black */
+  background: var(--xp-deep);
   box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.22);
   color: #fff;
 }
@@ -23219,6 +23416,65 @@ button.bs-ship-row.dock.placed {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(102px, 1fr));
   gap: 8px;
+}
+
+/* ---- earned badges (the display case at the foot of the level card) ----
+   Same divider language as .rank-ladder directly above it, so the level card
+   reads as one panel with three stacked rows rather than three cards fused
+   together. */
+
+.lm-badges {
+  width: 100%;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.lm-badges-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.lm-badges-head span {
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--xp);
+}
+
+/* wraps rather than scrolls: the case fills up over months, and a player who
+   owns thirty trophies should see thirty, not seven and an arrow */
+.lm-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: center;
+}
+
+/* the plate is the lm-card's --lm tint at badge size, plus the extruded
+   bottom edge every pushable surface wears */
+.lm-badge {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--lm) 15%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--lm) 38%, var(--border));
+  box-shadow: inset 0 -3px 0 var(--edge);
+  cursor: pointer;
+}
+
+.lm-badge:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
 }
 
 .lm-card {

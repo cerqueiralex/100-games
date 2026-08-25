@@ -2,17 +2,21 @@ import type { StreakInfo } from '../progress/progress';
 import { CheckIcon } from '../design/icons';
 
 /**
- * Streak UI — the Duolingo-style play-streak surfaces. The flame is game
- * CONTENT (like memory-card faces), so it keeps a fixed identity color from
- * the content palette (--play-*) instead of following the accent; grayscale
- * "cold"/zero states are handled in CSS with a filter.
+ * Streak UI — the Duolingo-style play-streak surfaces. The flame is
+ * PROGRESSION art, so it burns in --xp (orange by default, the player's
+ * profile color once they pick one) rather than following the accent, which
+ * stays monochrome ink; grayscale "cold"/zero states are handled in CSS with
+ * a filter.
  */
 
-/** The sticker-style flame. `color` recolors the body (streak landmark
-    tiers); `label` prints a number inside the white drop. */
+/** The sticker-style flame. It burns in `--xp` — the progression color, which
+    the player may retune through their profile color — so the flame, the level
+    ring and the XP bar always agree. `color` overrides it (streak landmark
+    tiers carry their own palette slot); `label` prints a number inside the
+    white drop. */
 export function FlameArt({
   size = 32,
-  color = 'var(--play-7)',
+  color = 'var(--xp)',
   label
 }: {
   size?: number;

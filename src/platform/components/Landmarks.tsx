@@ -301,6 +301,90 @@ function renderLandmarkCard(
   return canvas;
 }
 
+/* ---------- earned badges (the panel inside the level card) ---------- */
+
+/**
+ * Every UNLOCKED landmark as a small plate, in catalogue order, shown at the
+ * foot of the level card.
+ *
+ * Unlocked ONLY — this is the one surface in the app that is a display case
+ * rather than a checklist. The gallery below already shows the whole
+ * catalogue with locked art and live meters, which is what tells a player
+ * what to chase; repeating the locked half here would make the level card a
+ * second, worse copy of it. So the panel answers a different question: what
+ * have I actually got? Catalogue order (not newest-first) keeps the families
+ * grouped, so a wall of unlabelled 26px art still reads as a collection, and
+ * it matches the gallery below rather than disagreeing with it.
+ *
+ * With nothing unlocked it renders nothing at all: an empty case with a "0"
+ * over it is worse than no case.
+ */
+export function LandmarkBadges({ progress }: { progress: PlayerProgress }) {
+  const [selected, setSelected] = useState<LandmarkDef | null>(null);
+  const earned = LANDMARKS.filter((d) => progress.landmarks[d.id]);
+  if (earned.length === 0) return null;
+
+  const unlockedAt = selected ? progress.landmarks[selected.id]?.at : null;
+  return (
+    <div className="lm-badges">
+      <p className="lm-badges-head">
+        Badges earned
+        <span>{earned.length}</span>
+      </p>
+      <div className="lm-badge-row">
+        {earned.map((def) => (
+          <button
+            key={def.id}
+            className="lm-badge"
+            style={{ '--lm': `var(--play-${def.slot})` } as CSSProperties}
+            onClick={() => {
+              sfx.tap();
+              setSelected(def);
+            }}
+            title={def.title}
+            aria-label={`${def.title} — unlocked`}
+          >
+            <LandmarkArt def={def} size={26} />
+          </button>
+        ))}
+      </div>
+
+      {/* tappable, because a 26px emblem with no caption says nothing on a
+          phone, where `title` never appears. Deliberately the short form —
+          art, requirement, date: sharing lives in the gallery, and two Share
+          buttons for one trophy is a choice nobody needs to make. */}
+      <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.title}>
+        {selected && unlockedAt && (
+          <div
+            className="lm-detail"
+            style={{ '--lm': `var(--play-${selected.slot})` } as CSSProperties}
+          >
+            <div className="lm-modal-art">
+              <LandmarkArt def={selected} size={64} />
+            </div>
+            <p className="lm-req">{selected.requirement}</p>
+            <div className="lm-status">
+              <Chip tone="good">
+                Unlocked{' '}
+                {new Date(unlockedAt).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </Chip>
+            </div>
+            <div className="modal-actions">
+              <button className="ghost-btn" onClick={() => setSelected(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+}
+
 /* ---------- the gallery ---------- */
 
 function LandmarkCard({

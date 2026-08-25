@@ -88,12 +88,23 @@
   --bad-soft: rgba(255, 69, 58, 0.14);
   --warn: #ffd60a;
 
-  /* THE secondary color: progression (player level, XP, streak). Fixed
-     across accent themes exactly like --good/--bad — a level must read the
-     same whichever theme color the player picked, and it sits next to the
-     streak flame, which is this same orange (--play-7). */
-  --xp: var(--play-7);
-  --xp-soft: color-mix(in srgb, var(--play-7) 16%, transparent);
+  /* THE secondary color: progression (player level, XP, streak flame, daily
+     marks). Orange by default and fixed across SURFACE themes — a level must
+     read the same on black, dim and light.
+
+     It is the one color the player may retune, through the profile color
+     (design/profileColors.ts): --profile is set on <html> only once somebody
+     picks one, so an untouched profile resolves the fallback and is the app
+     exactly as it shipped. The hexes live in that module and are never
+     written down here — this is the single hand-off point.
+
+     --xp-rim and --xp-deep are the darker relatives every extruded/white-ink
+     surface needs. They mix toward BLACK, not toward a darker orange: a fixed
+     brown baked into the mix turned every other profile color muddy. */
+  --xp: var(--profile, var(--play-7));
+  --xp-soft: color-mix(in srgb, var(--xp) 16%, transparent);
+  --xp-rim: color-mix(in srgb, var(--xp) 75%, #000);
+  --xp-deep: color-mix(in srgb, var(--xp) 58%, #000);
 
   /* fixed near-black ink for glyphs sitting on colored fills (e.g. the
      mine on a --bad cell) — deliberately does NOT follow the theme. */

@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { CategoryId, GameResult } from '../types';
 import { GAMES } from '../registry';
+import { useAppState } from '../AppState';
 import { categoryColor, categoryName, gameCategory } from '../categories';
+import { chartRamp } from '../design/profileColors';
 import { formatDuration } from '../stats';
 import { sfx } from '../audio';
 
@@ -43,12 +45,43 @@ function lastDays(n: number): { key: string; label: string; end: number }[] {
 
 const dayKey = (ts: number) => new Date(ts).toDateString();
 
-function Legend({ ids, counts }: { ids: string[]; counts?: Map<string, number> }) {
+/**
+ * How a chart paints its series. Two modes, and the default is the app as it
+ * shipped: with no profile color the content palette answers (one stable
+ * color per game, per category), and once the player picks one every series
+ * comes from a ramp derived from THAT color so the whole profile reads as
+ * theirs. "Other" is a fold rather than a series, so it keeps its neutral
+ * grey in both modes and never eats a ramp slot.
+ */
+function useSeriesPaint(ids: string[], fallback: (id: string) => string): (id: string) => string {
+  const { profile, settings } = useAppState();
+  const color = profile.color;
+  const theme = settings.theme;
+  const key = ids.join('\u0000');
+  return useMemo(() => {
+    if (!color) return fallback;
+    const real = ids.filter((id) => id !== OTHER_ID);
+    const ramp = chartRamp(color, real.length, theme);
+    const byId = new Map(real.map((id, i) => [id, ramp[i]]));
+    return (id: string) => byId.get(id) ?? fallback(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, color, theme]);
+}
+
+function Legend({
+  ids,
+  counts,
+  paint
+}: {
+  ids: string[];
+  counts?: Map<string, number>;
+  paint: (id: string) => string;
+}) {
   return (
     <div className="chart-legend">
       {ids.map((id) => (
         <span key={id} className="legend-item">
-          <span className="legend-dot" style={{ background: seriesColor(id) }} />
+          <span className="legend-dot" style={{ background: paint(id) }} />
           {seriesName(id)}
           {counts && <b>{counts.get(id)}</b>}
         </span>
@@ -95,6 +128,11 @@ export function GamesPieChart({ history }: { history: GameResult[] }) {
     return { slices, total, counts: new Map(entries) };
   }, [history]);
 
+  const paint = useSeriesPaint(
+    useMemo(() => slices.map((s) => s.id), [slices]),
+    seriesColor
+  );
+
   if (total === 0) {
     return <p className="empty-note">Play some games to see your split.</p>;
   }
@@ -103,7 +141,7 @@ export function GamesPieChart({ history }: { history: GameResult[] }) {
     <div className="pie-wrap">
       <svg viewBox="0 0 180 180" className="pie-svg" role="img" aria-label="Most played games">
         {slices.map((s) => (
-          <path key={s.id} d={donutSlice(90, 90, 82, 52, s.a0, s.a1)} fill={seriesColor(s.id)} />
+          <path key={s.id} d={donutSlice(90, 90, 82, 52, s.a0, s.a1)} fill={paint(s.id)} />
         ))}
         <text x="90" y="85" textAnchor="middle" className="pie-total">
           {total}
@@ -112,7 +150,7 @@ export function GamesPieChart({ history }: { history: GameResult[] }) {
           games
         </text>
       </svg>
-      <Legend ids={slices.map((s) => s.id)} counts={counts} />
+      <Legend ids={slices.map((s) => s.id)} counts={counts} paint={paint} />
     </div>
   );
 }
@@ -128,6 +166,11 @@ export function CategoryBarChart({ history }: { history: GameResult[] }) {
     }
     return [...counts.entries()].sort((a, b) => b[1] - a[1]);
   }, [history]);
+
+  const paint = useSeriesPaint(
+    useMemo(() => rows.map(([cat]) => cat), [rows]),
+    (id) => categoryColor(id as CategoryId)
+  );
 
   if (rows.length === 0) {
     return <p className="empty-note">Play some games to see your category split.</p>;
@@ -161,7 +204,7 @@ export function CategoryBarChart({ history }: { history: GameResult[] }) {
               width={w}
               height={ROW - 15}
               rx={(ROW - 15) / 2}
-              fill={categoryColor(cat)}
+              fill={paint(cat)}
             />
             <text x={labelW + w + 10} y={y + ROW / 2 + 4} className="catbar-count">
               {count}
@@ -216,6 +259,8 @@ export function ActivityChart({ history }: { history: GameResult[] }) {
     return { perDay, seriesIds, totals: shownTotals, max };
   }, [history, days]);
 
+  const paint = useSeriesPaint(seriesIds, seriesColor);
+
   if (perDay.size === 0) {
     return <p className="empty-note">No games in the last 30 days.</p>;
   }
@@ -261,7 +306,7 @@ export function ActivityChart({ history }: { history: GameResult[] }) {
                     width={barW}
                     height={Math.max(h - 1.5, 1)}
                     rx={2}
-                    fill={seriesColor(id)}
+                    fill={paint(id)}
                   />
                 );
               })}
@@ -280,7 +325,7 @@ export function ActivityChart({ history }: { history: GameResult[] }) {
           </text>
         ))}
       </svg>
-      <Legend ids={seriesIds} counts={totals} />
+      <Legend ids={seriesIds} counts={totals} paint={paint} />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   saveSettings,
   writeGameData
 } from './storage';
+import { isProfileColor } from './design/profileColors';
 import { normalizeProgress, type PlayerProgress } from './progress/progress';
 import { normalizeDailyStore, type DailyChallengeStore } from './daily/store';
 
@@ -155,7 +156,11 @@ function validProfile(raw: unknown): Profile | null {
   return {
     name: name || DEFAULT_PROFILE.name,
     emoji: typeof raw.emoji === 'string' && raw.emoji ? raw.emoji : DEFAULT_PROFILE.emoji,
-    joinedAt: num(raw.joinedAt, Date.now())
+    joinedAt: num(raw.joinedAt, Date.now()),
+    // an unknown color (older/newer build, hand-edited file) is DROPPED, not
+    // passed through: the standard look is always a valid profile, while an
+    // unresolvable one would leave --profile painting the chrome with nothing
+    ...(isProfileColor(raw.color) ? { color: raw.color } : {})
   };
 }
 

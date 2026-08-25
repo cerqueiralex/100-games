@@ -310,8 +310,14 @@ export interface PlatformSettings {
   favorites: string[];
 }
 
+/** The player's profile color (see design/profileColors.ts). `undefined` on a
+    Profile is a real state — "standard", the app as it ships. */
+export type ProfileColorId = 'yellow' | 'green' | 'orange' | 'blue' | 'purple';
+
 export interface Profile {
   name: string;
   emoji: string;
   joinedAt: number;
+  /** chosen profile color; absent = the standard look, never a fallback hex */
+  color?: ProfileColorId;
 }

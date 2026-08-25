@@ -6,6 +6,7 @@ import type {
   PlatformSettings,
   Profile
 } from './types';
+import { isProfileColor } from './design/profileColors';
 
 const KEYS = {
   settings: '100games.v1.settings',
@@ -65,7 +66,12 @@ export function loadProfile(): Profile {
     write(KEYS.profile, fresh);
     return fresh;
   }
-  return { ...DEFAULT_PROFILE, ...saved };
+  const profile = { ...DEFAULT_PROFILE, ...saved };
+  // a color this build doesn't know (hand-edited storage, or one dropped in a
+  // later version) falls back to the standard look rather than painting the
+  // chrome with a value nothing can resolve
+  if (!isProfileColor(profile.color)) delete profile.color;
+  return profile;
 }
 
 export function saveProfile(profile: Profile): void {

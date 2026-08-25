@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { sfx } from '../audio';
 import {
   levelFromXp,
@@ -11,6 +11,7 @@ import {
   type XpAward
 } from '../progress/xp';
 import { RANK_BADGE, RANK_GLOSS, RANK_MATERIAL } from '../design/rankMaterials';
+import { GameCrownBadge } from './ui';
 
 /** The XP bar's height in px — the hero ring matches it (see .xp-bar). */
 const XP_BAR_THICKNESS = 12;
@@ -18,11 +19,11 @@ const XP_BAR_THICKNESS = 12;
 /**
  * Player level UI — the XP surfaces.
  *
- * XP chrome is painted with `--xp` (the streak orange), a SEMANTIC token
- * that deliberately does NOT follow the accent, exactly like --good/--bad:
- * levels must read the same whichever theme color the player picked, and
- * they sit beside the streak flame, which is that same orange. See
- * DESIGN.md "Player level & XP".
+ * XP chrome is painted with `--xp`, a SEMANTIC token that deliberately does
+ * NOT follow the accent, exactly like --good/--bad: a level reads the same on
+ * every surface theme, and it sits beside the streak flame, which burns in
+ * that same token. Orange by default; the one color a player may retune, via
+ * their profile color. See DESIGN.md "Player level & XP".
  */
 
 /**
@@ -274,8 +275,28 @@ export function XpBar({ percent, label }: { percent: number; label?: string }) {
  * The profile's first section: level on top, XP bar under it. Deliberately
  * shows total XP too — "how far to the next level" is the motivating number,
  * but players want to see the lifetime total they have banked.
+ *
+ * `badges` is a SLOT, not an import: the earned-landmark panel that renders
+ * there lives in Landmarks.tsx, which already imports RankCrown from this
+ * file. Pulling LandmarkArt the other way would close a module cycle for a
+ * purely visual arrangement; the page composes the two instead.
+ *
+ * The two corners hold the player's two crowns, and they are deliberately
+ * opposite ends of the same shelf: RANK crown right (what your level is
+ * worth, in its material), GAME crowns left (how many games you have swept,
+ * counted on the progression color). Costing no vertical space is the point —
+ * the card already stacks a dial, a bar, a ladder and a badge case.
  */
-export function LevelHero({ xp }: { xp: number }) {
+export function LevelHero({
+  xp,
+  crowns = 0,
+  badges
+}: {
+  xp: number;
+  /** games beaten on every difficulty — the counted completion crown */
+  crowns?: number;
+  badges?: ReactNode;
+}) {
   const meter = xpMeter(xp);
   const rank = rankForXp(xp);
   return (
@@ -287,6 +308,11 @@ export function LevelHero({ xp }: { xp: number }) {
           <RankCrown rank={rank} size={38} />
         </span>
       )}
+      {/* facing it: the games you have beaten on all five difficulties, the
+          same 38px as the rank crown so the two corners read as a pair */}
+      <span className="level-hero-crowns">
+        <GameCrownBadge count={crowns} size={38} />
+      </span>
       <div className="level-hero-badge">
         <LevelRing xp={xp} size={96} showNumber stroke={XP_BAR_THICKNESS} />
       </div>
@@ -298,6 +324,7 @@ export function LevelHero({ xp }: { xp: number }) {
       </p>
       <p className="level-hero-note">{meter.total.toLocaleString()} XP earned in total</p>
       <RankLadder xp={xp} />
+      {badges}
     </div>
   );
 }
