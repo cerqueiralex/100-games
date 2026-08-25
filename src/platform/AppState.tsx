@@ -14,6 +14,7 @@ import { configureAudio } from './audio';
 import { applyProfileColor } from './design/profileColors';
 import {
   loadProgress,
+  recordFeat,
   recordProgress,
   type DailyProgressInfo,
   type PlayerProgress
@@ -33,6 +34,13 @@ interface AppState {
   updateProfile: (patch: Partial<Profile>) => void;
   /** records the play and returns the XP it earned (see progress/xp.ts) */
   recordResult: (result: GameResult, daily?: DailyProgressInfo) => XpAward;
+  /**
+   * Stamps a feat earned OUTSIDE a game — making a win card, exporting or
+   * importing a backup (see FEATS). Idempotent: a feat already held is a
+   * no-op, so a player who exports weekly is paid once, like every other
+   * award in the store.
+   */
+  markFeat: (feat: string) => void;
   wipeHistory: () => void;
   wipeEverything: () => void;
   /** re-read every store — used after a backup import replaces them */
@@ -113,6 +121,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setProgress(next);
         // handed back so the results modal can show what this result earned
         return award;
+      },
+      markFeat: (feat) => {
+        const next = recordFeat(feat);
+        if (next) setProgress(next);
       },
       wipeHistory: () => {
         // the game log clears; streaks and landmarks are trophies and persist

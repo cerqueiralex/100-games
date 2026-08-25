@@ -867,21 +867,28 @@ p {
   border-radius: 999px;
   background: var(--xp);
   border: 3px solid var(--xp-rim);
-  /* one notch deeper than the 35px inline trophy: this disc is 38px, and the
-     edge has to stay readable as an edge at that size (candy depth standard) */
+  /* one notch deeper than the 35px inline trophy: this disc is ~36px (the
+     RankCrown box minus the inset its own SVG disc sits in — see
+     GameCrownBadge), and the edge has to stay readable as an edge at that
+     size (candy depth standard) */
   box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.28);
   flex-shrink: 0;
   box-sizing: border-box;
-  /* no padding: the border is the inset, and every px inside is height the
-     count needs to stay readable at this size */
+  /* no padding here: the crown is inset by being DRAWN smaller than the disc
+     (GameCrownBadge sizes the svg), which is how the rank crown does it too —
+     padding would inset the art from the border box and lose that match */
   padding: 0;
 }
 
 /* the crown plus its counter bubble; relative so the bubble can hang off the
-   bottom-right corner without the disc growing to contain it */
+   bottom-right corner without the disc growing to contain it. The wrap is
+   sized to the RankCrown BOX (inline, by GameCrownBadge) while the disc
+   inside it matches that crown's drawn diameter — so the two corners of the
+   level card sit on one centre line and read as the same size. */
 .crown-badge-wrap {
   position: relative;
   display: inline-grid;
+  place-items: center;
   flex-shrink: 0;
 }
 
@@ -23410,6 +23417,20 @@ button.bs-ship-row.dock.placed {
   font-weight: 700;
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
+}
+
+/* the secrets, under the trophies proper — same grid, same cards, its own
+   heading and count, because "how many are there and how many have I found"
+   is the only honest thing a hidden trophy can tell you */
+.lm-egg-head {
+  margin-top: 22px;
+}
+
+.lm-egg-note {
+  margin: -4px 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim);
 }
 
 .lm-grid {

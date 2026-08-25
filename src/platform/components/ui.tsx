@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { sfx } from '../audio';
+import { RANK_BADGE } from '../design/rankMaterials';
 
 /** Icons live in the design system — re-exported here for convenience. */
 export * from '../design/icons';
@@ -385,15 +386,30 @@ export function GameCrownBadge({ count, size = 38 }: { count: number; size?: num
     count === 0
       ? 'No game crowns yet — beat a game on all five difficulties'
       : `${count} ${count === 1 ? 'game' : 'games'} beaten on every difficulty`;
+  /* `size` is the RankCrown BOX, not its disc: that SVG draws its rim circle
+     at r=30 in a 64 viewBox, so a plain `size`px disc here comes out ~7%
+     wider than the crown facing it across the level card (which is exactly
+     how the left corner ended up visibly bigger than the right). Derive the
+     visible diameter from the same table both crowns already share, and keep
+     the wrap at the full box so the two discs stay centred on one line. */
+  const disc = (size * RANK_BADGE.r * 2) / 64;
+  /* ...and the art is inset inside that disc the way the rank crown's is.
+     RankCrown draws its crown ~62% of the rim's diameter wide, leaving a
+     visible ring of material all round; this path fills its own viewBox
+     (bbox 54.8 x 51.5 of 64), so drawing it at 100% put the side jewels
+     ~1px off the rim and read as cramped next to the crown facing it. 0.724
+     of the disc is the box that lands the art at that same ~62%. */
+  const art = +(disc * 0.724).toFixed(2);
   return (
     <span
       className={`crown-badge-wrap ${count === 0 ? 'locked' : ''}`}
+      style={{ width: size, height: size }}
       title={label}
       role="img"
       aria-label={label}
     >
-      <span className="crown-badge" style={{ width: size, height: size }}>
-        <svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden>
+      <span className="crown-badge" style={{ width: disc, height: disc }}>
+        <svg viewBox="0 0 64 64" width={art} height={art} aria-hidden>
           <g fill="#fff">
             <path d="M10 22 22 33 32 12 42 33 54 22 49 47 15 47Z" />
             <circle cx="10" cy="22" r="5.4" />

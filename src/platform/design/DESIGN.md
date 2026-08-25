@@ -124,6 +124,25 @@ tokens. Rules:
   plates or meters — it would become a second, worse copy of the gallery,
   and its "badges earned" count would stop being a count of what you own.
   Validate-enforced.
+- **Easter eggs are the ONE exception to "locked stays visible", and only
+  half of one.** A secret keeps its shape: while unfound it renders a
+  dashed mystery egg with a `?`, the title reads `???`, the subtitle
+  reads `Hidden`, and the detail modal shows a tease instead of a
+  requirement and NO meter — a meter on a secret is a description of the
+  secret. What stays visible is that it EXISTS: its own "Easter eggs"
+  section under the gallery, with a found/total count, because knowing
+  there is something to find is the whole appeal. Found, it is an
+  ordinary landmark in every way — real art, real title, shareable card.
+  The split lives in the component (`def.secret`), never in progress: a
+  secret unlocks, pays XP and is stamped exactly like every other
+  trophy.
+- **One art per landmark KIND, parameterized by the def** — never one
+  drawing per landmark id. Two comebacks are one chart with one dip or
+  two (`def.count`); two speed trophies are one stopwatch wearing
+  `def.seconds`; two backup trophies are one drive with the arrow
+  reversed. A kind whose art cannot be told apart from another kind's at
+  26px (the badge row) is the bug to avoid — that is why the clean-win
+  RUN is a rosette and not a second hexagon.
 
 ### Share cards follow the player's theme
 
@@ -411,9 +430,18 @@ never recomputed from capped history:
   made of one thing. Only the size and the number differ, and the level
   card's two corners face each other: rank crown right, game crowns left,
   both absolutely positioned so neither costs the card a row.
+- **The two corner crowns match in DRAWN pixels, not in props.** Both take
+  `size={38}`, but that number is `RankCrown`'s SVG box: inside it the rank
+  disc is drawn at `RANK_BADGE.r` (30 of a 64 viewBox → 35.6px) with its
+  crown at ~62% of that disc. `GameCrownBadge` therefore derives BOTH from
+  the same table — disc `size · 2r / 64`, art `0.724 ·` disc — instead of
+  making a 38px CSS disc with its art at 100%, which shipped ~7% wider with
+  its jewels ~1px off the rim: bigger and cramped, on the one card where
+  the two are side by side. Validate-enforced. When two pieces of art must
+  match, matching the prop is not matching the pixels.
 - **A count does not go inside the art — it gets its own bubble.** The
-  crown disc stays exactly what it is on a game card (38px, matching the
-  rank crown facing it), and `.crown-badge-count` hangs off its
+  crown disc stays exactly what it is on a game card (the rank crown's
+  drawn diameter, derived as above), and `.crown-badge-count` hangs off its
   bottom-right the way a notification count hangs off an app icon, in the
   SAME material as the disc — `--xp` fill, `--xp-rim` ring, extruded
   bottom edge, white ink — so the two read as one object, which is the

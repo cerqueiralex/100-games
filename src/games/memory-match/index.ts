@@ -28,6 +28,20 @@ export const memoryMatchDefinition: GameDefinition = {
       defaultChoice: 'standard'
     }
   ],
+  /* The first easter egg. Declared HERE, by the game, because the platform
+     must never learn a game id (see the landmark sync rule): the catalogue
+     spreads whatever the registry declares. The result carries the options
+     the run was played under, so the predicate is one comparison. */
+  easterEggs: [
+    {
+      id: 'gotta-catch-em-all',
+      title: "Gotta Catch 'em All",
+      requirement: 'Win a Memory Match round played with the Pokémon cards',
+      emoji: '⚡',
+      slot: 7,
+      when: (r) => r.outcome === 'won' && r.options?.theme === 'pokemon'
+    }
+  ],
   assistFeatures: [
     {
       id: 'previewStart',

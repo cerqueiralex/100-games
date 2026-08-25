@@ -293,6 +293,19 @@ they gain enforcement, delete entries obsoleted by code removal.
   rank. Validate-enforced: strictly monotonic lightness, every step a
   distinct color on the picked hue (≤12° drift), all readable on the card.
 
+- **2026-08-24 · design · a `size` prop is not a size — two badges facing
+  each other must derive from ONE table.** The level card's two corner
+  crowns were both passed `size={38}` and looked different: `RankCrown`
+  spends that box on an SVG whose disc is drawn at r=30 in a 64 viewBox
+  (35.6px) with its crown at ~62% of that disc, while `GameCrownBadge`
+  made a CSS disc of the full 38px and drew its art at 100% of it — so the
+  left crown came out ~7% wider with its jewels ~1px off the rim, reading
+  as bigger AND cramped. Both now derive from `RANK_BADGE`. Rule: when two
+  pieces of art must match, matching the prop is not matching the pixels —
+  compare the DRAWN geometry, and derive it from the shared table.
+  Validate-enforced (the badge must reference `RANK_BADGE.r`, and its svg
+  must not go back to `width="100%"`).
+
 ## Watch items (re-check every QA — not yet machine-enforced)
 
 - **2026-08-24 · tooling · a file-scanning validate check must scan CODE,

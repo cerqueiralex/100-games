@@ -513,7 +513,8 @@ export function ShareImageModal({
   render,
   filename,
   alt,
-  onClose
+  onClose,
+  onRendered
 }: {
   /** may be async — a card whose art needs decoding first (sprite avatars)
       awaits it, so the canvas is only drawn once everything is ready */
@@ -521,6 +522,14 @@ export function ShareImageModal({
   filename: string;
   alt: string;
   onClose: () => void;
+  /**
+   * The card is drawn and on screen. Fired for the trophy that rewards
+   * MAKING one — deliberately here rather than on the Share/Download
+   * buttons, because the hint under the card tells phone players to
+   * long-press the image instead, and a trophy that misses the app's own
+   * documented path is a bug report waiting to happen.
+   */
+  onRendered?: () => void;
 }) {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [shareSupported, setShareSupported] = useState(false);
@@ -536,6 +545,7 @@ export function ShareImageModal({
       blobRef.current = b;
       url = URL.createObjectURL(b);
       setImgUrl(url);
+      onRendered?.();
       if (typeof navigator.canShare === 'function') {
         const file = new File([b], filename, { type: 'image/png' });
         setShareSupported(navigator.canShare({ files: [file] }));
@@ -597,7 +607,15 @@ export function ShareImageModal({
   );
 }
 
-export function ShareCardModal({ data, onClose }: { data: ShareData; onClose: () => void }) {
+export function ShareCardModal({
+  data,
+  onClose,
+  onRendered
+}: {
+  data: ShareData;
+  onClose: () => void;
+  onRendered?: () => void;
+}) {
   return (
     <ShareImageModal
       // decode the sprite avatar first, then draw — see drawFooterWithAvatar
@@ -605,6 +623,7 @@ export function ShareCardModal({ data, onClose }: { data: ShareData; onClose: ()
       filename="100-games-win.png"
       alt="Your win card"
       onClose={onClose}
+      onRendered={onRendered}
     />
   );
 }

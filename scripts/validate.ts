@@ -3783,7 +3783,12 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
     cleanWins: 0,
     dailyBest: 0,
     dailyGames: [],
-    records: {}
+    records: {},
+    feats: [],
+    playCounts: {},
+    cleanStreak: 0,
+    cleanStreakBest: 0,
+    fails: {}
   };
   const noStreak = computeStreak([], new Date());
 
@@ -3859,6 +3864,95 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
       if (landmarkMeter(tier, withBest, noStreak, 0).done !== 0)
         bad('daily streak meter ignores the live streak it was handed');
     }
+  }
+
+  // the clean-win streak ladder: documented rungs, and the same
+  // live-meter / best-unlocks split both other streak ladders use
+  {
+    const rungs = LANDMARKS.filter((d) => d.kind === 'clean-streak').map((d) => d.count);
+    const want = [10, 25, 50, 75, 100];
+    if (JSON.stringify(rungs) !== JSON.stringify(want))
+      bad(`clean-streak rungs are [${rungs}], expected [${want}]`);
+    const tier = LANDMARKS.find((d) => d.kind === 'clean-streak');
+    if (tier) {
+      const live: Progress = { ...fresh, cleanStreak: 4, cleanStreakBest: 40 };
+      if (landmarkMeter(tier, live, noStreak).done !== 4)
+        bad('the clean-streak meter shows the best run, not the live one the player can act on');
+    }
+  }
+
+  // THE FEAT RULE: a feat-backed landmark unlocks from a stamped MOMENT.
+  // Every feat a landmark hangs off must be one the write path can actually
+  // stamp — a typo here is a trophy nobody could ever earn.
+  {
+    const { FEATS, eggFeat } = await import('../src/platform/progress/progress');
+    const known = new Set<string>(Object.values(FEATS));
+    const eggIds = new Set(
+      GAMES.flatMap((g) => (g.easterEggs ?? []).map((e) => eggFeat(g.id, e.id)))
+    );
+    for (const def of LANDMARKS.filter((d) => d.feat)) {
+      if (!known.has(def.feat!) && !eggIds.has(def.feat!))
+        bad(`landmark ${def.id} hangs off feat "${def.feat}", which nothing can stamp`);
+    }
+    // and every feat the app knows how to stamp is worth a trophy
+    for (const feat of known) {
+      if (!LANDMARKS.some((d) => d.feat === feat)) bad(`feat "${feat}" is stamped but has no landmark`);
+    }
+  }
+
+  // EASTER EGGS STAY DERIVED, exactly like categories: the catalogue holds
+  // what the registry declares and nothing else, so a game's secret cannot
+  // be forgotten here and the platform never learns a game id
+  {
+    const { eggFeat } = await import('../src/platform/progress/progress');
+    const declared = GAMES.flatMap((g) => (g.easterEggs ?? []).map((e) => ({ g, e })));
+    const eggs = LANDMARKS.filter((d) => d.kind === 'egg');
+    if (eggs.length !== declared.length)
+      bad(`${eggs.length} egg landmarks for ${declared.length} declared in the registry`);
+    for (const { g, e } of declared) {
+      const def = LANDMARKS.find((d) => d.id === eggFeat(g.id, e.id));
+      if (!def) {
+        bad(`${g.id}'s easter egg "${e.id}" never reached the catalogue`);
+        continue;
+      }
+      if (!def.secret) bad(`${def.id} is not secret — an easter egg you can read is not one`);
+      if (def.feat !== def.id) bad(`${def.id} does not unlock from its own feat`);
+      if (def.gameId !== g.id) bad(`${def.id} lost the game that declared it`);
+      if (!e.requirement || !e.title || !e.emoji) bad(`${def.id} is missing title/requirement/emoji`);
+    }
+    // nothing but an egg may hide: a hidden meter on an ordinary trophy is
+    // just a trophy nobody can chase
+    for (const d of LANDMARKS.filter((x) => x.secret)) {
+      if (d.kind !== 'egg') bad(`${d.id} is secret but is not an easter egg`);
+    }
+  }
+
+  // the two cross-category trophies re-measure the live registry
+  {
+    const active = CATEGORIES.filter((c) => GAMES.some((g) => g.category === c.id));
+    const ren = LANDMARKS.find((d) => d.kind === 'renaissance');
+    const full = LANDMARKS.find((d) => d.kind === 'full-house');
+    if (active.length === 0) {
+      if (ren || full) bad('the cross-category trophies exist with no non-empty category');
+    } else {
+      if (!ren) bad('no Renaissance landmark though categories have games');
+      else if (landmarkMeter(ren, fresh, noStreak).total !== active.length)
+        bad(`Renaissance covers ${landmarkMeter(ren, fresh, noStreak).total} categories, ${active.length} have games`);
+      if (!full) bad('no Full House landmark though categories have games');
+      else {
+        // ties (a fresh profile) go to the SMALLEST category — the meter
+        // must point at the shortest road, not an arbitrary one
+        const smallest = Math.min(...active.map((c) => GAMES.filter((g) => g.category === c.id).length));
+        const { total } = landmarkMeter(full, fresh, noStreak);
+        if (total !== smallest)
+          bad(`Full House's fresh meter targets ${total} games, expected the smallest category (${smallest})`);
+      }
+    }
+  }
+
+  // the five Grand Slams are the difficulty sweeps, by name
+  for (const def of LANDMARKS.filter((d) => d.kind === 'difficulty')) {
+    if (!/Grand Slam/.test(def.title)) bad(`${def.id} is titled "${def.title}" — the family is the Grand Slams`);
   }
 
   // a fresh profile starts fully locked with meaningful meters
@@ -4075,6 +4169,18 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
       // and the crown still fills its disc rather than being shrunk for the number
       const tip = Number(badge.match(/M10 22 22 33 32 (\d+)/)?.[1] ?? 99);
       if (tip > 16) bad(`the crown no longer fills the badge (tip at y=${tip})`);
+      /* ONE SIZE, TWO CORNERS. `size` is RankCrown's SVG BOX, and that SVG
+         draws its disc at r=30 inside a 64 viewBox — so a plain `size`px
+         disc here ships ~7% wider than the crown facing it across the level
+         card, which is exactly what happened. Same for the art: RankCrown
+         keeps a visible ring of material round its crown, so this one must
+         be DRAWN inset rather than filling the disc (at 100% its side jewels
+         sat ~1px off the rim and read as cramped). Both stay derived from
+         the shared badge table, never re-measured by eye. */
+      if (!/RANK_BADGE\.r/.test(badge))
+        bad('GameCrownBadge no longer sizes its disc from RANK_BADGE — the two level-card crowns will drift apart');
+      if (/<svg[^>]*width="100%"/.test(badge))
+        bad('the crown art fills its disc again — it must be drawn inset, like the rank crown facing it');
     }
     /* The bubble is the SAME material as the disc it hangs off — --xp fill,
        --xp-rim ring, extruded edge, white ink — so the two read as one
@@ -4140,7 +4246,7 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
 
   if (ok)
     console.log(
-      `  ✓ ${LANDMARKS.length} landmarks: streak ladder ${expectedTiers.length} tiers, library trophies cover all ${GAMES.length} games, 1 mastery per non-empty category, daily family only while the rotation is non-empty, fresh profile fully locked, streak math sane, badge panel unlocked-only and the crown KPI store-derived`
+      `  ✓ ${LANDMARKS.length} landmarks: streak ladder ${expectedTiers.length} tiers, library trophies cover all ${GAMES.length} games, 1 mastery per non-empty category, daily family only while the rotation is non-empty, every feat stampable and every stampable feat a trophy, easter eggs derived from the registry and secret, fresh profile fully locked, streak math sane, badge panel unlocked-only and the crown KPI store-derived`
     );
 }
 
@@ -4635,7 +4741,10 @@ console.log('— Progress write path (lifetime counters & award order) —');
     const { levelFromXp, XP_AWARDS } = await import('../src/platform/progress/xp');
     type GameResult = import('../src/platform/types').GameResult;
 
-    let clock = Date.parse('2026-03-01T10:00:00Z');
+    /* Local wall-clock, not a UTC instant: the time-of-day feats read
+       getHours(), so a UTC fixture would land in the small hours (and earn
+       Night Owl, changing every award total here) west of Greenwich. */
+    let clock = new Date(2026, 2, 1, 12, 0, 0).getTime();
     type DailyInfo = import('../src/platform/progress/progress').DailyProgressInfo;
     const play = (over: Partial<GameResult> = {}, dailyInfo?: DailyInfo) => {
       clock += 60_000;
@@ -4649,7 +4758,10 @@ console.log('— Progress write path (lifetime counters & award order) —');
           durationSec: 60,
           outcome: 'won',
           score: 100,
-          errors: 0,
+          // one error on purpose: this block measures the AWARD breakdown,
+          // and a spotless win legitimately unlocks a second landmark (see
+          // the feats block, which tests that on its own)
+          errors: 1,
           hintsUsed: 0,
           assistsEnabled: [],
           assistsUsed: [],
@@ -4796,6 +4908,323 @@ console.log('— Progress write path (lifetime counters & award order) —');
   if (ok)
     console.log(
       '  ✓ plays counts finished sessions only, cleanWins only unaided wins, landmark XP paid in the same award, level crowns judged after the XP lands, pre-counter stores backfilled once, daily XP paid only on a real state change'
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Feats & easter eggs, through the real write path
+// (src/platform/progress/progress.ts — applyFeats / recordFeat)
+// ---------------------------------------------------------------------------
+console.log('— Feats & easter eggs —');
+{
+  let ok = true;
+  const bad = (msg: string) => {
+    failed = true;
+    ok = false;
+    console.error(`✗ ${msg}`);
+  };
+
+  /* Same in-memory localStorage trick as the block above: a feat is only
+     real if the ONE line that stamps it fires, so every case here drives
+     recordProgress/recordFeat for real rather than hand-building a store. */
+  const mem = new Map<string, string>();
+  (globalThis as { localStorage?: unknown }).localStorage = {
+    getItem: (k: string) => mem.get(k) ?? null,
+    setItem: (k: string, v: string) => void mem.set(k, v),
+    removeItem: (k: string) => void mem.delete(k),
+    clear: () => mem.clear(),
+    key: (i: number) => [...mem.keys()][i] ?? null,
+    get length() {
+      return mem.size;
+    }
+  };
+
+  try {
+    const { recordProgress, recordFeat, normalizeProgress, FEATS, eggFeat, LANDMARKS } =
+      await import('../src/platform/progress/progress');
+    const { XP_AWARDS } = await import('../src/platform/progress/xp');
+    const { GAMES } = await import('../src/platform/registry');
+    const { CATEGORIES } = await import('../src/platform/categories');
+    type GameResult = import('../src/platform/types').GameResult;
+    type Progress = import('../src/platform/progress/progress').PlayerProgress;
+
+    /* Local wall-clock, not UTC: the two time-of-day feats read
+       getHours(), so a fixture built from an ISO string would pass in one
+       timezone and fail in another. */
+    let day = 1;
+    const at = (hour: number, minute = 0) => new Date(2026, 4, day, hour, minute, 0).getTime();
+    const play = (over: Partial<GameResult> = {}, hour = 12): Progress => {
+      const finishedAt = over.finishedAt ?? at(hour);
+      return recordProgress({
+        id: `f${finishedAt}-${Math.round(Math.random() * 1e6)}`,
+        gameId: 'sudoku',
+        difficulty: 'easy',
+        startedAt: finishedAt - 60_000,
+        finishedAt,
+        durationSec: 120,
+        outcome: 'won',
+        score: 100,
+        errors: 0,
+        hintsUsed: 0,
+        assistsEnabled: [],
+        assistsUsed: [],
+        cleanWin: true,
+        ...over
+      }).progress;
+    };
+    const reset = () => {
+      mem.clear();
+      day += 1;
+    };
+    const has = (p: Progress, feat: string) => p.feats.includes(feat);
+
+    // 1. THE SMALL HOURS ARE DISJOINT: one play must never hand out both
+    //    trophies, so the owl keeps midnight-to-four and the bird four-to-six
+    reset();
+    let p = play({}, 1);
+    if (!has(p, FEATS.nightOwl) || has(p, FEATS.earlyBird))
+      bad('a 1am game did not earn exactly Night Owl');
+    reset();
+    p = play({}, 5);
+    if (!has(p, FEATS.earlyBird) || has(p, FEATS.nightOwl))
+      bad('a 5am game did not earn exactly Early Bird');
+    reset();
+    p = play({}, 7);
+    if (has(p, FEATS.earlyBird) || has(p, FEATS.nightOwl))
+      bad('a 7am game earned a small-hours trophy');
+
+    // 2. Bounce Back is about the PREVIOUS finished game — and an abandon
+    //    is not one, so quitting cannot manufacture the comeback
+    reset();
+    play({ outcome: 'lost', cleanWin: false });
+    p = play();
+    if (!has(p, FEATS.bounceBack)) bad('a win straight after a loss did not earn Bounce Back');
+    reset();
+    play({ outcome: 'abandoned', cleanWin: false });
+    p = play();
+    if (has(p, FEATS.bounceBack)) bad('a win after an ABANDON earned Bounce Back');
+    reset();
+    p = play();
+    if (has(p, FEATS.bounceBack)) bad('the very first win earned Bounce Back');
+
+    // 3. Third Time's the Charm counts failures on THAT game and tier, and
+    //    an abandon counts as a failure (walking out of a losing board)
+    reset();
+    play({ outcome: 'lost', cleanWin: false, difficulty: 'hard' });
+    play({ outcome: 'abandoned', cleanWin: false, difficulty: 'hard' });
+    p = play({ difficulty: 'easy' });
+    if (has(p, FEATS.thirdTime)) bad('a win on another tier claimed Third Time');
+    p = play({ difficulty: 'hard' });
+    if (!has(p, FEATS.thirdTime)) bad('a win after two failed attempts did not earn Third Time');
+
+    // 4. The clean-win run: a helped win breaks it, an abandon does not,
+    //    and the trophy is never taken back once earned
+    reset();
+    for (let i = 0; i < 3; i++) p = play();
+    if (p.cleanStreak !== 3) bad(`three clean wins made a streak of ${p.cleanStreak}`);
+    p = play({ outcome: 'abandoned', cleanWin: false });
+    if (p.cleanStreak !== 3) bad('an abandon broke the clean-win run');
+    p = play({ cleanWin: false, hintsUsed: 1 });
+    if (p.cleanStreak !== 0) bad('a helped win did not break the clean-win run');
+    if (p.cleanStreakBest !== 3) bad(`best clean run is ${p.cleanStreakBest}, expected 3`);
+    reset();
+    for (let i = 0; i < 10; i++) p = play();
+    if (!p.landmarks['clean-streak-10']) bad('ten clean wins in a row did not unlock the ladder');
+    p = play({ outcome: 'lost', cleanWin: false });
+    if (!p.landmarks['clean-streak-10']) bad('a loss revoked an earned clean-streak trophy');
+    if (p.cleanStreak !== 0) bad('a loss did not break the clean-win run');
+
+    // 5. Speed: only clean wins, only measured ones. A run the clock never
+    //    started (durationSec 0) is unmeasured, not instant.
+    reset();
+    p = play({ durationSec: 45 });
+    if (!has(p, FEATS.underMinute) || has(p, FEATS.halfMinute))
+      bad('a 45s clean win did not earn exactly Under a Minute');
+    reset();
+    p = play({ durationSec: 20 });
+    if (!has(p, FEATS.underMinute) || !has(p, FEATS.halfMinute))
+      bad('a 20s clean win did not earn both speed trophies');
+    reset();
+    p = play({ durationSec: 0 });
+    if (has(p, FEATS.underMinute)) bad('a 0-second (unmeasured) win earned a speed trophy');
+    reset();
+    p = play({ durationSec: 10, cleanWin: false, hintsUsed: 1 });
+    if (has(p, FEATS.underMinute)) bad('a HELPED fast win earned a speed trophy');
+
+    // 6. Spotless needs the game's own error count at zero
+    reset();
+    p = play({ errors: 3 });
+    if (has(p, FEATS.flawless)) bad('a clean win with 3 errors earned Spotless');
+    p = play({ errors: 0 });
+    if (!has(p, FEATS.flawless)) bad('a clean win with no errors did not earn Spotless');
+
+    // 7. Deep Cut needs a library of your own first, and then rewards the
+    //    game at the bottom of your own play counts
+    reset();
+    const ids = GAMES.slice(0, 12).map((g) => g.id);
+    for (const gameId of ids.slice(0, 9)) p = play({ gameId });
+    if (has(p, FEATS.deepCut)) bad('Deep Cut fired before 10 games had been tried');
+    p = play({ gameId: ids[9] });
+    if (has(p, FEATS.deepCut)) bad('Deep Cut fired on the 10th game (the gate is 10 already played)');
+    p = play({ gameId: ids[10] });
+    if (!has(p, FEATS.deepCut)) bad('a never-played game did not count as a Deep Cut');
+    // and the game you play constantly never counts — from a clean store,
+    // because the walk up to 10 games above earns the feat honestly on the
+    // first untouched game after the gate opens
+    reset();
+    for (const gameId of ids.slice(0, 10)) p = play({ gameId });
+    if (has(p, FEATS.deepCut)) bad('Deep Cut fired while the gate was still closed');
+    for (let i = 0; i < 5; i++) p = play({ gameId: ids[0] });
+    if (has(p, FEATS.deepCut)) bad('your most-played game counted as a Deep Cut');
+
+    // 8. Genre Hopper: every non-empty category in ONE day, and the meter
+    //    is today's hop (it resets with the calendar; the trophy does not)
+    reset();
+    const active = CATEGORIES.filter((c) => GAMES.some((g) => g.category === c.id));
+    active.forEach((c, i) => {
+      const g = GAMES.find((x) => x.category === c.id)!;
+      p = play({ gameId: g.id }, 9 + i);
+    });
+    if (!has(p, FEATS.genreHopper)) bad('one game per category in a day did not earn Genre Hopper');
+    if (p.today?.cats.length !== active.length)
+      bad(`today's hop recorded ${p.today?.cats.length} categories, expected ${active.length}`);
+    reset();
+    p = play({ gameId: GAMES.find((g) => g.category === active[0].id)!.id });
+    if (has(p, FEATS.genreHopper)) bad('one category earned Genre Hopper');
+
+    // 9. THE EASTER EGG: declared by the game, decided on the options the
+    //    run was played under — and only on a win
+    {
+      const eggGame = GAMES.find((g) => (g.easterEggs ?? []).length > 0);
+      const egg = eggGame?.easterEggs?.[0];
+      if (!eggGame || !egg) bad('no game declares an easter egg any more');
+      else {
+        const id = eggFeat(eggGame.id, egg.id);
+        reset();
+        p = play({ gameId: eggGame.id, options: { theme: 'zodiac' } });
+        if (has(p, id)) bad(`${id} fired on the wrong option`);
+        p = play({ gameId: eggGame.id, outcome: 'lost', cleanWin: false, options: { theme: 'pokemon' } });
+        if (has(p, id)) bad(`${id} fired on a LOSS`);
+        p = play({ gameId: eggGame.id, options: { theme: 'pokemon' } });
+        if (!has(p, id)) bad(`${id} did not fire on the win that earned it`);
+        if (!p.landmarks[id]) bad(`${id} was stamped as a feat but never unlocked its landmark`);
+      }
+    }
+
+    // 10. recordFeat: the out-of-game path. Stamped once, paid once.
+    reset();
+    const first = recordFeat(FEATS.sharedWin);
+    if (!first || !first.landmarks['show-off']) bad('making a win card did not unlock Show Off');
+    if (first && first.xp !== XP_AWARDS.landmark)
+      bad(`Show Off paid ${first?.xp} XP, expected ${XP_AWARDS.landmark}`);
+    if (recordFeat(FEATS.sharedWin) !== null) bad('a feat already held was stamped a second time');
+    const both = recordFeat(FEATS.backupOut);
+    if (!both || !both.landmarks['backup-export']) bad('exporting a backup did not unlock Backup Plan');
+    if (both && both.xp !== XP_AWARDS.landmark * 2)
+      bad(`two feats paid ${both?.xp} XP, expected ${XP_AWARDS.landmark * 2}`);
+
+    // 11. A backup file is untrusted: the feat fields are sanitized like
+    //     every other counter — but an UNKNOWN feat id survives, because a
+    //     file from a newer build must not have its trophies deleted
+    {
+      const dirty = normalizeProgress({
+        days: [],
+        played: [],
+        wins: {},
+        landmarks: {},
+        xp: 0,
+        plays: 0,
+        cleanWins: 0,
+        dailyBest: 0,
+        dailyGames: [],
+        records: {},
+        feats: ['night-owl', 42, null, 'egg-future-game-secret'],
+        playCounts: { sudoku: -3, maze: 2.7, simon: 'lots' },
+        cleanStreak: -5,
+        cleanStreakBest: Number.POSITIVE_INFINITY,
+        lastOutcome: 'exploded',
+        fails: { 'sudoku:easy': 2 },
+        today: { day: '2026-05-01', cats: ['logic', 'not-a-category'] }
+      });
+      if (!dirty) bad('a progress store with feats failed to normalize at all');
+      else {
+        if (dirty.feats.join() !== 'night-owl,egg-future-game-secret')
+          bad(`hostile feats normalized to [${dirty.feats}]`);
+        if (dirty.playCounts.sudoku !== undefined) bad('a negative play count survived');
+        if (dirty.playCounts.maze !== 2) bad('a fractional play count was not floored');
+        if (dirty.playCounts.simon !== undefined) bad('a non-numeric play count survived');
+        if (dirty.cleanStreak !== 0 || dirty.cleanStreakBest !== 0)
+          bad(`hostile clean-run counters normalized to ${dirty.cleanStreak}/${dirty.cleanStreakBest}`);
+        if (dirty.lastOutcome !== undefined) bad('a junk lastOutcome survived');
+        if (dirty.today?.cats.join() !== 'logic') bad(`hostile today.cats normalized to [${dirty.today?.cats}]`);
+      }
+    }
+
+    // 12. A store written BEFORE the feats existed replays its history
+    //     forwards (history is stored newest-first, and a comeback only
+    //     exists in the right order)
+    {
+      mem.clear();
+      const row = (over: Partial<GameResult>): GameResult => ({
+        id: `h${over.finishedAt}`,
+        gameId: 'sudoku',
+        difficulty: 'easy',
+        startedAt: 0,
+        finishedAt: 0,
+        durationSec: 300,
+        outcome: 'won',
+        score: 10,
+        errors: 1,
+        hintsUsed: 0,
+        assistsEnabled: [],
+        assistsUsed: [],
+        cleanWin: true,
+        ...over
+      });
+      mem.set(
+        '100games.v1.history',
+        // newest first, as storage writes it: the win came AFTER the loss
+        JSON.stringify([
+          row({ finishedAt: at(14) }),
+          row({ finishedAt: at(13), outcome: 'lost', cleanWin: false })
+        ])
+      );
+      mem.set(
+        '100games.v1.progress',
+        JSON.stringify({
+          days: ['2026-05-01'],
+          played: ['sudoku'],
+          wins: {},
+          landmarks: {},
+          xp: 100,
+          plays: 2,
+          cleanWins: 1,
+          dailyBest: 0,
+          dailyGames: [],
+          records: {}
+        })
+      );
+      const { loadProgress } = await import('../src/platform/progress/progress');
+      const seeded = loadProgress();
+      if (!has(seeded, FEATS.bounceBack))
+        bad('a pre-feat store did not replay its history forwards (Bounce Back missed)');
+      if (seeded.plays !== 2) bad(`the feat backfill re-counted plays (${seeded.plays}, expected 2)`);
+      if (!JSON.parse(mem.get('100games.v1.progress')!).feats)
+        bad('the feat backfill was not persisted at load');
+    }
+
+    // 13. every landmark the new families added is reachable: each has a
+    //     requirement line and lands in the gallery
+    for (const def of LANDMARKS) {
+      if (!def.requirement.trim()) bad(`${def.id} has no requirement line`);
+    }
+  } finally {
+    delete (globalThis as { localStorage?: unknown }).localStorage;
+  }
+
+  if (ok)
+    console.log(
+      '  ✓ small hours disjoint, comebacks judged on the previous finished game, clean runs broken only by a finished non-clean game, speed trophies only for measured clean wins, Deep Cut gated on a library of your own, Genre Hopper per calendar day, the easter egg decided on the run\'s options, out-of-game feats paid once, hostile feat data sanitized (unknown ids kept) and pre-feat stores replayed in order'
     );
 }
 

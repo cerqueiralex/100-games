@@ -42,7 +42,17 @@ const ROMAN: Record<string, string> = { easy: 'I', medium: 'II', hard: 'III', pr
 
 /** sticker-style SVG art per landmark kind, colored via --lm (set on the
     plate from the def's content-palette slot) */
-export function LandmarkArt({ def, size = 44 }: { def: LandmarkDef; size?: number }) {
+export function LandmarkArt({
+  def,
+  size = 44,
+  /** a secret that has not been found yet: mystery art, never the real
+      emblem — the shape itself would give the trophy away */
+  hidden = false
+}: {
+  def: LandmarkDef;
+  size?: number;
+  hidden?: boolean;
+}) {
   const lm = `var(--play-${def.slot})`;
   switch (def.kind) {
     case 'streak':
@@ -205,6 +215,269 @@ export function LandmarkArt({ def, size = 44 }: { def: LandmarkDef; size?: numbe
           </text>
         </svg>
       );
+    case 'clean-streak': {
+      // a rosette, not another hexagon: this ladder counts wins in a ROW,
+      // and it has to be tellable apart from the clean-wins total at 26px
+      const n = String(def.count);
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <path
+            d="M32.0 4.0 37.6 11.2 46.0 7.8 47.2 16.8 56.2 18.0 52.8 26.4 60.0 32.0 52.8 37.6 56.2 46.0 47.2 47.2 46.0 56.2 37.6 52.8 32.0 60.0 26.4 52.8 18.0 56.2 16.8 47.2 7.8 46.0 11.2 37.6 4.0 32.0 11.2 26.4 7.8 18.0 16.8 16.8 18.0 7.8 26.4 11.2Z"
+            fill={lm}
+            stroke="var(--ink)"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <text
+            x="32"
+            y="39"
+            textAnchor="middle"
+            fontSize={n.length >= 3 ? 17 : 21}
+            fontWeight="800"
+            fill="var(--play-9)"
+          >
+            {n}
+          </text>
+        </svg>
+      );
+    }
+    case 'flawless':
+      // a cut gem — "flawless" is a gem word, and it is the one shape in
+      // the gallery that says "no inclusions" without a caption
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <path
+            d="M20 11 H44 L56 26 L32 56 L8 26 Z"
+            fill={lm}
+            stroke="var(--ink)"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M8 26 H56 M20 11 L26 26 L32 56 L38 26 L44 11"
+            fill="none"
+            stroke="var(--play-9)"
+            strokeWidth="2.4"
+            opacity="0.85"
+          />
+        </svg>
+      );
+    case 'speed': {
+      // a stopwatch wearing the time to beat
+      const n = String(def.seconds);
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <rect x="26" y="4" width="12" height="7" rx="2.5" fill="var(--ink)" />
+          <rect x="46" y="10" width="9" height="6" rx="2.5" fill="var(--ink)" transform="rotate(38 50 13)" />
+          <circle cx="32" cy="37" r="23" fill={lm} stroke="var(--ink)" strokeWidth="3" />
+          <text x="32" y="44" textAnchor="middle" fontSize="20" fontWeight="800" fill="var(--play-9)">
+            {n}
+          </text>
+        </svg>
+      );
+    }
+    case 'time-of-day':
+      return def.moment === 'night' ? (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <path
+            d="M43 7a25 25 0 1 0 14 44A27 27 0 0 1 43 7Z"
+            fill={lm}
+            stroke="var(--ink)"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path d="M50 14 L52.5 19 L57.5 21.5 L52.5 24 L50 29 L47.5 24 L42.5 21.5 L47.5 19Z" fill="var(--play-6)" />
+          <circle cx="24" cy="20" r="3" fill="var(--play-9)" opacity="0.85" />
+        </svg>
+      ) : (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <path
+            d="M11 42a21 21 0 0 1 42 0Z"
+            fill={lm}
+            stroke="var(--ink)"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M32 8v7 M12 22l5 5 M52 22l-5 5 M4 42h7 M53 42h7"
+            stroke={lm}
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+          <path d="M6 50h52" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round" />
+        </svg>
+      );
+    case 'comeback': {
+      // the shape of the story: one dip per failure, then the climb. The
+      // rung's count IS the number of dips, so both comebacks are one
+      // drawing with one parameter.
+      const line =
+        def.count === 1 ? 'M11 21 L26 45 L53 15' : 'M8 22 L19 41 L30 33 L42 49 L56 13';
+      const end = def.count === 1 ? [53, 15] : [56, 13];
+      const dips = def.count === 1 ? [[26, 45]] : [[19, 41], [42, 49]];
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <rect x="5" y="5" width="54" height="54" rx="15" fill={lm} stroke="var(--ink)" strokeWidth="3" />
+          <path
+            d={line}
+            fill="none"
+            stroke="var(--play-9)"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {dips.map(([x, y]) => (
+            <circle key={`${x}`} cx={x} cy={y} r="4" fill="var(--ink)" />
+          ))}
+          <circle cx={end[0]} cy={end[1]} r="5.5" fill="var(--play-9)" />
+        </svg>
+      );
+    }
+    case 'genre-hopper':
+      // four different shapes, one hop over them: the whole point is that
+      // they are NOT the same thing
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <path
+            d="M8 22 Q32 -2 56 22"
+            fill="none"
+            stroke={lm}
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeDasharray="4 5"
+          />
+          <circle cx="11" cy="44" r="8" fill="var(--play-4)" stroke="var(--ink)" strokeWidth="3" />
+          <rect x="19" y="36" width="16" height="16" rx="3" fill="var(--play-3)" stroke="var(--ink)" strokeWidth="3" />
+          <path d="M45 34 L53 50 L37 50Z" fill="var(--play-1)" stroke="var(--ink)" strokeWidth="3" strokeLinejoin="round" />
+          <circle cx="32" cy="13" r="5" fill={lm} stroke="var(--ink)" strokeWidth="3" />
+        </svg>
+      );
+    case 'deep-cut':
+      // a record: the deep cut is the track nobody plays
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <circle cx="32" cy="32" r="26" fill={lm} stroke="var(--ink)" strokeWidth="3" />
+          <circle cx="32" cy="32" r="20" fill="none" stroke="var(--play-9)" strokeWidth="1.8" opacity="0.7" />
+          <circle cx="32" cy="32" r="15" fill="none" stroke="var(--play-9)" strokeWidth="1.8" opacity="0.7" />
+          <circle cx="32" cy="32" r="9" fill="var(--play-9)" opacity="0.9" />
+          <circle cx="32" cy="32" r="3" fill="var(--ink)" />
+        </svg>
+      );
+    case 'share':
+      // the win card, leaving
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <rect
+            x="9"
+            y="14"
+            width="36"
+            height="44"
+            rx="7"
+            fill={lm}
+            stroke="var(--ink)"
+            strokeWidth="3"
+            transform="rotate(-8 27 36)"
+          />
+          <path
+            d="M27 26 L30.4 33.2 L38 34.1 L32.4 39.4 L33.9 47 L27 43.3 L20.1 47 L21.6 39.4 L16 34.1 L23.6 33.2Z"
+            fill="var(--play-9)"
+            transform="rotate(-8 27 36)"
+          />
+          <path
+            d="M47 22 L60 12 L55 27 L52 21Z"
+            fill="var(--play-6)"
+            stroke="var(--ink)"
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case 'backup': {
+      // one drive, two directions — the arrow is the whole difference
+      const out = def.feat === 'backup-export';
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <rect x="7" y="30" width="50" height="28" rx="8" fill={lm} stroke="var(--ink)" strokeWidth="3" />
+          <circle cx="17" cy="44" r="3.5" fill="var(--play-9)" />
+          <path
+            d={out ? 'M32 24 V6 M23 15 L32 6 L41 15' : 'M32 6 V24 M23 15 L32 24 L41 15'}
+            fill="none"
+            stroke={lm}
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path d="M28 44 H48" stroke="var(--play-9)" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
+        </svg>
+      );
+    }
+    case 'renaissance':
+      // a painter's palette: every colour on one board
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <path
+            d="M32 6C16 6 5 17 5 30c0 11 9 19 19 19 5 0 6 3 6 5 0 2 2 4 5 4 14 0 24-12 24-27C59 17 47 6 32 6Z"
+            fill={lm}
+            stroke="var(--ink)"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <circle cx="41" cy="44" r="6.5" fill="var(--bg)" stroke="var(--ink)" strokeWidth="2.5" />
+          <circle cx="19" cy="22" r="4.4" fill="var(--play-1)" />
+          <circle cx="32" cy="17" r="4.4" fill="var(--play-3)" />
+          <circle cx="45" cy="22" r="4.4" fill="var(--play-4)" />
+          <circle cx="49" cy="33" r="4.4" fill="var(--play-6)" />
+          <circle cx="17" cy="35" r="4.4" fill="var(--play-8)" />
+        </svg>
+      );
+    case 'full-house':
+      // a house with every window lit — one category, finished
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <path
+            d="M32 6 L58 26 H50 V56 H14 V26 H6 Z"
+            fill={lm}
+            stroke="var(--ink)"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <rect x="20" y="30" width="9" height="9" rx="2" fill="var(--play-9)" />
+          <rect x="35" y="30" width="9" height="9" rx="2" fill="var(--play-9)" />
+          <rect x="20" y="43" width="9" height="9" rx="2" fill="var(--play-9)" />
+          <rect x="35" y="43" width="9" height="9" rx="2" fill="var(--play-9)" />
+          <rect x="27.5" y="17" width="9" height="7" rx="2" fill="var(--play-9)" />
+        </svg>
+      );
+    case 'egg':
+      // found: a decorated egg. Still hidden: the mystery plate below.
+      return hidden ? (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <path
+            d="M32 5c11 0 21 16 21 29a21 21 0 0 1-42 0C11 21 21 5 32 5Z"
+            fill="none"
+            stroke="var(--ink)"
+            strokeWidth="3"
+            strokeDasharray="5 5"
+          />
+          <text x="32" y="45" textAnchor="middle" fontSize="27" fontWeight="800" fill="var(--ink)">
+            ?
+          </text>
+        </svg>
+      ) : (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <path
+            d="M32 5c11 0 21 16 21 29a21 21 0 0 1-42 0C11 21 21 5 32 5Z"
+            fill={lm}
+            stroke="var(--ink)"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path d="M13 32 L20 26 L27 32 L34 26 L41 32 L48 26 L52 30" fill="none" stroke="var(--play-9)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="22" cy="44" r="3.4" fill="var(--play-9)" />
+          <circle cx="32" cy="49" r="3.4" fill="var(--play-9)" />
+          <circle cx="42" cy="44" r="3.4" fill="var(--play-9)" />
+        </svg>
+      );
   }
 }
 
@@ -238,6 +511,30 @@ function cardStat(def: LandmarkDef, total: number): [string, string] {
       return [String(total), `GAMES BEATEN ON ${def.difficulty!.toUpperCase()}`];
     case 'category':
       return [String(total), `${categoryName(def.category!).toUpperCase()} GAMES BEATEN`];
+    case 'clean-streak':
+      return [String(def.count), 'CLEAN WINS IN A ROW'];
+    case 'flawless':
+      return ['0', 'MISTAKES, NO HELP'];
+    case 'speed':
+      return [`${def.seconds}s`, 'CLEAN WIN, UNDER'];
+    case 'time-of-day':
+      return def.moment === 'night' ? ['4AM', 'STILL PLAYING BEFORE'] : ['6AM', 'ALREADY PLAYING BY'];
+    case 'comeback':
+      return def.count === 1 ? ['1', 'LOSS, THEN A WIN'] : ['3', 'RD TIME LUCKY'];
+    case 'genre-hopper':
+      return [String(total), 'CATEGORIES IN ONE DAY'];
+    case 'deep-cut':
+      return ['10%', 'THE BOTTOM OF THE PLAY COUNTS'];
+    case 'share':
+      return ['1st', 'WIN CARD MADE'];
+    case 'backup':
+      return def.feat === 'backup-export' ? ['OUT', 'DATA EXPORTED'] : ['IN', 'DATA BROUGHT HOME'];
+    case 'renaissance':
+      return [String(total), 'CATEGORIES, ALL WON CLEAN'];
+    case 'full-house':
+      return [String(total), 'GAMES SWEPT IN ONE CATEGORY'];
+    case 'egg':
+      return ['★', 'SECRET FOUND'];
   }
 }
 
@@ -399,12 +696,16 @@ function LandmarkCard({
   onClick: () => void;
 }) {
   const locked = unlockedAt === null;
+  /* A secret keeps its secret: no title, no meter, no emblem until it is
+     found. The card still exists — knowing there IS something to find is
+     the whole appeal of an easter egg; knowing what it is would end it. */
+  const hidden = locked && !!def.secret;
   return (
     <button
       className={`lm-card fx-card ${locked ? 'locked' : ''}`}
       style={{ '--lm': `var(--play-${def.slot})` } as CSSProperties}
       onClick={onClick}
-      aria-label={`${def.title} — ${locked ? 'locked' : 'unlocked'}`}
+      aria-label={hidden ? 'Undiscovered secret' : `${def.title} — ${locked ? 'locked' : 'unlocked'}`}
     >
       {locked && (
         <span className="lm-lock" aria-hidden>
@@ -412,13 +713,15 @@ function LandmarkCard({
         </span>
       )}
       <span className="lm-plate">
-        <LandmarkArt def={def} size={40} />
+        <LandmarkArt def={def} size={40} hidden={hidden} />
       </span>
-      <span className="lm-title">{def.title}</span>
+      <span className="lm-title">{hidden ? '???' : def.title}</span>
       <span className="lm-sub">
-        {locked
-          ? `${meter.done}/${meter.total}`
-          : new Date(unlockedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+        {hidden
+          ? 'Hidden'
+          : locked
+            ? `${meter.done}/${meter.total}`
+            : new Date(unlockedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
       </span>
     </button>
   );
@@ -439,46 +742,77 @@ export function LandmarksSection({
   const [selected, setSelected] = useState<LandmarkDef | null>(null);
   const [sharing, setSharing] = useState<LandmarkDef | null>(null);
 
-  const unlockedCount = LANDMARKS.filter((d) => progress.landmarks[d.id]).length;
+  /* Two galleries, one catalogue: the trophies you can read off and go
+     earn, and the secrets you cannot. They are split HERE rather than in
+     progress.ts — a secret is an ordinary landmark in every other way
+     (unlocks, pays XP, shares), it is only presented differently. */
+  const trophies = LANDMARKS.filter((d) => !d.secret);
+  const secrets = LANDMARKS.filter((d) => d.secret);
+  const unlockedCount = trophies.filter((d) => progress.landmarks[d.id]).length;
+  const foundCount = secrets.filter((d) => progress.landmarks[d.id]).length;
 
   const selectedUnlock = selected ? (progress.landmarks[selected.id] ?? null) : null;
+  const selectedHidden = !!selected?.secret && !selectedUnlock;
   const selectedMeter = selected
     ? landmarkMeter(selected, progress, streak, dailyCurrent)
     : null;
+
+  const card = (def: LandmarkDef) => (
+    <LandmarkCard
+      key={def.id}
+      def={def}
+      unlockedAt={progress.landmarks[def.id]?.at ?? null}
+      meter={landmarkMeter(def, progress, streak, dailyCurrent)}
+      onClick={() => {
+        sfx.tap();
+        setSelected(def);
+      }}
+    />
+  );
 
   return (
     <section className="setup-section">
       <h3 className="section-title lm-head">
         Landmarks
         <span className="lm-count">
-          {unlockedCount} / {LANDMARKS.length}
+          {unlockedCount} / {trophies.length}
         </span>
       </h3>
-      <div className="lm-grid">
-        {LANDMARKS.map((def) => (
-          <LandmarkCard
-            key={def.id}
-            def={def}
-            unlockedAt={progress.landmarks[def.id]?.at ?? null}
-            meter={landmarkMeter(def, progress, streak, dailyCurrent)}
-            onClick={() => {
-              sfx.tap();
-              setSelected(def);
-            }}
-          />
-        ))}
-      </div>
+      <div className="lm-grid">{trophies.map(card)}</div>
 
-      <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.title}>
+      {secrets.length > 0 && (
+        <>
+          <h3 className="section-title lm-head lm-egg-head">
+            Easter eggs
+            <span className="lm-count">
+              {foundCount} / {secrets.length}
+            </span>
+          </h3>
+          <p className="lm-egg-note">
+            Secrets hidden inside the games. No hints — you'll know when you find one.
+          </p>
+          <div className="lm-grid">{secrets.map(card)}</div>
+        </>
+      )}
+
+      <Modal
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        title={selectedHidden ? 'Undiscovered' : selected?.title}
+      >
         {selected && selectedMeter && (
           <div
             className="lm-detail"
             style={{ '--lm': `var(--play-${selected.slot})` } as CSSProperties}
           >
             <div className={`lm-modal-art ${selectedUnlock ? '' : 'locked'}`}>
-              <LandmarkArt def={selected} size={64} />
+              <LandmarkArt def={selected} size={64} hidden={selectedHidden} />
             </div>
-            <p className="lm-req">{selected.requirement}</p>
+            <p className="lm-req">
+              {selectedHidden
+                ? 'A secret somewhere in the games. Play around — it will find you.'
+                : selected.requirement}
+            </p>
             {selectedUnlock ? (
               <>
                 <div className="lm-status">
@@ -504,6 +838,17 @@ export function LandmarksSection({
                     }}
                   >
                     Share card
+                  </button>
+                </div>
+              </>
+            ) : selectedHidden ? (
+              <>
+                <div className="lm-status">
+                  <Chip tone="muted">Not found yet</Chip>
+                </div>
+                <div className="modal-actions">
+                  <button className="ghost-btn" onClick={() => setSelected(null)}>
+                    Close
                   </button>
                 </div>
               </>

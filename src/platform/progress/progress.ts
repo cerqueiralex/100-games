@@ -1,7 +1,7 @@
 import type { CategoryId, Difficulty, GameResult } from '../types';
 import { DIFFICULTIES } from '../types';
 import { GAMES } from '../registry';
-import { CATEGORIES } from '../categories';
+import { activeCategories, CATEGORIES } from '../categories';
 import { eligibleGames } from '../daily/rotation';
 import { loadHistory, readGameData, writeGameData } from '../storage';
 import {
@@ -85,7 +85,81 @@ export interface PlayerProgress {
    * "Clear history" — progress is the permanent side of the store.
    */
   records: Record<string, Partial<Record<Difficulty, PersonalBest>>>;
+  /**
+   * FEATS — one-off moments the trophies remember (see FEATS below).
+   *
+   * A feat is a MOMENT, not a standing fact. "Played every game" can be
+   * re-derived from the store at any time; "won the game right after losing
+   * one" cannot — it is only ever true for an instant. Stamping the moment
+   * here is what keeps landmark evaluation a pure function of
+   * PlayerProgress, which is what lets loadProgress re-evaluate the whole
+   * catalogue on every start without a play.
+   */
+  feats: string[];
+  /**
+   * gameId -> FINISHED sessions of that game. The play counts are what make
+   * "popularity" mean something on a device with no server: your own
+   * library, ranked by how much you actually play it (see isDeepCut).
+   */
+  playCounts: Record<string, number>;
+  /** clean wins in a row right now — broken by any finished non-clean game */
+  cleanStreak: number;
+  /** the longest clean-win run ever; what the ladder UNLOCKS from */
+  cleanStreakBest: number;
+  /**
+   * The outcome of the last FINISHED session, for the comeback feats.
+   * Abandons deliberately do not write it: quitting is not "the previous
+   * game", and it must not be usable to wipe a loss off the record.
+   */
+  lastOutcome?: 'won' | 'lost';
+  /** `gameId:difficulty` -> failed attempts in a row; cleared by a win */
+  fails: Record<string, number>;
+  /**
+   * The categories played TODAY, for Genre Hopper. Only the current day is
+   * kept — a permanent store must not grow a row per calendar day, and
+   * yesterday's hop is already recorded as the feat it earned.
+   */
+  today?: { day: string; cats: CategoryId[] };
 }
+
+/* ---------- feats ---------- */
+
+/**
+ * The one-off moments trophies are keyed to. Ids are stable strings: they
+ * are written into the permanent store (and into backup files), so renaming
+ * one would silently un-earn a trophy.
+ */
+export const FEATS = {
+  deepCut: 'deep-cut',
+  nightOwl: 'night-owl',
+  earlyBird: 'early-bird',
+  bounceBack: 'bounce-back',
+  thirdTime: 'third-time',
+  genreHopper: 'genre-hopper',
+  underMinute: 'under-60',
+  halfMinute: 'under-30',
+  flawless: 'flawless',
+  sharedWin: 'shared-win',
+  backupOut: 'backup-export',
+  backupIn: 'backup-import'
+} as const;
+
+export type FeatId = string;
+
+/** the feat id (and landmark id) of one game's easter egg */
+export function eggFeat(gameId: string, eggId: string): string {
+  return `egg-${gameId}-${eggId}`;
+}
+
+/** you have to own a library before "the one you never play" means anything */
+const DEEP_CUT_MIN_GAMES = 10;
+/** the bottom decile of the library, by your own play counts */
+const DEEP_CUT_SHARE = 0.1;
+/** a clean win this fast, in seconds, earns each speed trophy */
+const SPEED_TIERS: { seconds: number; feat: string; title: string; slot: number }[] = [
+  { seconds: 60, feat: FEATS.underMinute, title: 'Under a Minute', slot: 7 },
+  { seconds: 30, feat: FEATS.halfMinute, title: 'Half a Minute', slot: 5 }
+];
 
 /* ---------- day math (local-time calendar days, DST-safe) ---------- */
 
@@ -162,12 +236,24 @@ export type LandmarkKind =
   | 'streak'
   | 'plays'
   | 'clean-wins'
+  | 'clean-streak'
   | 'level'
   | 'daily-streak'
   | 'daily-collector'
   | 'all-played'
   | 'difficulty'
-  | 'category';
+  | 'category'
+  | 'renaissance'
+  | 'full-house'
+  | 'flawless'
+  | 'speed'
+  | 'time-of-day'
+  | 'comeback'
+  | 'genre-hopper'
+  | 'deep-cut'
+  | 'share'
+  | 'backup'
+  | 'egg';
 
 export interface LandmarkDef {
   id: string;
@@ -187,6 +273,25 @@ export interface LandmarkDef {
   rank?: RankId;
   difficulty?: Difficulty;
   category?: CategoryId;
+  /**
+   * The feat that unlocks this landmark (see FEATS). A landmark with a feat
+   * is unlocked by the MOMENT, never by the meter — which is what lets its
+   * meter show something live and actionable ("5/8 categories today")
+   * without ever taking the trophy back when the day rolls over.
+   */
+  feat?: string;
+  /** speed tiers: the clean-win time to beat, in seconds */
+  seconds?: number;
+  /** time-of-day tiers: which end of the small hours this one is */
+  moment?: 'night' | 'dawn';
+  /**
+   * Hidden until found: no title, no requirement, mystery art, and its own
+   * section in the gallery. Everything else about it is an ordinary
+   * landmark — it unlocks, pays XP and shares the same way.
+   */
+  secret?: boolean;
+  /** eggs only: the game that declared it, for the detail card */
+  gameId?: string;
 }
 
 /** streak tiers — bimester/trimester/quadrimester/semester follow the
@@ -220,6 +325,17 @@ const CLEAN_TIERS: { count: number; title: string; slot: number }[] = [
   { count: 200, title: 'Self-Made', slot: 16 },
   { count: 500, title: 'Untouchable', slot: 3 },
   { count: 1000, title: 'Flawless Thousand', slot: 8 }
+];
+
+/** clean wins in a row, across ANY games — the run ends the moment a
+    finished game is not a clean win (a helped win breaks it exactly as a
+    loss does; an abandon is not a finished game and leaves it alone) */
+const CLEAN_STREAK_TIERS: { count: number; title: string; slot: number }[] = [
+  { count: 10, title: 'On a Roll', slot: 7 },
+  { count: 25, title: 'In the Zone', slot: 2 },
+  { count: 50, title: 'Unbroken', slot: 5 },
+  { count: 75, title: 'Relentless', slot: 12 },
+  { count: 100, title: 'Perfect Hundred', slot: 6 }
 ];
 
 /** the Daily Challenge streak ladder — deliberately shorter rungs than the
@@ -310,6 +426,127 @@ export const LANDMARKS: LandmarkDef[] = [
       emoji: '✨'
     })
   ),
+  ...CLEAN_STREAK_TIERS.map(
+    (t): LandmarkDef => ({
+      id: `clean-streak-${t.count}`,
+      title: t.title,
+      requirement: `Win ${t.count} games in a row with no help`,
+      kind: 'clean-streak',
+      count: t.count,
+      slot: t.slot,
+      emoji: '🎯'
+    })
+  ),
+  /* One-off feats: moments rather than totals. Each is stamped when it
+     happens (see applyFeats) and unlocked from that stamp, never
+     recomputed — "won right after losing" is only true for an instant. */
+  {
+    id: 'flawless',
+    title: 'Spotless',
+    requirement: 'Win a game with no mistakes and no help',
+    kind: 'flawless',
+    feat: FEATS.flawless,
+    slot: 11,
+    emoji: '💎'
+  },
+  ...SPEED_TIERS.map(
+    (t): LandmarkDef => ({
+      id: `speed-${t.seconds}`,
+      title: t.title,
+      requirement: `Win a game with no help in under ${t.seconds} seconds`,
+      kind: 'speed',
+      feat: t.feat,
+      seconds: t.seconds,
+      slot: t.slot,
+      emoji: '⏱️'
+    })
+  ),
+  {
+    id: 'bounce-back',
+    title: 'Bounce Back',
+    requirement: 'Win the very next game after a loss',
+    kind: 'comeback',
+    feat: FEATS.bounceBack,
+    count: 1,
+    slot: 4,
+    emoji: '🔄'
+  },
+  {
+    id: 'third-time',
+    title: "Third Time's the Charm",
+    requirement: 'Win a game and difficulty you had already failed twice',
+    kind: 'comeback',
+    feat: FEATS.thirdTime,
+    count: 2,
+    slot: 3,
+    emoji: '🍀'
+  },
+  {
+    id: 'night-owl',
+    title: 'Night Owl',
+    requirement: 'Finish a game between midnight and 4am',
+    kind: 'time-of-day',
+    feat: FEATS.nightOwl,
+    moment: 'night',
+    slot: 13,
+    emoji: '🦉'
+  },
+  {
+    id: 'early-bird',
+    title: 'Early Bird',
+    requirement: 'Finish a game between 4am and 6am',
+    kind: 'time-of-day',
+    feat: FEATS.earlyBird,
+    moment: 'dawn',
+    slot: 6,
+    emoji: '🐦'
+  },
+  {
+    id: 'genre-hopper',
+    title: 'Genre Hopper',
+    requirement: 'Play a game from every category in one day',
+    kind: 'genre-hopper',
+    feat: FEATS.genreHopper,
+    slot: 15,
+    emoji: '🎪'
+  },
+  {
+    id: 'deep-cut',
+    title: 'Deep Cut',
+    requirement: `Finish a game from the bottom 10% of your play counts, once you have played ${DEEP_CUT_MIN_GAMES} different games`,
+    kind: 'deep-cut',
+    feat: FEATS.deepCut,
+    count: DEEP_CUT_MIN_GAMES,
+    slot: 10,
+    emoji: '💿'
+  },
+  {
+    id: 'show-off',
+    title: 'Show Off',
+    requirement: 'Make your first shareable win card',
+    kind: 'share',
+    feat: FEATS.sharedWin,
+    slot: 2,
+    emoji: '📣'
+  },
+  {
+    id: 'backup-export',
+    title: 'Backup Plan',
+    requirement: 'Export a backup of your data',
+    kind: 'backup',
+    feat: FEATS.backupOut,
+    slot: 1,
+    emoji: '📤'
+  },
+  {
+    id: 'backup-import',
+    title: 'Home Sweet Home',
+    requirement: 'Import a backup of your data',
+    kind: 'backup',
+    feat: FEATS.backupIn,
+    slot: 8,
+    emoji: '📥'
+  },
   /* The Daily Challenge trophies exist only while something is actually in
      the rotation — the same rule that gives an empty category no mastery
      landmark. With nothing eligible the feature is off, its card renders
@@ -359,10 +596,13 @@ export const LANDMARKS: LandmarkDef[] = [
     slot: 6,
     emoji: '🧩'
   },
+  /* The five Grand Slams: the whole library beaten, unaided, on one tier.
+     Ids stay `all-<difficulty>` — they are stamped into every player's
+     store, and an id is a promise, not a label. */
   ...DIFFICULTIES.map(
     (d): LandmarkDef => ({
       id: `all-${d}`,
-      title: `${d[0].toUpperCase()}${d.slice(1)} Sweep`,
+      title: `${d[0].toUpperCase()}${d.slice(1)} Grand Slam`,
       requirement: `Beat every game on ${d} with no help`,
       kind: 'difficulty',
       difficulty: d,
@@ -380,6 +620,50 @@ export const LANDMARKS: LandmarkDef[] = [
       slot: c.slot,
       emoji: CATEGORY_EMOJI[c.id]
     })
+  ),
+  /* The two cross-category trophies. Both derive from the live registry
+     like everything else here: Renaissance grows a rung whenever a new
+     category gets its first game, Full House re-measures the categories
+     themselves. Only listed while some category actually has games — the
+     same rule that gives an empty category no mastery. */
+  ...(activeCategories().length > 0
+    ? [
+        {
+          id: 'renaissance',
+          title: 'Renaissance',
+          requirement: 'Win a game with no help in every category',
+          kind: 'renaissance',
+          slot: 16,
+          emoji: '🎨'
+        } as LandmarkDef,
+        {
+          id: 'full-house',
+          title: 'Full House',
+          requirement: 'Beat every game in one category on all five difficulties',
+          kind: 'full-house',
+          slot: 14,
+          emoji: '🏠'
+        } as LandmarkDef
+      ]
+    : []),
+  /* Easter eggs last, and hidden: the gallery gives them their own section
+     (see Landmarks.tsx). Declared by the games themselves — the catalogue
+     spreads whatever the registry holds, exactly as it does for categories,
+     so the platform never learns a game id. */
+  ...GAMES.flatMap((g) =>
+    (g.easterEggs ?? []).map(
+      (e): LandmarkDef => ({
+        id: eggFeat(g.id, e.id),
+        title: e.title,
+        requirement: e.requirement,
+        kind: 'egg',
+        feat: eggFeat(g.id, e.id),
+        gameId: g.id,
+        secret: true,
+        slot: e.slot,
+        emoji: e.emoji
+      })
+    )
   )
 ];
 
@@ -427,6 +711,11 @@ export function landmarkMeter(
       return { done: Math.min(p.plays, def.count!), total: def.count! };
     case 'clean-wins':
       return { done: Math.min(p.cleanWins, def.count!), total: def.count! };
+    case 'clean-streak':
+      // the LIVE run, like every other streak meter: it is what the player
+      // can still act on. Unlocking uses the best run ever (see `achieved`),
+      // so a broken streak never costs a trophy already earned.
+      return { done: Math.min(p.cleanStreak, def.count!), total: def.count! };
     case 'level':
       return { done: Math.min(levelFromXp(p.xp), def.level!), total: def.level! };
     case 'daily-streak':
@@ -456,6 +745,49 @@ export function landmarkMeter(
       const gs = GAMES.filter((g) => g.category === def.category);
       return { done: gs.filter((g) => (p.wins[g.id] ?? []).length > 0).length, total: gs.length };
     }
+    case 'renaissance': {
+      const cats = activeCategories();
+      const done = cats.filter((c) =>
+        GAMES.some((g) => g.category === c.id && (p.wins[g.id] ?? []).length > 0)
+      ).length;
+      return { done, total: cats.length };
+    }
+    case 'full-house': {
+      /* The category you are CLOSEST to sweeping — the one the meter can
+         actually help with. Ties (every category at zero) go to the
+         SMALLEST one, which is the shortest road to the trophy. */
+      let best: { done: number; total: number } | null = null;
+      for (const c of activeCategories()) {
+        const gs = GAMES.filter((g) => g.category === c.id);
+        if (gs.length === 0) continue;
+        const cand = { done: gs.filter((g) => allDifficultiesBeaten(p, g.id)).length, total: gs.length };
+        const better =
+          !best ||
+          cand.done * best.total > best.done * cand.total ||
+          (cand.done * best.total === best.done * cand.total && cand.total < best.total);
+        if (better) best = cand;
+      }
+      return best ?? { done: 0, total: 1 };
+    }
+    case 'genre-hopper': {
+      // today's hop only — yesterday's is already stamped as its feat
+      const cats = activeCategories();
+      const today = p.today?.day === dayKey(Date.now()) ? p.today.cats : [];
+      return { done: cats.filter((c) => today.includes(c.id)).length, total: cats.length };
+    }
+    case 'deep-cut':
+      // the gate the player can see coming: how much of the library they
+      // have tried. The pick itself (see isDeepCut) is the moment.
+      return { done: Math.min(p.played.length, def.count!), total: def.count! };
+    case 'flawless':
+    case 'speed':
+    case 'time-of-day':
+    case 'comeback':
+    case 'share':
+    case 'backup':
+    case 'egg':
+      // a moment: you have it or you don't
+      return { done: p.feats.includes(def.feat!) ? 1 : 0, total: 1 };
   }
 }
 
@@ -463,6 +795,12 @@ const NO_STREAK: StreakInfo = { current: 0, best: 0, playedToday: false, totalDa
 
 function achieved(def: LandmarkDef, p: PlayerProgress, bestStreak: number): boolean {
   if (def.kind === 'streak') return bestStreak >= def.days!;
+  // both streak ladders unlock from the BEST run ever while their meters
+  // show the live one — a trophy is never taken back by a bad day
+  if (def.kind === 'clean-streak') return p.cleanStreakBest >= def.count!;
+  // a feat is a stamped moment; its meter may legitimately read 0 forever
+  // after (today's categories, a play-count gate) without un-earning it
+  if (def.feat) return p.feats.includes(def.feat);
   const { done, total } = landmarkMeter(def, p, NO_STREAK);
   return total > 0 && done >= total;
 }
@@ -495,7 +833,12 @@ function emptyProgress(): PlayerProgress {
     cleanWins: 0,
     dailyBest: 0,
     dailyGames: [],
-    records: {}
+    records: {},
+    feats: [],
+    playCounts: {},
+    cleanStreak: 0,
+    cleanStreakBest: 0,
+    fails: {}
   };
 }
 
@@ -515,7 +858,114 @@ export function countsAsBeaten(r: GameResult): boolean {
   return r.outcome === 'won' && r.cleanWin;
 }
 
+function addFeat(p: PlayerProgress, id: string): void {
+  if (!p.feats.includes(id)) p.feats.push(id);
+}
+
+/**
+ * Is this game in the bottom 10% of YOUR play counts?
+ *
+ * "Popularity" on a device with no server can only mean one thing: how much
+ * this player actually plays each game. The gate is a library of your own —
+ * with fewer than DEEP_CUT_MIN_GAMES games tried, "the one you never play"
+ * is every game you own, and the trophy would mean nothing.
+ *
+ * Ranked ascending with ties sharing the best rank, so the dozens of games
+ * sitting at zero all count as the bottom of the pile — which is exactly
+ * what a deep cut is.
+ */
+export function isDeepCut(p: PlayerProgress, gameId: string): boolean {
+  if (p.played.length < DEEP_CUT_MIN_GAMES) return false;
+  const mine = p.playCounts[gameId] ?? 0;
+  const fewer = GAMES.filter((g) => (p.playCounts[g.id] ?? 0) < mine).length;
+  return fewer < Math.max(1, Math.ceil(GAMES.length * DEEP_CUT_SHARE));
+}
+
+function failKey(gameId: string, difficulty: Difficulty): string {
+  return `${gameId}:${difficulty}`;
+}
+
+/**
+ * Stamps the one-off moments this result earned.
+ *
+ * Order is load-bearing: the three comeback/obscurity feats are decided
+ * against the state BEFORE the result is folded in (you bounced back from
+ * the PREVIOUS game's loss; the game was obscure until this play made it
+ * one play less obscure), so this runs first and the counters it reads are
+ * updated afterwards, in this same function.
+ *
+ * Only FINISHED sessions EARN anything here, for the same reason `plays`
+ * counts only finished sessions: quitting takes two seconds, and a trophy
+ * anyone can quit their way into is worth nothing. So an abandon stamps no
+ * feat and breaks no clean-win run — with one deliberate exception: it does
+ * count as a failed attempt for Third Time's the Charm, because walking out
+ * of a board you are losing is exactly the story that trophy is about.
+ */
+function applyFeats(p: PlayerProgress, r: GameResult): void {
+  const finished = r.outcome !== 'abandoned';
+  const clean = countsAsBeaten(r);
+  const key = failKey(r.gameId, r.difficulty);
+
+  // ---- judged against the state before this result ----
+  if (finished && isDeepCut(p, r.gameId)) addFeat(p, FEATS.deepCut);
+  if (r.outcome === 'won' && p.lastOutcome === 'lost') addFeat(p, FEATS.bounceBack);
+  if (r.outcome === 'won' && (p.fails[key] ?? 0) >= 2) addFeat(p, FEATS.thirdTime);
+
+  // ---- what this result itself was ----
+  if (finished) {
+    p.playCounts[r.gameId] = (p.playCounts[r.gameId] ?? 0) + 1;
+    const hour = new Date(r.finishedAt).getHours();
+    // the two windows are disjoint on purpose: one play must not hand out
+    // both trophies, so the owl keeps the small hours and the bird gets the
+    // two before six
+    if (hour < 4) addFeat(p, FEATS.nightOwl);
+    else if (hour < 6) addFeat(p, FEATS.earlyBird);
+
+    const day = dayKey(r.finishedAt);
+    const cat = GAMES.find((g) => g.id === r.gameId)?.category;
+    if (p.today?.day !== day) p.today = { day, cats: [] };
+    if (cat && !p.today.cats.includes(cat)) p.today.cats.push(cat);
+    const cats = p.today.cats;
+    const active = activeCategories();
+    if (active.length > 0 && active.every((c) => cats.includes(c.id))) addFeat(p, FEATS.genreHopper);
+  }
+
+  if (clean) {
+    p.cleanStreak += 1;
+    p.cleanStreakBest = Math.max(p.cleanStreakBest, p.cleanStreak);
+    // "no mistakes" is the game's own error count; a game that does not
+    // count errors reports zero, so for those this is simply a clean win
+    if (r.errors === 0) addFeat(p, FEATS.flawless);
+    // > 0 guards the held-clock case: a run the timer never started is not
+    // a fast win, it is an unmeasured one
+    for (const t of SPEED_TIERS) {
+      if (r.durationSec > 0 && r.durationSec < t.seconds) addFeat(p, t.feat);
+    }
+  } else if (finished) {
+    p.cleanStreak = 0;
+  }
+
+  // a failed attempt is a loss OR an abandon — walking out of a board you
+  // are losing is the same story the comeback trophy is about
+  if (r.outcome === 'won') delete p.fails[key];
+  else p.fails[key] = (p.fails[key] ?? 0) + 1;
+  if (finished) p.lastOutcome = r.outcome as 'won' | 'lost';
+
+  // the game's own secrets — declared in the registry, never known here
+  const game = GAMES.find((g) => g.id === r.gameId);
+  for (const egg of game?.easterEggs ?? []) {
+    try {
+      if (egg.when(r)) addFeat(p, eggFeat(game!.id, egg.id));
+    } catch {
+      // a game's predicate must never be able to break the write path that
+      // records everybody's play
+    }
+  }
+}
+
 function applyResult(p: PlayerProgress, r: GameResult): void {
+  // first: the feats read the state as it was BEFORE this result
+  applyFeats(p, r);
   const day = dayKey(r.finishedAt);
   if (!p.days.includes(day)) p.days.push(day);
   if (!p.played.includes(r.gameId)) p.played.push(r.gameId);
@@ -566,17 +1016,51 @@ function seedXp(p: PlayerProgress, history: GameResult[]): number {
   );
 }
 
+/** history is stored newest-first; the feats are order-dependent (a
+    comeback, a run of clean wins), so every replay walks it forwards */
+function chronological(history: GameResult[]): GameResult[] {
+  return [...history].sort((a, b) => a.finishedAt - b.finishedAt);
+}
+
 function seedFromHistory(): PlayerProgress {
   const p = emptyProgress();
   const history = loadHistory();
-  // applyResult also runs up the lifetime plays/cleanWins counters
-  for (const r of history) applyResult(p, r);
+  // applyResult also runs up the lifetime plays/cleanWins counters and
+  // replays the feats
+  for (const r of chronological(history)) applyResult(p, r);
   p.days.sort();
   for (const r of history) updateRecord(p, r);
   p.xp = seedXp(p, history);
   // after the XP, so the level ladder sees the level this history earned
   evaluateLandmarks(p, Date.now());
   return p;
+}
+
+/**
+ * Feat state for a store written before the feats existed: replay the
+ * (capped) history forwards into the feat fields ONLY — everything else in
+ * `p` is already loaded, and re-running applyResult would double every
+ * lifetime counter.
+ *
+ * `played` is rebuilt as it goes rather than read from the loaded store, so
+ * Deep Cut's "you have tried 10 games" gate is judged at each moment of the
+ * replay instead of being granted by hindsight.
+ */
+function seedFeats(p: PlayerProgress, history: GameResult[]): void {
+  p.feats = [];
+  p.playCounts = {};
+  p.fails = {};
+  p.cleanStreak = 0;
+  p.cleanStreakBest = 0;
+  p.lastOutcome = undefined;
+  p.today = undefined;
+  const played = p.played;
+  p.played = [];
+  for (const r of chronological(history)) {
+    applyFeats(p, r);
+    if (!p.played.includes(r.gameId)) p.played.push(r.gameId);
+  }
+  p.played = played;
 }
 
 /**
@@ -616,6 +1100,25 @@ function cleanCount(raw: unknown): number | null {
   if (raw === undefined || raw === null) return null;
   if (typeof raw !== 'number' || !Number.isFinite(raw) || raw < 0) return 0;
   return Math.floor(raw);
+}
+
+/** gameId/key -> whole non-negative count, from an untrusted file */
+function cleanCounts(raw: unknown): Record<string, number> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const n = cleanCount(v);
+    if (n) out[k] = n;
+  }
+  return out;
+}
+
+function cleanToday(raw: unknown): PlayerProgress['today'] {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const t = raw as Partial<{ day: string; cats: unknown }>;
+  if (typeof t.day !== 'string' || !Array.isArray(t.cats)) return undefined;
+  const ids = new Set(CATEGORIES.map((c) => c.id));
+  return { day: t.day, cats: (t.cats as unknown[]).filter((c): c is CategoryId => ids.has(c as CategoryId)) };
 }
 
 function cleanRecords(raw: unknown): PlayerProgress['records'] {
@@ -659,13 +1162,27 @@ function normalize(raw: unknown, backfillFrom?: GameResult[]): PlayerProgress | 
     dailyGames: Array.isArray(p.dailyGames)
       ? p.dailyGames.filter((g): g is string => typeof g === 'string')
       : [],
-    records: cleanRecords(p.records)
+    records: cleanRecords(p.records),
+    /* Feats arrive from backup files, so they are untrusted like everything
+       else here — but an UNKNOWN feat id is kept rather than dropped: a
+       backup written by a newer build (or by a game whose easter egg this
+       build has not shipped yet) must not have its trophies quietly
+       deleted by an older reader. Only the shape is enforced. */
+    feats: Array.isArray(p.feats) ? p.feats.filter((f): f is string => typeof f === 'string') : [],
+    playCounts: cleanCounts(p.playCounts),
+    cleanStreak: cleanCount(p.cleanStreak) ?? 0,
+    cleanStreakBest: cleanCount(p.cleanStreakBest) ?? 0,
+    ...(p.lastOutcome === 'won' || p.lastOutcome === 'lost' ? { lastOutcome: p.lastOutcome } : {}),
+    fails: cleanCounts(p.fails),
+    ...(cleanToday(p.today) ? { today: cleanToday(p.today) } : {})
   };
   // a store from before levels / the volume ladders: backfill from what the
   // device can still prove, so an existing player keeps the level and the
   // counts their play has earned (one history read for both)
-  if (xp === null || plays === null || cleanWins === null) {
+  if (xp === null || plays === null || cleanWins === null || !Array.isArray(p.feats)) {
     const history = backfillFrom ?? loadHistory();
+    // feats first: seedXp counts landmarks, and the replay can unlock some
+    if (!Array.isArray(p.feats)) seedFeats(out, history);
     if (xp === null) out.xp = seedXp(out, history);
     if (plays === null || cleanWins === null) seedCounters(out, history);
   }
@@ -690,7 +1207,10 @@ export function loadProgress(): PlayerProgress {
     (typeof raw.xp !== 'number' ||
       typeof raw.plays !== 'number' ||
       typeof raw.cleanWins !== 'number' ||
-      typeof raw.dailyBest !== 'number');
+      typeof raw.dailyBest !== 'number' ||
+      // a store from before the feats: the replay above filled them in and
+      // must be persisted HERE, at load — never at write time (see below)
+      !Array.isArray(raw.feats));
   const stored = normalize(raw);
   const p = stored ?? seedFromHistory();
   const changed = evaluateLandmarks(p, Date.now());
@@ -724,6 +1244,22 @@ export interface DailyProgressInfo {
   cleanWin: boolean;
   /** the daily streak's best run after this completion */
   best: number;
+}
+
+/**
+ * Stamps every landmark this state has earned, in a LOOP: unlocking one
+ * pays 80 XP, which can itself carry the player over a level tier whose
+ * crown must then unlock in the same breath. Bounded by the catalogue size —
+ * each pass stamps at least one landmark and none is ever stamped twice.
+ */
+function stampLandmarks(p: PlayerProgress, atMs: number, onUnlock: (id: string) => void): void {
+  for (let pass = 0; pass < LANDMARKS.length; pass++) {
+    const before = new Set(Object.keys(p.landmarks));
+    if (!evaluateLandmarks(p, atMs)) break;
+    for (const id of Object.keys(p.landmarks)) {
+      if (!before.has(id)) onUnlock(id);
+    }
+  }
 }
 
 function awardXp(p: PlayerProgress, r: GameResult, daily?: DailyProgressInfo): XpAward {
@@ -760,17 +1296,8 @@ function awardXp(p: PlayerProgress, r: GameResult, daily?: DailyProgressInfo): X
     if (daily.advanced) grant('dailyStreak');
   }
 
-  /* Landmarks last, and in a LOOP: unlocking one pays 80 XP, which can
-     itself carry the player over a level tier whose crown must then unlock
-     in the same breath. Bounded by the catalogue size — each pass stamps at
-     least one landmark and none is ever stamped twice. */
-  for (let pass = 0; pass < LANDMARKS.length; pass++) {
-    const before = new Set(Object.keys(p.landmarks));
-    if (!evaluateLandmarks(p, r.finishedAt)) break;
-    for (const id of Object.keys(p.landmarks)) {
-      if (!before.has(id)) grant('landmark', getLandmark(id)?.title);
-    }
-  }
+  // landmarks last (see stampLandmarks — the loop is load-bearing)
+  stampLandmarks(p, r.finishedAt, (id) => grant('landmark', getLandmark(id)?.title));
 
   const total = entries.reduce((sum, e) => sum + e.xp, 0);
   const levelAfter = levelFromXp(p.xp);
@@ -790,4 +1317,29 @@ export function recordProgress(result: GameResult, daily?: DailyProgressInfo): P
   const award = awardXp(p, result, daily);
   writeGameData(PROGRESS_KEY, p);
   return { progress: p, award };
+}
+
+/**
+ * The second write path: a feat earned OUTSIDE a game — making a win card,
+ * exporting or importing a backup. Same rules as a result, minus the game:
+ * the moment is stamped once, anything it unlocked is stamped with it and
+ * paid the usual landmark XP.
+ *
+ * Returns null when the feat was already held, so the caller can skip a
+ * pointless state update — and so a player who exports ten backups is paid
+ * for one, exactly like every other award in this store.
+ *
+ * No XpAward comes back on purpose: these moments happen on surfaces with
+ * no results modal (a settings page, a share sheet), so the XP lands
+ * quietly and the trophy itself is what the player sees.
+ */
+export function recordFeat(feat: string): PlayerProgress | null {
+  const p = normalize(readGameData<PlayerProgress>(PROGRESS_KEY)) ?? seedFromHistory();
+  if (p.feats.includes(feat)) return null;
+  p.feats.push(feat);
+  stampLandmarks(p, Date.now(), () => {
+    p.xp += XP_AWARDS.landmark;
+  });
+  writeGameData(PROGRESS_KEY, p);
+  return p;
 }

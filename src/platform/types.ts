@@ -232,6 +232,32 @@ export interface MasteryGuide {
   references: MasteryLink[];
 }
 
+/**
+ * A hidden landmark a game declares for itself (see progress/progress.ts).
+ *
+ * Easter eggs are the ONE game-specific trophy, and they are still derived
+ * rather than enumerated: the catalogue spreads whatever the registry
+ * declares, exactly as it spreads one mastery per non-empty category. The
+ * platform must never special-case a game id in landmark logic — a game
+ * that wants a secret ships the predicate itself.
+ *
+ * `when` is handed the finished result (outcome, difficulty, options,
+ * errors, duration…) and must be a pure, cheap boolean: it runs inside the
+ * single progress write path, for every result, forever.
+ */
+export interface EasterEggDef {
+  /** unique within the game; the landmark id is `egg-<gameId>-<id>` */
+  id: string;
+  title: string;
+  /** the line shown once it is found — how it was earned */
+  requirement: string;
+  /** celebratory emoji for the shareable card (content, not UI chrome) */
+  emoji: string;
+  /** content-palette slot (--play-N), 1-16 and never 9 (white) */
+  slot: number;
+  when: (result: GameResult) => boolean;
+}
+
 /** The contract each game folder exports to plug into the platform. */
 export interface GameDefinition {
   id: string;
@@ -273,6 +299,11 @@ export interface GameDefinition {
     /** the tier daily runs are locked to; omit for medium */
     difficulty?: Difficulty;
   };
+  /**
+   * Hidden trophies this game hands the landmark catalogue (see
+   * `EasterEggDef`). Omit — as almost every game does — when it has none.
+   */
+  easterEggs?: EasterEggDef[];
 }
 
 /** A finished (or abandoned) play, persisted in history. */
@@ -291,6 +322,15 @@ export interface GameResult {
   assistsUsed: string[];
   /** Won without any assist actually used and no hints. */
   cleanWin: boolean;
+  /**
+   * The game options this run was played under (see `GameDefinition.options`),
+   * frozen at start() like the save's copy. Recorded because an option can
+   * be the POINT of a feat — the Pokémon easter egg has to know which deck
+   * was on the table — and because a result is the only thing progress ever
+   * sees. Absent on games with no options, and on every row written before
+   * this field existed.
+   */
+  options?: Record<string, string>;
   extra?: Record<string, number | string>;
 }
 

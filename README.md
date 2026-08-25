@@ -89,7 +89,8 @@ A minimalist platform of sixty-seven classic puzzle and brain games — flat sur
 - **Statistics & history**: win rate, best/avg time, best/avg score, game crowns, streaks, errors, hints, time played, high scores per difficulty, filterable per game, with a calendar to browse any day's games (Profile tab)
 - **Play streak**: playing on consecutive days builds a Duolingo-style day streak — a flame card on the profile with a Mo–Su week row (plus best-ever and total days played) and a compact flame counter next to your name on the home page; miss a full day and it resets. The flame greys out until you've played that day
 - **Completion markers**: every difficulty you've beaten gets a thick green ring and a gold-star seal on its top-left corner — on that game's difficulty picker and on the profile's high-score tiles alike; beat a game on all five tiers and it earns a green badge with a flat gold check-marked trophy, shown on its menu card and beside its name in the profile's high scores
-- **Landmarks**: a trophy collection on the profile — play your first game, streak milestones (1–3 weeks, 1 month, bimester, trimester, quadrimester, semester, a full year), finish 50/100/200/500/1000 games, win 50/100/200/500/1000 of them with no help at all, reach each rank crown, keep a Daily Challenge streak (7 days, a month, 100 days, a year) and solve one of every game in the daily rotation, play every game, beat every game on each difficulty, and master each category. Locked trophies show in black & white behind a padlock with live progress ("41/67"); unlocked ones color in with their date and can be shared as a designed 1080×1350 card. Trophies are permanent — once earned they're never taken back, and they survive a history wipe
+- **Landmarks**: a trophy collection on the profile — play your first game, streak milestones (1–3 weeks, 1 month, bimester, trimester, quadrimester, semester, a full year), finish 50/100/200/500/1000 games, win 50/100/200/500/1000 of them with no help at all, win 10/25/50/75/100 in a row with no help, reach each rank crown, keep a Daily Challenge streak (7 days, a month, 100 days, a year) and solve one of every game in the daily rotation, play every game, take a Grand Slam (every game in the library beaten unaided on one difficulty — one for each tier), master each category, win one clean in every category (Renaissance) and sweep a whole category on all five tiers (Full House). Alongside them a set of one-off feats: win with no mistakes at all, win in under a minute (and under thirty seconds), win straight after a loss, win a board you'd already failed twice, play in the small hours or before six, play every category in a single day, dig out a game from the bottom of your own play counts, make your first win card, and export or import a backup. Locked trophies show in black & white behind a padlock with live progress ("41/67"); unlocked ones color in with their date and can be shared as a designed 1080×1350 card. Trophies are permanent — once earned they're never taken back, and they survive a history wipe
+- **Easter eggs**: a separate, hidden section under the landmarks. You can see how many there are and how many you've found — nothing else. Locked ones show a dashed `?` egg with no title and no hint; find one and it colors in with its real name and story, and shares like any other trophy
 - **Profile**: name + avatar — an emoji or one of six Pokémon (Pikachu, Bulbasaur, Charmander, Squirtle, Snorlax, Mewtwo), which follows you onto the home header and every card you share — plus totals across games
 - **Profile color**: pick yellow, green, orange, blue or purple in Profile → Edit and it becomes yours across the app — a 4px frame around your avatar and the home header card, the color of your level, XP bar, streak flame and counter, and the palette your profile charts are drawn from. Every color is nudged just enough on each surface theme to stay readable (yellow darkens on warm paper so a level number never disappears into it), and **Standard** is always there to put the shipped orange back
 - **Share cards**: on any win, generate a 1080×1350 PNG win card — native share sheet on iPhone (WhatsApp etc.), download or long-press-copy anywhere
@@ -260,11 +261,20 @@ a `mastery.ts` strategy guide, and save/resume support (hydrate from
 Streaks and landmarks need **no per-game work**: the achievement
 catalogue (`src/platform/progress/`) is derived from the registry and the
 category vocabulary, so a new game automatically counts toward the
-Collector, difficulty-sweep and category-mastery trophies (and the first
+Collector, Grand Slam and category-mastery trophies (and the first
 game of a new category creates that category's landmark). Never hardcode
 game counts or lists in landmark logic — `npm run validate` re-proves the
 catalogue is in sync with the library on every run, so run it after
 registering the game.
+
+The one game-specific trophy is an **easter egg**, and it is still
+declared by the game, not by the platform: add an `easterEggs` entry to
+the definition (id, title, requirement, emoji, palette slot, and a
+`when(result)` predicate) and the catalogue picks it up as a hidden
+landmark. The predicate is handed the finished result, so it can key off
+the outcome, difficulty, time, errors or the options the run was played
+under — Memory Match's "Gotta Catch 'em All" is simply "won, with the
+Pokémon cards".
 
 ### Assist / help tracking
 

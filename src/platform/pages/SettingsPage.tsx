@@ -5,6 +5,7 @@ import { applyBackup, exportBackup, parseBackup, type ParseResult } from '../bac
 import { ExportIcon, ExternalLinkIcon, ImportIcon, TrashIcon, WarnIcon } from '../design/icons';
 import { sfx } from '../audio';
 import { buildLine, VERSION_LABEL } from '../version';
+import { FEATS } from '../progress/progress';
 import type { ThemeId } from '../types';
 import { Avatar } from '../design/avatars';
 
@@ -15,7 +16,7 @@ const THEMES: { id: ThemeId; name: string; desc: string }[] = [
 ];
 
 export function SettingsPage() {
-  const { settings, updateSettings, profile, wipeHistory, wipeEverything, reloadFromStorage } =
+  const { settings, updateSettings, profile, wipeHistory, wipeEverything, reloadFromStorage, markFeat } =
     useAppState();
   const [confirm, setConfirm] = useState<'history' | 'all' | null>(null);
   /** the picked file, validated and awaiting the player's go-ahead */
@@ -31,6 +32,7 @@ export function SettingsPage() {
     a.download = `100games-${profile.name.toLowerCase().replace(/\s+/g, '-') || 'data'}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    markFeat(FEATS.backupOut);
   };
 
   const pickFile = async (file: File) => {
@@ -260,6 +262,10 @@ export function SettingsPage() {
               onClick={() => {
                 applyBackup(pending.payload);
                 reloadFromStorage();
+                // after the reload: the imported file replaced the progress
+                // store, so the feat belongs to the store that is now on the
+                // device (and may already be in it)
+                markFeat(FEATS.backupIn);
                 setPending(null);
                 setImported(true);
                 sfx.win();

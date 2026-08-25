@@ -6,7 +6,7 @@ import { deleteSave, loadSaves, putSave, resolveAssists, resolveOptions } from '
 import { formatDate, formatDuration } from '../stats';
 import { sfx } from '../audio';
 import { BackIcon, Chip, HelpIcon, HomeIcon, Modal, PauseIcon, PlayIcon, RestartIcon, SaveIcon, ShareIcon, StarIcon, Toggle } from './ui';
-import { beatenDifficulties } from '../progress/progress';
+import { beatenDifficulties, FEATS } from '../progress/progress';
 import { ShareCardModal } from './ShareCard';
 import { WinCelebration, WIN_CELEBRATION_MS } from './WinCelebration';
 import { LevelUpModal, XpEarned } from './Level';
@@ -82,7 +82,7 @@ export function GameShell({
       from the stored seed and the difficulty is locked to the assignment */
   daily?: DailyChallengeRecord;
 }) {
-  const { settings, updateSettings, setGameAssist, setGameOption, recordResult, profile, progress } =
+  const { settings, updateSettings, setGameAssist, setGameOption, recordResult, markFeat, profile, progress } =
     useAppState();
   // difficulties this game has been WON at — green star + border on the picker
   const beaten = beatenDifficulties(progress, game.id);
@@ -257,9 +257,13 @@ export function GameShell({
         .map(([id]) => id),
       assistsUsed: stats.assistsUsed,
       cleanWin: outcome === 'won' && stats.hintsUsed === 0 && stats.assistsUsed.length === 0,
+      // the options this run was played under, for the feats that turn on
+      // them (an easter egg keyed to a deck). Omitted when the game has
+      // none, exactly like the save's copy.
+      ...(Object.keys(sessionOptions).length > 0 ? { options: sessionOptions } : {}),
       extra: stats.extra
     }),
-    [game.id, difficulty, assists]
+    [game.id, difficulty, assists, sessionOptions]
   );
 
   const events = useMemo(
@@ -814,6 +818,7 @@ export function GameShell({
               : {})
           }}
           onClose={() => setShowShare(false)}
+          onRendered={() => markFeat(FEATS.sharedWin)}
         />
       )}
     </div>
