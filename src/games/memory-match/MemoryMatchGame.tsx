@@ -63,9 +63,18 @@ export function MemoryMatchGame({
 }: GameProps) {
   const cfg = CONFIG[difficulty];
   // old-format saves may lack `matched` — treat them as no save
-  const saved =
+  const rawSave =
     savedState && Array.isArray((savedState as MemorySave).matched)
       ? (savedState as MemorySave)
+      : undefined;
+  /* A save dealt from a theme this build no longer ships (the zodiac deck
+     was removed) is equally unreadable: its deck is face ids no remaining
+     theme can draw, and the fallback theme would render them as literal id
+     strings. memoryTheme() answers a different id than asked exactly when
+     the asked one is gone — treat that save as no save too. */
+  const saved =
+    rawSave && (rawSave.theme === undefined || memoryTheme(rawSave.theme).id === rawSave.theme)
+      ? rawSave
       : undefined;
   /* The save's own theme wins over the current pick: its deck holds face
      ids from that theme, and the shell restores the option alongside it.

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { sfx } from '../audio';
+import { RosetteIcon } from '../design/icons';
 import { RANK_BADGE } from '../design/rankMaterials';
 
 /** Icons live in the design system — re-exported here for convenience. */
@@ -348,24 +349,24 @@ export function Modal({
 }
 
 /**
- * The swept-all-difficulties crown as a standalone ACHIEVEMENT badge, with
+ * The swept-all-difficulties rosette as a standalone ACHIEVEMENT badge, with
  * the number of games that earned it on a counter bubble beside it.
  *
  * Same family as the inline `.game-card-trophy` on game cards — `--xp` disc,
- * `--xp-rim` border, white crown — so the mark means one thing everywhere;
- * this is the counted form for the level card.
+ * `--xp-rim` border, white rosette medal (the shared `RosetteIcon`, one
+ * drawing for both surfaces) — so the mark means one thing everywhere; this
+ * is the counted form for the level card. It is deliberately NOT a crown:
+ * crowns belong to the rank ladder, and this badge faces a rank crown across
+ * the level card — two crown families on one card read as one ladder.
  *
  * The count is its own COUNTER BUBBLE hanging off the bottom-right, the way
- * an app icon carries a notification count — the crown disc itself is left
+ * an app icon carries a notification count — the art disc itself is left
  * exactly as it is on a game card, at the same size as the rank crown facing
  * it across the level card. Three earlier layouts all failed on the same
- * mistake, putting the number *into* the art: inside the crown's band (a
- * flame has a fat middle to print into, a crown is mostly points and gaps,
- * so the band left ~8px and it was illegible), stacked under a half-height
- * crown (readable, but it destroyed the silhouette that carries the meaning)
- * and finally overlaid across the crown (readable, and it broke the crown's
- * shape). Art and count are separate objects; the bubble is where a count
- * belongs.
+ * mistake, putting the number *into* the art (in its band, stacked under
+ * half-height art, overlaid across it — each broke legibility or the
+ * silhouette). Art and count are separate objects; the bubble is where a
+ * count belongs.
  *
  * The bubble is the SAME material as the disc it hangs off — `--xp` fill,
  * `--xp-rim` ring, extruded bottom edge, white ink — so the two read as one
@@ -374,7 +375,7 @@ export function Modal({
  * ~2.1:1 on the default orange, ~1.4:1 on yellow), which is why the digits
  * are sized and weighted up. If a color ever reads badly, deepen the FILL to
  * `--xp-deep` rather than darkening the ink — darkening the ink is what stops
- * the bubble matching the crown.
+ * the bubble matching the badge.
  *
  * Zero renders GREY rather than hidden — the same locked treatment as an
  * unearned rank crown or landmark plate, so "grey means not yet" only ever
@@ -394,11 +395,13 @@ export function GameCrownBadge({ count, size = 38 }: { count: number; size?: num
      the wrap at the full box so the two discs stay centred on one line. */
   const disc = (size * RANK_BADGE.r * 2) / 64;
   /* ...and the art is inset inside that disc the way the rank crown's is.
-     RankCrown draws its crown ~62% of the rim's diameter wide, leaving a
-     visible ring of material all round; this path fills its own viewBox
-     (bbox 54.8 x 51.5 of 64), so drawing it at 100% put the side jewels
-     ~1px off the rim and read as cramped next to the crown facing it. 0.724
-     of the disc is the box that lands the art at that same ~62%. */
+     RankCrown draws its crown ~62% of the rim's diameter tall, leaving a
+     visible ring of material all round; RosetteIcon fills ~86% of its own
+     viewBox height (the old crown art at 100% put its side jewels ~1px off
+     the rim and read as cramped next to the crown facing it). 0.724 of the
+     disc is the box that lands the art at that same ~62%. The art itself is
+     the SAME RosetteIcon the inline game-card trophy renders — one drawing,
+     two surfaces — inked white by .crown-badge. */
   const art = +(disc * 0.724).toFixed(2);
   return (
     <span
@@ -409,15 +412,7 @@ export function GameCrownBadge({ count, size = 38 }: { count: number; size?: num
       aria-label={label}
     >
       <span className="crown-badge" style={{ width: disc, height: disc }}>
-        <svg viewBox="0 0 64 64" width={art} height={art} aria-hidden>
-          <g fill="#fff">
-            <path d="M10 22 22 33 32 12 42 33 54 22 49 47 15 47Z" />
-            <circle cx="10" cy="22" r="5.4" />
-            <circle cx="32" cy="12" r="6" />
-            <circle cx="54" cy="22" r="5.4" />
-            <rect x="14" y="50" width="36" height="7.5" rx="2.2" />
-          </g>
-        </svg>
+        <RosetteIcon size={art} />
       </span>
       <span className="crown-badge-count" aria-hidden>
         {count}

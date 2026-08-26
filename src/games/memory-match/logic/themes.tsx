@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { PixelArt } from './pixelArt';
-import { ZODIAC_ART } from './zodiacArt';
 import { cardSprite } from './cardArt';
 
 /**
@@ -17,7 +16,7 @@ import { cardSprite } from './cardArt';
  * unwinnable board. `npm run validate` re-proves the count for every theme.
  */
 
-export type MemoryThemeId = 'standard' | 'pokemon' | 'zodiac' | 'cards';
+export type MemoryThemeId = 'standard' | 'pokemon' | 'cards';
 
 export interface MemoryTheme {
   id: MemoryThemeId;
@@ -106,63 +105,6 @@ const pokemon: MemoryTheme = {
   boardClass: 'mm-theme-sprite'
 };
 
-/* ---------------- zodiac: signs, luminaries and planets ---------------- */
-
-/**
- * 12 signs is short of the 28 the extreme tier needs, so the theme is the
- * whole astrological alphabet: the signs, then the luminaries and planets,
- * then the lunar nodes and a comet — the real horoscope set, not padding.
- *
- * Every face is hand-drawn 16×16 pixel art (logic/zodiacArt.ts). The signs
- * are their GLYPHS rather than their creatures — see the note there for why
- * the creature version had to be thrown away.
- */
-const ZODIAC_NAMES: Record<string, string> = {
-  aries: 'Aries, the ram',
-  taurus: 'Taurus, the bull',
-  gemini: 'Gemini, the twins',
-  cancer: 'Cancer, the crab',
-  leo: 'Leo, the lion',
-  virgo: 'Virgo, the maiden',
-  libra: 'Libra, the scales',
-  scorpio: 'Scorpio, the scorpion',
-  sagittarius: 'Sagittarius, the archer',
-  capricorn: 'Capricorn, the goat',
-  aquarius: 'Aquarius, the water bearer',
-  pisces: 'Pisces, the fishes',
-  sun: 'the Sun',
-  moon: 'the Moon',
-  mercury: 'Mercury',
-  venus: 'Venus',
-  earth: 'Earth',
-  mars: 'Mars',
-  jupiter: 'Jupiter',
-  saturn: 'Saturn',
-  uranus: 'Uranus',
-  neptune: 'Neptune',
-  pluto: 'Pluto',
-  'north-node': 'the North Node',
-  'south-node': 'the South Node',
-  comet: 'a comet',
-  star: 'a star',
-  sparkle: 'a sparkle',
-  hourglass: 'an hourglass',
-  opposition: 'an opposition'
-};
-
-const zodiac: MemoryTheme = {
-  id: 'zodiac',
-  label: 'Zodiac',
-  faces: Object.keys(ZODIAC_ART),
-  render: (f) => {
-    const sprite = ZODIAC_ART[f];
-    return sprite ? <PixelArt sprite={sprite} className="mm-pixel" /> : null;
-  },
-  preview: <PixelArt sprite={ZODIAC_ART.leo} className="mm-pixel" />,
-  describe: (f) => ZODIAC_NAMES[f] ?? f,
-  boardClass: 'mm-theme-zodiac'
-};
-
 /* ---------------- cards: a French deck ---------------- */
 
 const SUITS = [
@@ -215,11 +157,10 @@ const cards: MemoryTheme = {
 export const MEMORY_THEMES: Record<MemoryThemeId, MemoryTheme> = {
   standard,
   pokemon,
-  zodiac,
   cards
 };
 
-export const MEMORY_THEME_LIST = [standard, pokemon, zodiac, cards];
+export const MEMORY_THEME_LIST = [standard, pokemon, cards];
 
 /** the stored choice, falling back to the classic set for anything unknown */
 export function memoryTheme(id: string | undefined): MemoryTheme {

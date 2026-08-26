@@ -140,6 +140,7 @@ export const FEATS = {
   halfMinute: 'under-30',
   flawless: 'flawless',
   sharedWin: 'shared-win',
+  sharedApp: 'share-app',
   backupOut: 'backup-export',
   backupIn: 'backup-import'
 } as const;
@@ -238,6 +239,7 @@ export type LandmarkKind =
   | 'clean-wins'
   | 'clean-streak'
   | 'level'
+  | 'daily-first'
   | 'daily-streak'
   | 'daily-collector'
   | 'all-played'
@@ -530,6 +532,15 @@ export const LANDMARKS: LandmarkDef[] = [
     emoji: '📣'
   },
   {
+    id: 'share-app',
+    title: 'Spread the Word',
+    requirement: "Share the app's link with a friend (Settings → Share the app)",
+    kind: 'share',
+    feat: FEATS.sharedApp,
+    slot: 5,
+    emoji: '💌'
+  },
+  {
     id: 'backup-export',
     title: 'Backup Plan',
     requirement: 'Export a backup of your data',
@@ -555,6 +566,18 @@ export const LANDMARKS: LandmarkDef[] = [
      hardcoded "the daily exists" flag. */
   ...(eligibleGames().length > 0
     ? [
+        /* the family's front door: any completion at all. Late completions
+           count too — `dailyGames` records the game of EVERY completed
+           daily, streak or no streak, so the door never depends on the
+           calendar being kind. */
+        {
+          id: 'daily-first',
+          title: 'Daily Debut',
+          requirement: 'Complete your first Daily Challenge',
+          kind: 'daily-first',
+          slot: 4,
+          emoji: '🌅'
+        } as LandmarkDef,
         ...DAILY_TIERS.map(
           (t): LandmarkDef => ({
             id: `daily-streak-${t.days}`,
@@ -718,6 +741,11 @@ export function landmarkMeter(
       return { done: Math.min(p.cleanStreak, def.count!), total: def.count! };
     case 'level':
       return { done: Math.min(levelFromXp(p.xp), def.level!), total: def.level! };
+    case 'daily-first':
+      // `dailyGames` gains an entry on every completed daily (late ones
+      // included), so a non-empty list IS "has completed at least one" —
+      // deliberately not dailyBest, which a late-only player never grows
+      return { done: Math.min(p.dailyGames.length, 1), total: 1 };
     case 'daily-streak':
       // the live run when the caller knows it, so a broken streak reads
       // honestly as "start again" instead of freezing at a number the
@@ -1321,7 +1349,8 @@ export function recordProgress(result: GameResult, daily?: DailyProgressInfo): P
 
 /**
  * The second write path: a feat earned OUTSIDE a game — making a win card,
- * exporting or importing a backup. Same rules as a result, minus the game:
+ * sharing the app's link, exporting or importing a backup. Same rules as a
+ * result, minus the game:
  * the moment is stamped once, anything it unlocked is stamped with it and
  * paid the usual landmark XP.
  *

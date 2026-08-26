@@ -5,7 +5,7 @@ import { GAMES, getGame } from '../registry';
 import { activeCategories, categoryName, gameCategory } from '../categories';
 import { computeStats, formatDate, formatDuration } from '../stats';
 import { allDifficultiesBeaten, beatenDifficulties, computeStreak } from '../progress/progress';
-import { CrownIcon, StarIcon } from '../design/icons';
+import { RosetteIcon, StarIcon } from '../design/icons';
 import { StreakHero } from '../components/Streak';
 import { LevelHero } from '../components/Level';
 import { LandmarkBadges, LandmarksSection } from '../components/Landmarks';
@@ -313,7 +313,7 @@ export function ProfilePage() {
                   title="Beaten on every difficulty"
                   aria-label="Beaten on every difficulty"
                 >
-                  <CrownIcon size={18} />
+                  <RosetteIcon size={18} />
                 </span>
               )}
               <span className="highscore-game">{g.name}</span>

@@ -129,6 +129,26 @@ export function LandmarkArt({
       const tier = RANK_TIERS.find((t) => t.id === def.rank);
       return tier ? <RankCrown rank={tier} size={size} /> : null;
     }
+    case 'daily-first':
+      // the family's calendar chrome with a SUNRISE on the page: the first
+      // daily is the family's daybreak. Deliberately not a number — a "1"
+      // here would read as one more streak tier beside the real ones.
+      return (
+        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+          <rect x="7" y="13" width="50" height="44" rx="8" fill={lm} stroke="var(--ink)" strokeWidth="3" />
+          <path d="M7 26h50" stroke="var(--ink)" strokeWidth="3" />
+          <rect x="18" y="5" width="6" height="13" rx="3" fill="var(--ink)" />
+          <rect x="40" y="5" width="6" height="13" rx="3" fill="var(--ink)" />
+          <path d="M22 50a10 10 0 0 1 20 0Z" fill="var(--play-9)" />
+          <path
+            d="M32 33v-4 M20 38.5l-2.8-2.8 M44 38.5l2.8-2.8"
+            stroke="var(--play-9)"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+          />
+          <path d="M15 50h34" stroke="var(--play-9)" strokeWidth="3.5" strokeLinecap="round" />
+        </svg>
+      );
     case 'daily-streak': {
       // a calendar page, NOT a flame: the play streak already owns the
       // flame, and two streaks that share art are two streaks nobody can
@@ -364,7 +384,39 @@ export function LandmarkArt({
         </svg>
       );
     case 'share':
-      // the win card, leaving
+      // two shares, two drawings: the win card leaving for Show Off, a
+      // paper plane carrying the LINK out for Spread the Word — one kind,
+      // branched on the feat, exactly like the two backup directions
+      if (def.feat === 'share-app') {
+        return (
+          <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+            {/* upper wing */}
+            <path
+              d="M58 9 L6 31 L25 38Z"
+              fill={lm}
+              stroke="var(--ink)"
+              strokeWidth="3"
+              strokeLinejoin="round"
+            />
+            {/* body and tail fold */}
+            <path
+              d="M58 9 L25 38 L29 55 L37 43Z"
+              fill={lm}
+              stroke="var(--ink)"
+              strokeWidth="3"
+              strokeLinejoin="round"
+            />
+            {/* the word, spreading behind it */}
+            <path
+              d="M8 46h11 M14 54h13 M44 52h10"
+              stroke="var(--play-9)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              opacity="0.85"
+            />
+          </svg>
+        );
+      }
       return (
         <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
           <rect
@@ -501,6 +553,8 @@ function cardStat(def: LandmarkDef, total: number): [string, string] {
       return [String(def.count), 'WINS WITH NO HELP'];
     case 'level':
       return [String(def.level), `LEVEL · ${def.title.toUpperCase()}`];
+    case 'daily-first':
+      return ['DAY 1', 'THE DAILY HABIT BEGINS'];
     case 'daily-streak':
       return [String(def.days), 'DAILY CHALLENGES IN A ROW'];
     case 'daily-collector':
@@ -526,7 +580,7 @@ function cardStat(def: LandmarkDef, total: number): [string, string] {
     case 'deep-cut':
       return ['10%', 'THE BOTTOM OF THE PLAY COUNTS'];
     case 'share':
-      return ['1st', 'WIN CARD MADE'];
+      return def.feat === 'share-app' ? ['1st', 'FRIEND GIVEN THE LINK'] : ['1st', 'WIN CARD MADE'];
     case 'backup':
       return def.feat === 'backup-export' ? ['OUT', 'DATA EXPORTED'] : ['IN', 'DATA BROUGHT HOME'];
     case 'renaissance':

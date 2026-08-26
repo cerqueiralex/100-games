@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useAppState } from '../AppState';
 import { Modal, Toggle } from '../components/ui';
 import { applyBackup, exportBackup, parseBackup, type ParseResult } from '../backup';
-import { ExportIcon, ExternalLinkIcon, ImportIcon, TrashIcon, WarnIcon } from '../design/icons';
+import { ExportIcon, ExternalLinkIcon, ImportIcon, ShareIcon, TrashIcon, WarnIcon } from '../design/icons';
 import { sfx } from '../audio';
 import { buildLine, VERSION_LABEL } from '../version';
 import { FEATS } from '../progress/progress';
@@ -19,6 +19,8 @@ export function SettingsPage() {
   const { settings, updateSettings, profile, wipeHistory, wipeEverything, reloadFromStorage, markFeat } =
     useAppState();
   const [confirm, setConfirm] = useState<'history' | 'all' | null>(null);
+  /** brief "Link copied!" feedback on the share card */
+  const [copied, setCopied] = useState(false);
   /** the picked file, validated and awaiting the player's go-ahead */
   const [pending, setPending] = useState<ParseResult | null>(null);
   const [imported, setImported] = useState(false);
@@ -41,6 +43,39 @@ export function SettingsPage() {
     } catch {
       setPending({ ok: false, error: "That file couldn't be read. Try exporting it again." });
     }
+  };
+
+  /* The shareable link is DERIVED, never hardcoded: origin + BASE_URL is
+     the deployed Pages URL in production and the LAN address in dev, so the
+     card always hands out the app the player is actually running. */
+  const appUrl = new URL(import.meta.env.BASE_URL, window.location.href).toString();
+
+  /* Tapping the card always copies the link; devices with a native share
+     sheet (the installed PWA on a phone) get it opened on top, with the
+     copy as the safety net underneath. Either outcome is a share, so the
+     Spread the Word feat stamps on the first success — recordFeat pays
+     only once, like every out-of-game feat. Dismissing the sheet after a
+     successful copy still copied, so the stamp stands. */
+  const shareApp = async () => {
+    sfx.tap();
+    let done = false;
+    try {
+      await navigator.clipboard.writeText(appUrl);
+      done = true;
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2200);
+    } catch {
+      // clipboard blocked — the share sheet below may still succeed
+    }
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: '100 Games', url: appUrl });
+        done = true;
+      } catch {
+        // sheet dismissed — not a share unless the copy above landed
+      }
+    }
+    if (done) markFeat(FEATS.sharedApp);
   };
 
   return (
@@ -115,6 +150,37 @@ export function SettingsPage() {
           Each game has its own assist toggles on its start screen. Whatever you use is recorded in
           your history, so clean wins stay distinguishable from assisted ones.
         </p>
+      </section>
+
+      <section className="setup-section">
+        <h3 className="section-title">Share the app</h3>
+        <p className="section-note">
+          100 Games is free and needs no store, no account and no install — anyone who opens the
+          link gets the whole library. Tap the card to copy it (your phone&rsquo;s share sheet opens
+          too, where it has one).
+        </p>
+        <div className="card-list">
+          <button className="settings-action" onClick={() => void shareApp()}>
+            <ShareIcon />
+            <span>{copied ? 'Link copied!' : appUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
+          </button>
+          <div className="settings-info-row">
+            <span className="toggle-label">Add to your iPhone home screen</span>
+            <span className="toggle-desc">
+              Open the link in Safari, tap the Share button (the square with an arrow), then choose
+              &ldquo;Add to Home Screen&rdquo;. The app gets its own icon and runs full-screen,
+              fully offline.
+            </span>
+          </div>
+          <div className="settings-info-row">
+            <span className="toggle-label">Add to your Android home screen</span>
+            <span className="toggle-desc">
+              Open the link in Chrome, tap the ⋮ menu, then choose &ldquo;Add to Home screen&rdquo;
+              (on some phones &ldquo;Install app&rdquo;). Same thing: an icon of its own, works
+              offline.
+            </span>
+          </div>
+        </div>
       </section>
 
       <section className="setup-section">

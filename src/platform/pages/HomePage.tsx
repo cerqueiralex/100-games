@@ -9,7 +9,7 @@ import { StreakChip } from '../components/Streak';
 import { LevelChip, RankCrown } from '../components/Level';
 import { DailyChallengeCard } from '../components/DailyChallenge';
 import { rankForXp } from '../progress/xp';
-import { ChevronIcon, ClockIcon, CrownIcon, SearchIcon, StarIcon } from '../design/icons';
+import { ChevronIcon, ClockIcon, HeartIcon, RosetteIcon, SearchIcon } from '../design/icons';
 import { sfx } from '../audio';
 import type { CategoryId, GameDefinition } from '../types';
 import type { DailyChallengeRecord } from '../daily/store';
@@ -120,7 +120,7 @@ export function HomePage({
   );
 
   const favorites = settings.favorites;
-  const pinned = visible.filter((g) => favorites.includes(g.id));
+  const favGames = visible.filter((g) => favorites.includes(g.id));
   const rest = visible.filter((g) => !favorites.includes(g.id));
 
   const toggleFavorite = (gameId: string) => {
@@ -139,7 +139,7 @@ export function HomePage({
     return (
       <button key={game.id} className="game-card fx-card" onClick={() => onOpenGame(game.id)}>
         {/* info column (icon + name/tagline, stats pill below) fills the
-            card; pin and arrow sit beside it, centered on the FULL card
+            card; heart and arrow sit beside it, centered on the FULL card
             height */}
         <span className="game-card-main">
           <span className="game-card-top">
@@ -175,13 +175,13 @@ export function HomePage({
             title="Beaten on every difficulty"
             aria-label="Beaten on every difficulty"
           >
-            <CrownIcon size={18} />
+            <RosetteIcon size={18} />
           </span>
         )}
         <span
           role="button"
           tabIndex={0}
-          aria-label={fav ? `Unpin ${game.name}` : `Pin ${game.name}`}
+          aria-label={fav ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`}
           className={`fav-btn ${fav ? 'active' : ''}`}
           onClick={(e) => {
             e.stopPropagation();
@@ -195,7 +195,7 @@ export function HomePage({
             }
           }}
         >
-          <StarIcon filled={fav} />
+          <HeartIcon filled={fav} />
         </span>
         <span className="game-card-go">›</span>
       </button>
@@ -298,7 +298,7 @@ export function HomePage({
 
       {/* Jump back into what you were playing. Hidden while searching or
           filtering: the page is then a result list, and three unrelated
-          games pinned above it would just be noise. */}
+          games stacked above it would just be noise. */}
       {!q && !category && recent.length > 0 && (
         <>
           <h3 className="section-title home-section">
@@ -320,16 +320,16 @@ export function HomePage({
         </>
       )}
 
-      {pinned.length > 0 && (
+      {favGames.length > 0 && (
         <>
           <h3 className="section-title home-section">
-            <StarIcon size={13} filled /> Pinned
+            <HeartIcon size={13} filled /> Favorites
           </h3>
-          <div className="game-cards">{pinned.map(renderCard)}</div>
+          <div className="game-cards">{favGames.map(renderCard)}</div>
         </>
       )}
 
-      {pinned.length > 0 && rest.length > 0 && (
+      {favGames.length > 0 && rest.length > 0 && (
         <h3 className="section-title home-section">All games</h3>
       )}
 

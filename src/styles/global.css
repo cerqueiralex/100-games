@@ -643,18 +643,26 @@ p {
 }
 
 /* the setup screen's locked assignment, standing in for the difficulty row */
-.daily-lock {
+/* The daily SETUP screen wears the daily's identity, so the moment before
+   a daily run never reads as an ordinary game setup: the locked-assignment
+   strip takes the home Daily card's soft --xp ring (same mix — one
+   language for "this surface is the daily") and inks the date --xp.
+   Doubled selector for the same reason as .daily-card: the ring must
+   outrank the shared card binding wherever it sits in the cascade. */
+.daily-lock.daily-lock {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   border-radius: var(--radius-m);
   padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--xp) 45%, var(--border));
 }
 
 .daily-lock-date {
   font-size: 15px;
   font-weight: 700;
+  color: var(--xp);
 }
 
 /* "Last played": three equal shortcuts in one row, wearing the category
@@ -739,7 +747,7 @@ p {
 }
 
 /* the info column: icon + name/tagline on top, stats pill on its own row
-   below so it never squeezes the title. Pin and arrow live OUTSIDE this
+   below so it never squeezes the title. Heart and arrow live OUTSIDE this
    column, so the card's align-items centers them on the full height. */
 .game-card-main {
   flex: 1;
@@ -837,11 +845,10 @@ p {
   color: var(--text-dim);
 }
 
-/* all five difficulties beaten: check-marked trophy badge on the card —
-   green disc, gold trophy, thick darker-green rim, extruded 2.5D bottom
-   edge per the candy depth standard */
-/* "beaten on every difficulty" — a white crown on the progression orange,
-   rimmed in a darker orange. 35px is the 32px badge grown 10%. */
+/* "beaten on every difficulty" — a white rosette medal (RosetteIcon, the
+   category-mastery badge shape; crowns belong to the rank ladder) on the
+   progression orange, rimmed in a darker orange, extruded 2.5D bottom edge
+   per the candy depth standard. 35px is the 32px badge grown 10%. */
 .game-card-trophy {
   display: grid;
   place-items: center;
@@ -855,9 +862,9 @@ p {
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.28);
 }
 
-/* The counted form of the same crown, on the profile card. Shares
+/* The counted form of the same rosette, on the profile card. Shares
    .game-card-trophy's material exactly — --xp disc, --xp-rim border, white
-   crown, extruded inset edge — because "beaten on every difficulty" must
+   rosette, extruded inset edge — because "beaten on every difficulty" must
    read as one mark wherever it appears (see DESIGN.md "Completion
    markers"). Only the size differs; the count hangs off it as its own
    bubble (.crown-badge-count) rather than being drawn into the art. */
@@ -867,6 +874,8 @@ p {
   border-radius: 999px;
   background: var(--xp);
   border: 3px solid var(--xp-rim);
+  /* inks the shared RosetteIcon white, same as .game-card-trophy */
+  color: #fff;
   /* one notch deeper than the 35px inline trophy: this disc is ~36px (the
      RankCrown box minus the inset its own SVG disc sits in — see
      GameCrownBadge), and the edge has to stay readable as an edge at that
@@ -874,7 +883,7 @@ p {
   box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.28);
   flex-shrink: 0;
   box-sizing: border-box;
-  /* no padding here: the crown is inset by being DRAWN smaller than the disc
+  /* no padding here: the art is inset by being DRAWN smaller than the disc
      (GameCrownBadge sizes the svg), which is how the rank crown does it too —
      padding would inset the art from the border box and lose that match */
   padding: 0;
@@ -1174,6 +1183,26 @@ p {
   position: sticky;
   bottom: calc(16px + env(safe-area-inset-bottom));
   box-shadow: var(--shadow);
+}
+
+/* The daily start button trades the neutral primary fill for --xp with a
+   party popper beside the label — the festive twin of the strip's ring
+   above (see DESIGN.md "Daily Challenge"). White ink on --xp is the crown
+   count bubble's documented tradeoff; if a profile color ever reads badly
+   here, deepen the FILL to --xp-deep rather than darkening the ink. The
+   extruded edge keeps the candy standard in the fill's own rim color. */
+.start-btn-daily {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: var(--xp);
+  color: #fff;
+  box-shadow: var(--shadow), inset 0 -4px 0 var(--xp-rim);
+}
+
+.start-btn-daily:active {
+  box-shadow: var(--shadow), inset 0 -1px 0 var(--xp-rim);
 }
 
 .ghost-btn {
@@ -2483,11 +2512,19 @@ p {
 
 /* ---- the painted chrome: 4px extruded frames in the profile color ---- */
 
+/* The FRAME is the object that extrudes, so its layers stack like every
+   other candy surface: bright frame face innermost, dark rim as the
+   outermost bottom lip. The first shipped version had it inverted —
+   bright border outside, dark band inset INSIDE it — which read as an
+   inner shadow on the card, not a 2.5D edge under the frame. Hence the
+   bottom border leg IS the rim and the bright face returns as an inset
+   band above it, keeping the same 8px bottom depth and geometry. */
 :root[data-profile-color] .home-header,
 :root[data-profile-color] .home-avatar,
 :root[data-profile-color] .profile-avatar {
   border: 4px solid var(--xp);
-  box-shadow: inset 0 -4px 0 var(--xp-rim);
+  border-bottom-color: var(--xp-rim);
+  box-shadow: inset 0 -4px 0 var(--xp);
 }
 
 /* the padding gives back exactly the 3px the thicker border took, so turning
@@ -3323,7 +3360,7 @@ a.settings-action {
   user-select: none;
 }
 
-/* Hand-drawn pixel sprites (zodiac signs, playing cards). The SVG carries
+/* Hand-drawn pixel sprites (the playing-card deck). The SVG carries
    shape-rendering: crispEdges, so these scale to any card size without ever
    softening — the whole point of authoring them as pixels. */
 .mm-pixel {
@@ -3337,20 +3374,6 @@ a.settings-action {
 .mm-theme-cards .mm-pixel {
   width: 66%;
   height: 72%;
-}
-
-/* Zodiac: night sky under every app theme. The sprites are drawn with a
-   dark ink outline and lit fills, which needs a dark ground — on the light
-   theme the same art on a pale card loses its outlines entirely. Fixed
-   content colours, like the card stock below. */
-.mm-theme-zodiac .mm-card.up {
-  background: #141c2e;
-  border-color: #2b3856;
-}
-
-.mm-theme-zodiac .mm-card.matched {
-  background: #17301f;
-  border-color: var(--good);
 }
 
 /* Card deck: a real card is ink on white stock, and that is also what keeps

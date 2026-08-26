@@ -199,7 +199,11 @@ they gain enforcement, delete entries obsoleted by code removal.
   redraw what does not read. Enforced as far as it can be: validate rejects
   ragged rows, off-palette characters, near-empty sprites and two faces
   that draw the same picture — but "recognisable" needs eyes, so the
-  render-and-inspect pass is part of the job, not a nicety.
+  render-and-inspect pass is part of the job, not a nicety. (2026-08-26:
+  the zodiac theme itself was removed on user request; the rule still
+  governs the card deck and any future pixel theme, and the removal added
+  its own guard — a save dealt from a theme the build no longer ships is
+  treated as no save, see `MemoryMatchGame`.)
 
 - **2026-08-24 · CSS · an `<img>` brings its own size, and percentages do not
   always contain it.** Pokémon profile avatars overflowed their plate in the

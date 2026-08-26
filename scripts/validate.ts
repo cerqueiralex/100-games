@@ -3658,7 +3658,6 @@ console.log('— Game options & Memory Match themes —');
      therefore be a clean rectangle, every character must be in the palette,
      and no sprite may be blank. */
   {
-    const { ZODIAC_ART } = await import('../src/games/memory-match/logic/zodiacArt');
     const { cardSprite } = await import('../src/games/memory-match/logic/cardArt');
     const { spriteSize } = await import('../src/games/memory-match/logic/pixelArt');
     const { MEMORY_THEMES } = await import('../src/games/memory-match/logic/themes');
@@ -3681,21 +3680,13 @@ console.log('— Game options & Memory Match themes —');
       if (lit < 12) bad(`pixel sprite ${name} has only ${lit} lit pixels — it would look blank`);
     };
 
-    for (const [id, sprite] of Object.entries(ZODIAC_ART)) checkSprite(`zodiac/${id}`, sprite);
     for (const id of MEMORY_THEMES.cards.faces) checkSprite(`cards/${id}`, cardSprite(id));
 
     /* Two faces that draw the SAME picture would make a board unwinnable as
        the player sees it: either card of one pair "matches" either card of
        the other, and the two pairs are indistinguishable. */
-    const seen = new Map<string, string>();
     const key = (s: { palette: Record<string, string>; rows: string[] }) =>
       JSON.stringify([s.rows, s.palette]);
-    for (const [id, sprite] of Object.entries(ZODIAC_ART)) {
-      const k = key(sprite);
-      const dup = seen.get(k);
-      if (dup) bad(`zodiac faces "${dup}" and "${id}" draw exactly the same picture`);
-      seen.set(k, id);
-    }
     const cardsSeen = new Map<string, string>();
     for (const id of MEMORY_THEMES.cards.faces) {
       const k = key(cardSprite(id));
@@ -3838,11 +3829,24 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
     const { eligibleGames } = await import('../src/platform/daily/rotation');
     const eligible = eligibleGames();
     const dailyDefs = LANDMARKS.filter(
-      (d) => d.kind === 'daily-streak' || d.kind === 'daily-collector'
+      (d) => d.kind === 'daily-first' || d.kind === 'daily-streak' || d.kind === 'daily-collector'
     );
     if (eligible.length === 0 && dailyDefs.length > 0)
       bad('the daily landmarks exist with an empty rotation (they could never unlock)');
     if (eligible.length > 0) {
+      // the family's front door: exactly one "first daily" trophy, locked
+      // on a fresh profile, and satisfied by ANY completion — dailyGames
+      // grows on every completed daily, late ones included, which is why
+      // it (and never dailyBest) is the meter's source
+      const firsts = LANDMARKS.filter((d) => d.kind === 'daily-first');
+      if (firsts.length !== 1) bad(`${firsts.length} daily-first landmarks, expected 1`);
+      if (firsts[0]) {
+        if (landmarkMeter(firsts[0], fresh, noStreak).done !== 0)
+          bad('daily-first starts satisfied on a fresh profile');
+        const lateOnly: Progress = { ...fresh, dailyBest: 0, dailyGames: ['sudoku'] };
+        if (landmarkMeter(firsts[0], lateOnly, noStreak).done !== 1)
+          bad('daily-first ignores a completed daily (a late-only player would never unlock it)');
+      }
       const rungs = LANDMARKS.filter((d) => d.kind === 'daily-streak').map((d) => d.days);
       const wantRungs = [7, 30, 100, 365];
       if (JSON.stringify(rungs) !== JSON.stringify(wantRungs))
@@ -3898,6 +3902,21 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
     for (const feat of known) {
       if (!LANDMARKS.some((d) => d.feat === feat)) bad(`feat "${feat}" is stamped but has no landmark`);
     }
+    /* The out-of-game feats are only as real as their call sites — being in
+       FEATS satisfies the id check above, but nothing else proves a surface
+       ever stamps them. Pin each to the surface that owns its moment. */
+    const { readFileSync } = (await import('node:fs')) as unknown as {
+      readFileSync: (path: string, encoding: string) => string;
+    };
+    const read = (p: string) =>
+      readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8');
+    const settings = read('src/platform/pages/SettingsPage.tsx');
+    for (const feat of ['sharedApp', 'backupOut', 'backupIn'] as const) {
+      if (!settings.includes(`markFeat(FEATS.${feat})`))
+        bad(`SettingsPage no longer stamps FEATS.${feat} — its trophy became un-earnable`);
+    }
+    if (!read('src/platform/components/GameShell.tsx').includes('markFeat(FEATS.sharedWin)'))
+      bad('GameShell no longer stamps FEATS.sharedWin — Show Off became un-earnable');
   }
 
   // EASTER EGGS STAY DERIVED, exactly like categories: the catalogue holds
@@ -4153,34 +4172,43 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
       }
     }
     /* THE COUNT LIVES OUTSIDE THE ART. Three shipped layouts put the number
-       inside the crown — in its band (illegible: a crown is mostly points and
-       gaps), stacked under a half-height crown (legible, silhouette
-       destroyed), then overlaid across it (legible, silhouette broken). The
-       crown SVG must therefore carry NO text at all, and the count must be
-       its own bubble whose digits clear the fill they sit on. */
+       inside the art (in the old crown's band — illegible; stacked under
+       half-height art — silhouette destroyed; overlaid across it —
+       silhouette broken). The art must therefore carry NO text at all, and
+       the count must be its own bubble whose digits clear the fill they sit
+       on. The art is the shared RosetteIcon — the same drawing the inline
+       game-card trophy uses, and deliberately NOT a crown: crowns belong to
+       the rank ladder this badge faces across the level card. */
     const badge = read('src/platform/components/ui.tsx').match(
       /export function GameCrownBadge[\s\S]*?\n}/
     )?.[0];
-    if (!badge) bad('GameCrownBadge is gone — the level card has no counted crown');
-    else {
-      if (/<text/.test(badge))
-        bad('the crown SVG carries text again — the count belongs in its own bubble, not in the art');
-      if (!/crown-badge-count/.test(badge)) bad('the crown badge has no counter bubble');
-      // and the crown still fills its disc rather than being shrunk for the number
-      const tip = Number(badge.match(/M10 22 22 33 32 (\d+)/)?.[1] ?? 99);
-      if (tip > 16) bad(`the crown no longer fills the badge (tip at y=${tip})`);
+    const rosette = read('src/platform/design/icons.tsx').match(
+      /export function RosetteIcon[\s\S]*?\n}/
+    )?.[0];
+    if (!badge) bad('GameCrownBadge is gone — the level card has no counted badge');
+    if (!rosette) bad('RosetteIcon is gone — the swept-game mark has no art');
+    if (badge && rosette) {
+      if (/<text/.test(badge) || /<text/.test(rosette))
+        bad('the badge art carries text again — the count belongs in its own bubble, not in the art');
+      if (!/crown-badge-count/.test(badge)) bad('the game badge has no counter bubble');
+      if (!/<RosetteIcon/.test(badge))
+        bad('GameCrownBadge no longer draws the shared RosetteIcon — the swept-game mark is now two drawings');
+      // the rosette still fills its viewBox rather than being shrunk for a number:
+      // medal disc at r7.5 of the 24 box, ribbons reaching y=22.3
+      if (!/a7\.5 7\.5/.test(rosette) || !/22\.3/.test(rosette))
+        bad('RosetteIcon no longer fills its box — the medal shrank or lost its ribbons');
       /* ONE SIZE, TWO CORNERS. `size` is RankCrown's SVG BOX, and that SVG
          draws its disc at r=30 inside a 64 viewBox — so a plain `size`px
          disc here ships ~7% wider than the crown facing it across the level
          card, which is exactly what happened. Same for the art: RankCrown
          keeps a visible ring of material round its crown, so this one must
-         be DRAWN inset rather than filling the disc (at 100% its side jewels
+         be DRAWN inset rather than filling the disc (the old crown at 100%
          sat ~1px off the rim and read as cramped). Both stay derived from
          the shared badge table, never re-measured by eye. */
       if (!/RANK_BADGE\.r/.test(badge))
-        bad('GameCrownBadge no longer sizes its disc from RANK_BADGE — the two level-card crowns will drift apart');
-      if (/<svg[^>]*width="100%"/.test(badge))
-        bad('the crown art fills its disc again — it must be drawn inset, like the rank crown facing it');
+        bad('GameCrownBadge no longer sizes its disc from RANK_BADGE — the two level-card badges will drift apart');
+      if (!/disc \* 0\.724/.test(badge))
+        bad('the badge art no longer draws inset in its disc — it must stay at the rank crown’s ~62%');
     }
     /* The bubble is the SAME material as the disc it hangs off — --xp fill,
        --xp-rim ring, extruded edge, white ink — so the two read as one
@@ -4879,6 +4907,10 @@ console.log('— Progress write path (lifetime counters & award order) —');
       bad(
         `daily projections wrong: best ${first.progress.dailyBest}, games [${first.progress.dailyGames}]`
       );
+    // ...and the very first completion opens the family's front door in
+    // the SAME result — the projections land before landmarks evaluate
+    if (!first.progress.landmarks['daily-first'])
+      bad('the first completed daily did not unlock Daily Debut in the same result');
 
     // replaying a day already finished: completeDaily reports no state
     // change, so nothing is paid a second time
@@ -5101,7 +5133,7 @@ console.log('— Feats & easter eggs —');
       else {
         const id = eggFeat(eggGame.id, egg.id);
         reset();
-        p = play({ gameId: eggGame.id, options: { theme: 'zodiac' } });
+        p = play({ gameId: eggGame.id, options: { theme: 'cards' } });
         if (has(p, id)) bad(`${id} fired on the wrong option`);
         p = play({ gameId: eggGame.id, outcome: 'lost', cleanWin: false, options: { theme: 'pokemon' } });
         if (has(p, id)) bad(`${id} fired on a LOSS`);
@@ -5447,11 +5479,34 @@ console.log('— Profile color —');
           // strictly light → dark: a ramp that doubles back is not a gradient
           if (step.l >= prev.l - 0.012)
             bad(`${c.id} ramp of ${n} is flat or reversed at step ${i} (${prev.l.toFixed(3)} → ${step.l.toFixed(3)})`);
+          /* ...and at the sizes the charts actually ask for (they cap at 5
+             series), adjacent steps must be tellable APART — a ramp shipped
+             with ten near-identical purples, which is what the cap and this
+             floor exist to prevent. */
+          if (n <= 5 && prev.l - step.l < 0.075)
+            bad(
+              `${c.id} ramp of ${n} on ${theme}: steps ${i - 1}→${i} are only ${(prev.l - step.l).toFixed(3)} lightness apart — indistinguishable series`
+            );
         }
       }
     }
   }
   if (chartRamp('blue', 0, 'black').length !== 0) bad('chartRamp(0) must return an empty ramp');
+
+  /* 5b. EVERY PROFILE CHART CAPS AT FIVE SERIES, through the ONE constant.
+     The cap is what keeps the legends scannable and the ramp steps far
+     enough apart; a chart growing its own bigger cap quietly reintroduces
+     the confetti donut. The tail must fold, never be dropped. */
+  {
+    const charts = read('src/platform/components/charts.tsx');
+    if (!/const MAX_SERIES = 5;/.test(charts))
+      bad('charts.tsx lost its MAX_SERIES = 5 cap');
+    const folds = charts.match(/slice\(0, MAX_SERIES\)/g)?.length ?? 0;
+    if (folds < 3)
+      bad(`only ${folds} charts fold through MAX_SERIES — pie, category bars and activity must all cap at 5`);
+    if (/slice\(0, \d/.test(charts))
+      bad('a chart slices its series with a literal count instead of MAX_SERIES');
+  }
 
   /* 6. applyProfileColor is the only writer, and clearing must be complete —
         a leftover --profile or attribute would keep the frames painted after

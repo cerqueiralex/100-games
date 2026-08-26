@@ -252,9 +252,15 @@ What it repaints, and nothing else:
   number, XP bar, streak flame, streak count, the week row's check discs,
   the Daily Challenge card and its solved cells.
 - Three **profile frames** — the home header card and the avatar plate on
-  both the home header and the profile page — as a 4px extruded border
-  (`var(--xp)` + `var(--xp-rim)` inset edge), with the padding giving back
-  exactly the 3px the thicker border took so nothing shifts.
+  both the home header and the profile page — as a 4px extruded border.
+  The stacking order matters: the FRAME is the object that extrudes, so
+  the dark rim is the outermost bottom lip (`border-bottom-color:
+  var(--xp-rim)`) with the bright face returning as an inset band above it
+  (`inset 0 -4px 0 var(--xp)`). The first shipped version had it the other
+  way round — bright border outside, dark band inset within — and read as
+  an inner shadow on the card, not a 2.5D edge under the frame. The
+  padding gives back exactly the 3px the thicker border took so nothing
+  shifts.
 - The profile page's **charts** (categories, most played, activity), via
   `chartRamp`.
 
@@ -287,12 +293,18 @@ Rules that hold it together:
    derives the column count from `PROFILE_COLORS`, so adding a color
    without widening the grid fails rather than silently wrapping again.
    Height stays 46px: DESIGN's 44px touch minimum counts one dimension.
-4. **The charts get a gradient, not a scatter.** `chartRamp` is monotonic
-   light→dark with a tight ±9° hue sweep and flat saturation. Do not
-   interleave it to push neighbouring slices apart (it reads as two
-   alternating colors, not a palette) and do not widen the sweep (yellow
-   walks out to tan and lime). Neighbours in a gradient are meant to be
-   close; the legend carries the identity.
+4. **The charts get a gradient, not a scatter — and it must actually
+   graduate.** `chartRamp` is monotonic light→dark with a tight ±9° hue
+   sweep and flat saturation. Do not interleave it to push neighbouring
+   slices apart (it reads as two alternating colors, not a palette) and do
+   not widen the sweep (yellow walks out to tan and lime). Separation
+   comes from LIGHTNESS instead, and it is real: every profile chart caps
+   at **5 series** (`MAX_SERIES` in charts.tsx, tail folded into a grey
+   "Other"), and the ramp's span is sized so adjacent steps at that cap
+   differ by ≥0.075 lightness — a ten-slice donut of near-identical
+   purples shipped once, which is what the cap and the floor exist to
+   prevent. Both are validate-enforced; the bright end of the span stays
+   where every hue still clears the 1.9:1 card-visibility floor.
 5. **Never paint a progression surface with the raw `--play-7`.** It
    resolves to the same orange today, which is exactly why four of them
    stayed literal and turned up orange next to a green flame. Use `--xp`.
@@ -356,6 +368,19 @@ the plain border once the day is done, so a finished card stops asking for
 attention. The countdown to local midnight is the point of the card: "Play"
 alone would not tell anyone that waiting costs them the streak.
 
+The daily's **setup screen** wears the same identity, so the moment before
+a daily run never reads as an ordinary game setup: the locked-assignment
+strip (`.daily-lock`) takes the home card's soft `--xp` ring — the exact
+same 45% mix, one language for "this surface is the daily" — with the date
+inked `--xp`, and the start button (`.start-btn-daily`) trades the neutral
+primary fill for `--xp` + white ink + an `--xp-rim` extruded edge, with
+the `PartyIcon` popper beside its label. The popper is a monochrome
+`currentColor` icon, not an emoji (UI controls never use emoji); the
+festivity comes from the color, which follows the profile color like
+every `--xp` surface. White on `--xp` here is the crown count bubble's
+documented tradeoff — the escape hatch is the same: deepen the fill to
+`--xp-deep`, never darken the ink.
+
 The profile's four-week grid is paint-only state on fixed geometry (see
 "Tile grids"): solved-unaided is `--good`, solved-with-help is `--play-7`,
 started-and-abandoned is a dashed border, today carries an accent ring —
@@ -401,17 +426,22 @@ never recomputed from capped history:
   the same box (see "Tile grids"). Never swap `border-width` between
   states.
 - **All five tiers beaten** = the `.game-card-trophy` badge: a white
-  three-pointed `CrownIcon` on a `--xp` orange disc with a 3px darker-orange
-  rim and the extruded bottom edge. A swept game is the top of the
-  progression ladder, so it wears the progression color rather than the
-  green of a single beaten tier — the star seals stay green, and the two
-  never get confused for one another. It sits inline on the home card and
-  absolutely in the top-right corner of the profile's high-score card,
-  where it floats above the tiles' seals (`z-index: 2`) and therefore also
-  carries a very soft elevation shadow.
+  rosette medal (`RosetteIcon` — the same medal-with-ribbons shape the
+  category-mastery landmarks wear) on a `--xp` orange disc with a 3px
+  darker-orange rim and the extruded bottom edge. It is deliberately NOT a
+  crown: **crowns belong to the rank ladder alone** — this mark was a
+  three-pointed crown once, and beside the six rank crowns the two crown
+  families read as one ladder. A swept game is the top of the progression
+  ladder, so it wears the progression color rather than the green of a
+  single beaten tier — the star seals stay green, and the two never get
+  confused for one another. It sits inline on the home card and absolutely
+  in the top-right corner of the profile's high-score card, where it
+  floats above the tiles' seals (`z-index: 2`) and therefore also carries
+  a very soft elevation shadow.
 - Badge glyphs are **flat solid silhouettes**, not linework: at ~18px a
-  2px stroke turns to mush, so `CrownIcon` fills its shape (the same trick
-  the cipher glyphs use).
+  2px stroke turns to mush, so `RosetteIcon` fills its shapes, with the
+  medal's inner ring CUT OUT of the disc (evenodd) rather than stroked
+  (the same trick the cipher glyphs use).
 - **Counting them is a marker surface too**, and there are two counters.
   The profile's "Game crowns" KPI is
   `GAMES.filter(g => allDifficultiesBeaten(progress, g.id))` scoped to the
@@ -427,10 +457,12 @@ never recomputed from capped history:
   `.crown-badge` and `.game-card-trophy` must declare the same
   `background: var(--xp)` and `border: 3px solid var(--xp-rim)` — validate
   compares the two rules — because one mark that means one thing must be
-  made of one thing. Only the size and the number differ, and the level
-  card's two corners face each other: rank crown right, game crowns left,
-  both absolutely positioned so neither costs the card a row.
-- **The two corner crowns match in DRAWN pixels, not in props.** Both take
+  made of one thing. The art is shared too: `GameCrownBadge` renders the
+  same `RosetteIcon` the inline trophy does, so the mark can never become
+  two drawings. Only the size and the number differ, and the level card's
+  two corners face each other: rank crown right, game rosette left, both
+  absolutely positioned so neither costs the card a row.
+- **The two corner badges match in DRAWN pixels, not in props.** Both take
   `size={38}`, but that number is `RankCrown`'s SVG box: inside it the rank
   disc is drawn at `RANK_BADGE.r` (30 of a 64 viewBox → 35.6px) with its
   crown at ~62% of that disc. `GameCrownBadge` therefore derives BOTH from
@@ -440,7 +472,7 @@ never recomputed from capped history:
   the two are side by side. Validate-enforced. When two pieces of art must
   match, matching the prop is not matching the pixels.
 - **A count does not go inside the art — it gets its own bubble.** The
-  crown disc stays exactly what it is on a game card (the rank crown's
+  rosette disc stays exactly what it is on a game card (the rank crown's
   drawn diameter, derived as above), and `.crown-badge-count` hangs off its
   bottom-right the way a notification count hangs off an app icon, in the
   SAME material as the disc — `--xp` fill, `--xp-rim` ring, extruded
@@ -450,9 +482,9 @@ never recomputed from capped history:
   on the default orange, ~1.4:1 on yellow), which is why the digits are
   sized and weighted up. If a color ever reads badly there, deepen the
   FILL to `--xp-deep` — never darken the ink, which is exactly what would
-  stop the bubble matching the crown. Three layouts that put the
-  number *in* the crown all shipped and all failed, in three different
-  ways worth remembering: **in the band**, by analogy with `FlameArt`
+  stop the bubble matching the badge. Three layouts that put the
+  number *in* the art (a crown, at the time) all shipped and all failed,
+  in three different ways worth remembering: **in the band**, by analogy with `FlameArt`
   printing a streak length inside its white drop — but a flame is a fat
   teardrop with a big soft middle and a crown is mostly points and gaps,
   so the band left about 8px and the digits were illegible; **stacked
@@ -462,7 +494,8 @@ never recomputed from capped history:
   shape before putting type in it, never buy legibility by shrinking the
   thing that carries the meaning, and when a count and an emblem compete
   for the same 38px, separate them instead of nesting them.
-  Validate fails on any `<text>` inside the crown SVG.
+  Validate fails on any `<text>` inside the badge art (`GameCrownBadge`
+  or `RosetteIcon`).
 
 ## Components
 

@@ -329,6 +329,62 @@ export function StarIcon({ size = 18, filled = false }: IconProps & { filled?: b
   );
 }
 
+/** party popper — the Daily Challenge's festive mark (the daily start
+    button). Solid cone + streamers + confetti so it reads at ~18px;
+    monochrome currentColor like every UI icon — the ludic color comes from
+    the --xp surface it sits on, never from the glyph (no emoji in UI
+    controls, per DESIGN.md). */
+export function PartyIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      {/* the cone, firing up-right */}
+      <path fill="currentColor" d="M2.9 21.1 8.2 8.9 15.1 15.8Z" />
+      {/* streamers */}
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        d="M12.6 5.4c.4-1.6-.3-2.4-1.5-2.9"
+      />
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        d="M18.6 11.4c1.6-.4 2.4.3 2.9 1.5"
+      />
+      <path fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" d="M16.2 7.8 20.9 3.1" />
+      {/* confetti */}
+      <circle fill="currentColor" cx="14.2" cy="3.1" r="1.3" />
+      <circle fill="currentColor" cx="21" cy="8.1" r="1.3" />
+      <circle fill="currentColor" cx="18.9" cy="16.4" r="1.2" />
+    </svg>
+  );
+}
+
+/** Instagram-style like heart — the favorites toggle on home cards and the
+    "Favorites" section header. Outline at rest, solid when favorited, same
+    stroke language as StarIcon. Deliberately NOT a star: stars mark beaten
+    difficulties (the `.beat-seal`), and one glyph must not mean two things. */
+export function HeartIcon({ size = 18, filled = false }: IconProps & { filled?: boolean }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+  );
+}
+
 export function ShareIcon({ size = 16 }: IconProps) {
   return (
     <Svg size={size}>
@@ -415,25 +471,26 @@ export function LockIcon({ size = 14 }: IconProps) {
   );
 }
 
-/** three-pointed crown — "beaten on every difficulty".
-    Solid flat silhouette for the same reason as the trophy above: at badge
-    size a 2px stroke turns to mush. The balls sit ON the points and the
-    base is a separate bar, so the silhouette still reads as a crown when
-    it is only ~18px wide. Monochrome currentColor. */
-export function CrownIcon({ size = 16 }: IconProps) {
+/** rosette medal — "beaten on every difficulty".
+    The same badge shape the category-mastery landmarks wear (medal disc +
+    two ribbon tails, see Landmarks.tsx `category`), because CROWNS belong
+    to the rank ladder alone — this mark used to be a three-pointed crown
+    and the two crown families read as one ladder. Solid flat silhouette
+    for the same reason as the trophy above: at badge size a 2px stroke
+    turns to mush. The disc carries a cut-out inner ring (evenodd) so it
+    still reads as a medal, not a dot, at ~18px. Monochrome currentColor. */
+export function RosetteIcon({ size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
-      {/* body: outer point, dip, tall middle point, dip, outer point */}
+      {/* ribbon tails, drawn first so the disc overlaps their roots */}
+      <path fill="currentColor" d="M8.7 13.9 6.4 22.3 10.3 19.9 11.2 15.4Z" />
+      <path fill="currentColor" d="M15.3 13.9 17.6 22.3 13.7 19.9 12.8 15.4Z" />
+      {/* medal disc with a cut inner ring: solid r7.5, hole to r5.3, core r3.7 */}
       <path
         fill="currentColor"
-        d="M3.6 8.4 8.5 12.2 12 5.9 15.5 12.2 20.4 8.4 18.6 17.4 5.4 17.4Z"
+        fillRule="evenodd"
+        d="M4.5 9.1a7.5 7.5 0 1 0 15 0a7.5 7.5 0 1 0 -15 0Z M6.7 9.1a5.3 5.3 0 1 0 10.6 0a5.3 5.3 0 1 0 -10.6 0Z M8.3 9.1a3.7 3.7 0 1 0 7.4 0a3.7 3.7 0 1 0 -7.4 0Z"
       />
-      {/* balls on the three tips */}
-      <circle fill="currentColor" cx="3.6" cy="8.4" r="2.1" />
-      <circle fill="currentColor" cx="12" cy="5.9" r="2.3" />
-      <circle fill="currentColor" cx="20.4" cy="8.4" r="2.1" />
-      {/* base bar */}
-      <rect fill="currentColor" x="5.4" y="18.6" width="13.2" height="2.8" rx="0.7" />
     </svg>
   );
 }

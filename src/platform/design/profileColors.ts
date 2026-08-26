@@ -193,8 +193,14 @@ export function chartRamp(id: ProfileColorId, n: number, theme: ThemeId): string
   if (n <= 0) return [];
   const { h, s } = hexToHsl(PROFILE_COLORS.find((c) => c.id === id)?.hex ?? '#ff9f0a');
   const dark = isDark(theme);
-  const hi = dark ? 0.82 : 0.44;
-  const lo = dark ? 0.38 : 0.18;
+  /* The span is sized for the charts' 5-series cap (see charts.tsx
+     MAX_SERIES): wide enough that adjacent steps are tellable apart at a
+     glance — the original 0.44/0.26 spans sliced ten ways shipped a donut
+     of near-identical purples. The bright end stays where every hue still
+     clears the 1.9:1 card-visibility floor (yellow caps the light theme's
+     top; validate proves both ends for every color on every theme). */
+  const hi = dark ? 0.86 : 0.46;
+  const lo = dark ? 0.34 : 0.12;
   const sat = Math.min(0.98, Math.max(0.5, s));
   const SPREAD = 18; // total hue sweep in degrees, centred on the base hue
 

@@ -156,7 +156,7 @@ export interface GameSave {
   daily?: string;
   /**
    * The game options this save was made under (see `GameDefinition.options`).
-   * Restored with the save, because a Pokémon deck resumed under the zodiac
+   * Restored with the save, because a deck resumed under a different card
    * theme would be a board the screen cannot draw.
    */
   options?: Record<string, string>;
@@ -346,7 +346,7 @@ export interface PlatformSettings {
   lastDifficulty: Record<string, Difficulty>;
   /** gameId -> optionId -> chosen choice id (see `GameOptionDef`) */
   gameOptions: Record<string, Record<string, string>>;
-  /** pinned game ids, shown in their own section at the top of the menu */
+  /** favorite game ids, shown in the "Favorites" section at the top of the menu */
   favorites: string[];
 }
 

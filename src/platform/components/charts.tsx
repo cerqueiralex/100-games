@@ -21,8 +21,14 @@ export function gameColor(gameId: string): string {
 
 const gameName = (gameId: string) => GAMES.find((g) => g.id === gameId)?.name ?? gameId;
 
-/* charts cap their series count for readability; the long tail is folded
-   into one neutral-grey "Other" pseudo-series */
+/* Charts cap their series count for readability; the long tail is folded
+   into one neutral-grey "Other" pseudo-series. ONE cap for every profile
+   chart: five series was chosen because it is where both problems stop —
+   a longer legend stops being scannable, and a profile-color ramp sliced
+   more ways than this puts neighbouring steps too close to tell apart
+   (the earlier 8- and 10-series caps shipped exactly that). Validate pins
+   the constant and that each chart folds through it. */
+const MAX_SERIES = 5;
 const OTHER_ID = '__other';
 const seriesColor = (id: string) => (id === OTHER_ID ? 'var(--text-dim)' : gameColor(id));
 const seriesName = (id: string) => (id === OTHER_ID ? 'Other' : gameName(id));
@@ -112,11 +118,12 @@ export function GamesPieChart({ history }: { history: GameResult[] }) {
   const { slices, total, counts } = useMemo(() => {
     const byGame = new Map<string, number>();
     for (const r of history) byGame.set(r.gameId, (byGame.get(r.gameId) ?? 0) + 1);
-    // top 10 games only — beyond that the donut and legend turn to confetti;
-    // the tail folds into one "Other" slice so the total stays honest
+    // top games only — beyond the cap the donut and legend turn to
+    // confetti; the tail folds into one "Other" slice so the total stays
+    // honest
     const ranked = [...byGame.entries()].sort((a, b) => b[1] - a[1]);
-    const entries = ranked.slice(0, 10);
-    const restTotal = ranked.slice(10).reduce((s, [, c]) => s + c, 0);
+    const entries = ranked.slice(0, MAX_SERIES);
+    const restTotal = ranked.slice(MAX_SERIES).reduce((s, [, c]) => s + c, 0);
     if (restTotal > 0) entries.push([OTHER_ID, restTotal]);
     const total = history.length;
     let angle = 0;
@@ -164,12 +171,18 @@ export function CategoryBarChart({ history }: { history: GameResult[] }) {
       const cat = gameCategory(r.gameId);
       counts.set(cat, (counts.get(cat) ?? 0) + 1);
     }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    // same cap and fold as every profile chart: the top categories get a
+    // bar each, the tail becomes one grey "Other" so the totals stay honest
+    const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    const shown: [string, number][] = ranked.slice(0, MAX_SERIES);
+    const restTotal = ranked.slice(MAX_SERIES).reduce((s, [, c]) => s + c, 0);
+    if (restTotal > 0) shown.push([OTHER_ID, restTotal]);
+    return shown;
   }, [history]);
 
   const paint = useSeriesPaint(
     useMemo(() => rows.map(([cat]) => cat), [rows]),
-    (id) => categoryColor(id as CategoryId)
+    (id) => (id === OTHER_ID ? 'var(--text-dim)' : categoryColor(id as CategoryId))
   );
 
   if (rows.length === 0) {
@@ -196,7 +209,7 @@ export function CategoryBarChart({ history }: { history: GameResult[] }) {
         return (
           <g key={cat}>
             <text x={labelW - 12} y={y + ROW / 2 + 4} textAnchor="end" className="catbar-name">
-              {categoryName(cat)}
+              {cat === OTHER_ID ? 'Other' : categoryName(cat as CategoryId)}
             </text>
             <rect
               x={labelW}
@@ -232,14 +245,14 @@ export function ActivityChart({ history }: { history: GameResult[] }) {
       raw.set(key, m);
       totals.set(r.gameId, (totals.get(r.gameId) ?? 0) + 1);
     }
-    // stack only the window's top 8 games; the tail folds into "Other" —
+    // stack only the window's top games; the tail folds into "Other" —
     // thirty hair-thin unlabelable slivers per bar is what made this
     // chart unreadable
     const ranked = [...totals.entries()].sort((a, b) => b[1] - a[1]);
-    const top = ranked.slice(0, 8).map(([id]) => id);
-    const foldedTotal = ranked.slice(8).reduce((s, [, c]) => s + c, 0);
+    const top = ranked.slice(0, MAX_SERIES).map(([id]) => id);
+    const foldedTotal = ranked.slice(MAX_SERIES).reduce((s, [, c]) => s + c, 0);
     const seriesIds = foldedTotal > 0 ? [...top, OTHER_ID] : top;
-    const shownTotals = new Map(ranked.slice(0, 8));
+    const shownTotals = new Map(ranked.slice(0, MAX_SERIES));
     if (foldedTotal > 0) shownTotals.set(OTHER_ID, foldedTotal);
 
     const topSet = new Set(top);

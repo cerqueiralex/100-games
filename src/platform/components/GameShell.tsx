@@ -5,7 +5,7 @@ import { useAppState } from '../AppState';
 import { deleteSave, loadSaves, putSave, resolveAssists, resolveOptions } from '../storage';
 import { formatDate, formatDuration } from '../stats';
 import { sfx } from '../audio';
-import { BackIcon, Chip, HelpIcon, HomeIcon, Modal, PauseIcon, PlayIcon, RestartIcon, SaveIcon, ShareIcon, StarIcon, Toggle } from './ui';
+import { BackIcon, Chip, HelpIcon, HomeIcon, Modal, PartyIcon, PauseIcon, PlayIcon, RestartIcon, SaveIcon, ShareIcon, StarIcon, Toggle } from './ui';
 import { beatenDifficulties, FEATS } from '../progress/progress';
 import { ShareCardModal } from './ShareCard';
 import { WinCelebration, WIN_CELEBRATION_MS } from './WinCelebration';
@@ -186,8 +186,8 @@ export function GameShell({
     }
     if (daily) markDailyStarted(daily.date);
     /* A resumed game keeps the options it was SAVED under — the deck in the
-       snapshot was built from them, and drawing a Pokémon deck with zodiac
-       art would be a board the screen cannot render. Anything the save does
+       snapshot was built from them, and drawing it with another theme's art
+       would be a board the screen cannot render. Anything the save does
        not name falls back to the current pick. */
     setSessionOptions(
       resume?.options ? { ...setupOptions, ...pickKnownOptions(game, resume.options) } : setupOptions
@@ -518,8 +518,18 @@ export function GameShell({
 
         <p className="scoring-note">{game.scoringNote}</p>
 
-        <button className="primary-btn start-btn" onClick={() => start()}>
-          {daily ? "Play today's challenge" : 'Start game'}
+        <button
+          className={`primary-btn start-btn${daily ? ' start-btn-daily' : ''}`}
+          onClick={() => start()}
+        >
+          {daily ? (
+            <>
+              <PartyIcon size={18} />
+              Play today&rsquo;s challenge
+            </>
+          ) : (
+            'Start game'
+          )}
         </button>
 
         {showTutorial && <TutorialModal game={game} onClose={() => setShowTutorial(false)} />}
