@@ -23858,3 +23858,398 @@ button.bs-ship-row.dock.placed {
     }
   }
 }
+
+/* ===== chess ===== */
+
+/* The board is game CONTENT with fixed colours (like the memory-card
+   stock): the familiar online-chess green — light #ebecd0 / dark #779556 —
+   identical on every app theme. Highlights follow the same convention:
+   translucent yellow for the last move & selection, red for a king in
+   check. Everything is paint-only on a fixed 8×8 geometry. */
+
+.chess {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chess-board {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-auto-rows: 1fr; /* pin both axes — stable geometry (DESIGN.md "Tile grids") */
+  border-radius: var(--radius-s);
+  overflow: hidden;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.28);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.chess.board-hidden .chess-board,
+.chess.board-hidden .chess-log,
+.chess.board-hidden .chess-hud {
+  visibility: hidden;
+}
+
+.chess-sq {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.chess-sq.light {
+  background: #ebecd0;
+}
+
+.chess-sq.dark {
+  background: #779556;
+}
+
+/* the last move (either side's) and the picked-up piece wear the same
+   translucent yellow wash, exactly the familiar chess.com read */
+.chess-sq.last::after,
+.chess-sq.sel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 51, 0.45);
+}
+
+/* a king in CHECK flares red — the warning the tutorial promises */
+.chess-sq.check::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(235, 82, 70, 0.75);
+}
+
+/* the square under a dragged piece: thick inset frame, chess.com-style */
+.chess-sq.hover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 4px solid rgba(255, 255, 255, 0.75);
+  z-index: 2;
+}
+
+.chess-coord {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.chess-coord.rank {
+  top: 2px;
+  left: 3px;
+}
+
+.chess-coord.file {
+  bottom: 2px;
+  right: 3px;
+}
+
+.chess-sq.light .chess-coord {
+  color: #779556;
+}
+
+.chess-sq.dark .chess-coord {
+  color: #ebecd0;
+}
+
+/* legal-move marks: a dot on empty squares, a capture ring on occupied */
+.chess-dot {
+  width: 32%;
+  height: 32%;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.16);
+  z-index: 1;
+}
+
+.chess-ring {
+  position: absolute;
+  inset: 3%;
+  border-radius: 999px;
+  border: 4px solid rgba(0, 0, 0, 0.16);
+  z-index: 1;
+}
+
+.chess-pieces {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.chess-man {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12.5%;
+  height: 12.5%;
+  display: grid;
+  place-items: center;
+  transition: transform 0.16s ease;
+  z-index: 3;
+}
+
+.chess-man.dragging {
+  transition: none;
+  z-index: 6;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+}
+
+.chess-piece-svg {
+  width: 92%;
+  height: 92%;
+  display: block;
+}
+
+/* promotion picker — floats over the board, board input pauses under it */
+.chess-promo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 8;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow);
+  padding: 10px 12px 12px;
+  text-align: center;
+}
+
+.chess-promo p {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.chess-promo-row {
+  display: flex;
+  gap: 8px;
+}
+
+.chess-promo-btn {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 -3px 0 var(--edge);
+  cursor: pointer;
+}
+
+.chess-promo-btn:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 var(--edge);
+}
+
+/* ---- player rows: name, capture tray, material lead ---- */
+
+.chess-hud {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0 auto;
+  min-height: 30px;
+  opacity: 0.72;
+}
+
+.chess-hud.active {
+  opacity: 1;
+}
+
+.chess-hud-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.chess-hud-avatar.w {
+  background: #ebecd0;
+}
+
+.chess-hud-avatar.b {
+  background: #4c6a35;
+}
+
+.chess-hud-avatar .chess-piece-svg {
+  width: 80%;
+  height: 80%;
+}
+
+.chess-hud-name {
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.chess-tray {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 18px;
+}
+
+.chess-cap {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  margin-left: -5px;
+}
+
+.chess-cap:first-child {
+  margin-left: 0;
+}
+
+.chess-cap .chess-piece-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.chess-adv {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+
+.chess-turn {
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-dim);
+  min-height: 18px;
+}
+
+/* ---- the move log: numbered two-column SAN with figurine icons ---- */
+
+.chess-log {
+  width: 100%;
+  margin: 0 auto;
+  padding: 10px 14px;
+  max-height: 190px;
+  overflow-y: auto;
+  border-radius: var(--radius-l);
+  /* soft thin scrollbar (standard props win in Chrome/Firefox; the
+     ::-webkit rules below cover Safari, where these are unsupported) */
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text) 26%, transparent) transparent;
+}
+
+.chess-log::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chess-log::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chess-log::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text) 26%, transparent);
+  border-radius: 999px;
+}
+
+.chess-log-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 1fr;
+  align-items: center;
+  min-height: 26px;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chess-log-row:nth-child(odd) {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border-radius: 6px;
+}
+
+.chess-log-n {
+  color: var(--text-dim);
+  font-weight: 700;
+  padding-left: 6px;
+}
+
+.chess-san {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+}
+
+.chess-san-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-grid;
+  place-items: center;
+}
+
+.chess-san-icon .chess-piece-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- tutorial art cells ---- */
+
+.tut-cell.chess-tut {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+}
+
+.tut-cell.chess-tut.lt {
+  background: #ebecd0;
+}
+
+.tut-cell.chess-tut.dk {
+  background: #779556;
+}
+
+.tut-cell.chess-tut.last {
+  background: #f5f682;
+}
+
+.tut-cell.chess-tut.check {
+  background: #eb5246;
+}
+
+.tut-cell.chess-tut .chess-piece-svg,
+.tut-cell.chess-tut svg {
+  width: 86%;
+  height: 86%;
+}
+
+.chess-tut-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.chess-tut-ring {
+  position: absolute;
+  inset: 2px;
+  border-radius: 999px;
+  border: 3px solid rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 700px) {
+  .chess-log {
+    max-height: 150px;
+  }
+}

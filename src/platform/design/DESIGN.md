@@ -22,10 +22,10 @@ borders) stays neutral, so both colors always mean something.
 
 The accent used to be a six-way user setting. It was removed: six pickable
 hues multiplied every surface that had to be checked, for one bit of taste,
-and the monochrome option was the one that kept the whole 67-game library
+and the monochrome option was the one that kept the whole 68-game library
 legible on all three surface themes. **Do NOT reintroduce an accent
 picker** — no setting may repaint `--accent`, because that is the token
-every game's tools read, and 67 games × 6 hues × 3 themes is the surface
+every game's tools read, and 68 games × 6 hues × 3 themes is the surface
 that made it unmaintainable.
 
 The **profile color** (below) is the deliberate exception, and it is drawn
@@ -177,7 +177,7 @@ which players read as "something broke", not "I won". The rules:
   wrong), confetti is thin, and the banner lifts away before the modal
   opens. Whatever the game is still drawing underneath plays in full view.
 - **The shell owns the timing, games cooperate in no way.** A game that
-  fires `onFinish` mid-transition still gets its moment, so all 67 games
+  fires `onFinish` mid-transition still gets its moment, so all 68 games
   (and every future one) inherit this for free — never re-implement a
   per-game win animation or delay `onFinish` to fake one.
 - **Purely decorative**: the result is already recorded when it mounts, so
@@ -521,7 +521,7 @@ The in-game header owns TWO exits, and they are not interchangeable:
 - **Back** (`BackIcon`) goes one step out — to this game's own setup screen
   (difficulty, assists, tutorial, Continue card). Wanting a different
   difficulty is the common case; it must not cost a trip through the
-  67-game list.
+  68-game list.
 - **Home** (`HomeIcon`) leaves the game entirely for the game list.
 
 Both run the same `leave(to, recordAbandon)` path in `GameShell`, so the

@@ -66,6 +66,7 @@ import { connectFourDefinition } from '../games/connect-four';
 import { dotsBoxesDefinition } from '../games/dots-boxes';
 import { klondikeDefinition } from '../games/klondike';
 import { pegSolitaireDefinition } from '../games/peg-solitaire';
+import { chessDefinition } from '../games/chess';
 
 /**
  * Central game registry. To add a new game to the platform:
@@ -141,7 +142,8 @@ export const GAMES: GameDefinition[] = [
   connectFourDefinition,
   dotsBoxesDefinition,
   klondikeDefinition,
-  pegSolitaireDefinition
+  pegSolitaireDefinition,
+  chessDefinition
 ];
 
 export function getGame(id: string): GameDefinition | undefined {

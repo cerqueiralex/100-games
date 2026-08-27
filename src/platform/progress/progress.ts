@@ -709,7 +709,7 @@ export function allDifficultiesBeaten(p: PlayerProgress, gameId: string): boolea
 
 /* ---------- evaluation ---------- */
 
-/** progress toward a landmark, for meters ("41/67"). Streak meters show the
+/** progress toward a landmark, for meters ("41/68"). Streak meters show the
     CURRENT streak (what the player can still act on), while unlocking uses
     the best streak ever, so a past run keeps its trophy. */
 export function landmarkMeter(

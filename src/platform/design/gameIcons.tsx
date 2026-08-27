@@ -277,6 +277,33 @@ const klondike = (
   </svg>
 );
 
+const chess = (
+  <svg {...base}>
+    <rect x="9" y="9" width="46" height="46" rx="9" fill={C.paper} stroke={INK} strokeWidth="3" />
+    <g fill={C.green}>
+      <rect x="11" y="11" width="10.7" height="10.7" />
+      <rect x="32.4" y="11" width="10.7" height="10.7" />
+      <rect x="21.7" y="21.7" width="10.7" height="10.7" />
+      <rect x="43.1" y="21.7" width="10.7" height="10.7" />
+      <rect x="11" y="32.4" width="10.7" height="10.7" />
+      <rect x="32.4" y="32.4" width="10.7" height="10.7" />
+      <rect x="21.7" y="43.1" width="10.7" height="10.7" />
+      <rect x="43.1" y="43.1" width="10.7" height="10.7" />
+    </g>
+    {/* white king sticker over the board */}
+    <path d="M32 12.5v5M29.6 15h4.8" stroke={INK} strokeWidth="3" />
+    <path
+      d="M32 20.5c-4.2-3.6-10-3.4-12.6.4-2.4 3.5-1.3 8.3 2.2 11.6l6 5.6h8.8l6-5.6c3.5-3.3 4.6-8.1 2.2-11.6-2.6-3.8-8.4-4-12.6-.4Z"
+      fill={C.white}
+      stroke={INK}
+      strokeWidth="3"
+    />
+    <path d="M25 38.1h14l2.4 5.4H22.6Z" fill={C.white} stroke={INK} strokeWidth="3" />
+    <rect x="20.5" y="43.5" width="23" height="7" rx="2.6" fill={C.yellow} stroke={INK} strokeWidth="3" />
+    <ellipse cx="26.5" cy="24.5" rx="2.6" ry="1.7" fill={C.white} opacity="0.5" stroke="none" />
+  </svg>
+);
+
 const pegSolitaire = (
   <svg {...base}>
     <rect x="5" y="36" width="54" height="21" rx="7" fill={C.wood} stroke={INK} strokeWidth="3" />
@@ -1285,5 +1312,6 @@ export const gameIcons: Record<string, ReactNode> = {
   'connect-four': connectFour,
   'dots-boxes': dotsBoxes,
   klondike,
-  'peg-solitaire': pegSolitaire
+  'peg-solitaire': pegSolitaire,
+  chess
 };

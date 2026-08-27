@@ -3368,6 +3368,88 @@ console.log('— Dots & Boxes —');
   }
 }
 
+console.log('— Chess —');
+{
+  const { initialPosition, fromFen, perft, statusOf, san, legalMoves, applyMove, sqName } =
+    await import('../src/games/chess/logic/engine');
+  const { chooseMove } = await import('../src/games/chess/logic/ai');
+  const bad = (msg: string) => {
+    failed = true;
+    console.error(`✗ chess: ${msg}`);
+  };
+
+  /* Move generation is proven by PERFT — exact legal-move counts on the
+     classic torture positions (castling through check, en-passant pins,
+     underpromotion). A single wrong rule changes these totals, so never
+     "fix" a red perft by editing the expectation. */
+  const suite: [string, string | null, number, number][] = [
+    ['start', null, 1, 20],
+    ['start', null, 2, 400],
+    ['start', null, 3, 8902],
+    ['kiwipete', 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1', 1, 48],
+    ['kiwipete', 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1', 2, 2039],
+    ['ep-pins', '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1', 1, 14],
+    ['ep-pins', '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1', 2, 191],
+    ['ep-pins', '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1', 3, 2812],
+    ['promos', 'r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1', 1, 6],
+    ['promos', 'r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1', 2, 264]
+  ];
+  for (const [name, fen, depth, want] of suite) {
+    const got = perft(fen ? fromFen(fen) : initialPosition(), depth);
+    if (got !== want) bad(`perft(${name}, ${depth}) = ${got}, expected ${want}`);
+  }
+
+  // check, mate and the notation that reports them: the fool's mate
+  {
+    let pos = initialPosition();
+    let lastSan = '';
+    for (const uci of ['f2f3', 'e7e5', 'g2g4', 'd8h4']) {
+      const move = legalMoves(pos).find((m) => sqName(m.from) + sqName(m.to) === uci);
+      if (!move) {
+        bad(`fool's mate: ${uci} is not legal`);
+        break;
+      }
+      lastSan = san(pos, move);
+      pos = applyMove(pos, move);
+    }
+    if (lastSan !== 'Qh4#') bad(`fool's mate SAN is "${lastSan}", expected Qh4#`);
+    if (statusOf(pos) !== 'checkmate') bad(`fool's mate status is ${statusOf(pos)}`);
+  }
+
+  // every drawn ending the game calls is called correctly
+  if (statusOf(fromFen('7k/5Q2/6K1/8/8/8/8/8 b - - 0 1')) !== 'stalemate')
+    bad('a stalemate position was not called');
+  if (statusOf(fromFen('8/8/8/3k4/8/3BK3/8/8 w - - 0 1')) !== 'insufficient')
+    bad('K+B vs K was not a dead draw');
+  if (statusOf(fromFen('r3k3/8/8/8/8/8/8/R3K3 w - - 100 4')) !== 'fifty-moves')
+    bad('the fifty-move rule did not fire at halfmove 100');
+
+  // castling notation both ways
+  {
+    const pos = fromFen('4k3/8/8/8/8/8/4P3/R3K2R w KQ - 0 1');
+    const sans = legalMoves(pos).map((m) => san(pos, m));
+    if (!sans.includes('O-O') || !sans.includes('O-O-O'))
+      bad(`castling SAN missing from [${sans.join(' ')}]`);
+  }
+
+  /* The robot must be LEGAL on every tier, from the opening and from a
+     sharp middlegame — an illegal engine move corrupts the whole game. */
+  for (const diff of ['easy', 'medium', 'hard', 'pro', 'extreme'] as const) {
+    for (const fen of [null, 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1']) {
+      const pos = fen ? fromFen(fen) : initialPosition();
+      const move = chooseMove(pos, diff);
+      const legal =
+        move && legalMoves(pos).some((m) => m.from === move.from && m.to === move.to && m.promo === move.promo);
+      if (!legal) bad(`${diff}: robot move is missing or illegal`);
+    }
+  }
+
+  if (!failed)
+    console.log(
+      '  ✓ perft exact on start/kiwipete/ep-pins/promos, fool’s mate + SAN, stalemate/insufficient/fifty called, castling SAN, robot legal on all 5 tiers'
+    );
+}
+
 console.log('— Klondike Solitaire —');
 {
   const { deal, applyMove, legalMoves, isWon, isWinnable, canStackTableau, canStackFoundation, TIERS, WINNABLE_SEEDS } =
