@@ -33,7 +33,7 @@ A minimalist platform of sixty-eight classic puzzle and brain games — flat sur
 | **Tents & Trees** | Pitch one tent beside every tree to the row/column counts, no two tents touching; guess-free |
 | **Bridges** | Link every numbered island with the right count of non-crossing bridges into one network (Hashi); unique solution |
 | **Slitherlink** | Draw a single closed loop whose edges match the numbered clues; guess-free unique solutions |
-| **Nurikabe** | Grow each numbered island to its size in one connected sea with no 2×2 pools; unique solutions |
+| **Nurikabe** | Grow each numbered island to its size in one connected sea with no 2×2 pools; unique solutions, drawn as a 2.5D island world with trees, rocks and animated water |
 | **Lights Out** | Every tap flips a plus of lights — clear them all in as few presses as possible; exact minimal-press par |
 | **Fleet Finder** | Battleship solitaire — deduce a hidden, non-touching fleet from the row/column counts and a few reveals |
 | **Code Breaker** | Crack the hidden colour code from black/white peg feedback (Mastermind), with deduction assists |

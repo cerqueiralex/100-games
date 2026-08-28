@@ -3,7 +3,7 @@ import type { TutorialStep } from '../../platform/types';
 export const nurikabeTutorial: TutorialStep[] = [
   {
     title: 'Islands in a sea',
-    text: 'Every number is an island of light cells — the number tells you how many cells that island has, itself included. Paint the rest of the board as one dark sea.',
+    text: 'Every number is an island of grass cells — the number tells you how many cells that island has, itself included. Flood the rest of the board as one connected sea.',
     art: (
       <div className="tut-grid" style={{ gridTemplateColumns: 'repeat(4, auto)' }}>
         <span className="tut-cell lit">2</span>

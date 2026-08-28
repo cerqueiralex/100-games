@@ -12450,62 +12450,139 @@ button.bs-ship-row.dock.placed {
 
 /* =================== NURIKABE =================== */
 
+/* The board is a little floating world: raised grass blocks with a dirt
+   side, water with drifting wave lines and foam along every shore, and
+   plain sand where nothing has been decided yet. Grass, dirt, water and
+   foam are game CONTENT colours (like Reversi's felt and Gridlock's
+   asphalt — a documented token opt-out) and stay fixed so the island reads
+   the same on every theme; only the undecided sand is mixed with the
+   surface so a fresh board is not a bright slab on the dark themes. Each
+   block's edges are decided by its neighbours (classes set by the game):
+   sn = nothing stands south, show the dirt side; rn/re/rw = that side is
+   exposed (a rim on the top face, and the foam outline reaches past the
+   cell there); ctl/ctr/cbr/cbl = that corner is exposed on both sides and
+   rounds. The foam is drawn by the LAND cell as a rounded outline behind
+   its block — never by the water as straight edge lines, which cannot
+   follow a rounded corner and left a notch at every one. The side and
+   radius are px (clamped to the cell size) because the dirt side is a
+   box-shadow copy of the top face, which needs a length. */
 .nurikabe {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  --nur-r: clamp(6px, 2.2vw, 10px);
+  --nur-side: clamp(5px, 1.7vw, 8px);
+  --nur-grass-0: #8ccf52;
+  --nur-grass-1: #97d75d;
+  --nur-grass-2: #82c749;
+  --nur-rim: rgba(34, 92, 24, 0.3);
+  --nur-seam: rgba(34, 92, 24, 0.1);
+  --nur-dirt: #e5ad79;
+  --nur-dirt-deep: #cb905d;
+  --nur-water: #62c0ea;
+  --nur-foam: #ecf9ff;
+  --nur-sand: color-mix(in srgb, #cdb98a 32%, var(--surface));
+  --nur-sand-line: color-mix(in srgb, #7a6a48 22%, transparent);
+  --nur-num: #c8402f;
+  --nur-halo: #fff8ea;
 }
 
+/* the wrap is the base the whole world floats on: its bottom strip shows
+   below the board as the dirt side of the outer row */
 .nur-board-wrap {
   width: 100%;
   margin: 0 auto;
+  padding-bottom: 8px;
+  border-radius: 14px;
+  background: var(--nur-dirt);
+  box-shadow: inset 0 -3px 0 var(--nur-dirt-deep);
 }
 
 /* the board is a continuous grid whose cells share edges — deliberate
-   flat opt-out (DESIGN.md), like sudoku/crossword. Drag painting uses
-   pointer events + rect math, so touches must never scroll the page. */
+   flat opt-out (DESIGN.md), like sudoku/crossword; the 2.5D depth is
+   painted inside each cell. Drag painting uses pointer events + rect
+   math, so touches must never scroll the page. */
 .nur-board {
   display: grid;
-  /* grid-template-columns set inline to repeat(size, 1fr) */
+  /* grid-template-columns set inline to repeat(size, minmax(0, 1fr)) */
   grid-auto-rows: 1fr; /* pin both axes — stable geometry (DESIGN.md "Tile grids") */
   aspect-ratio: 1;
   width: 100%;
-  border: 2px solid var(--text-dim);
-  border-radius: 10px;
+  border-radius: 12px 12px 10px 10px;
   overflow: hidden;
-  background: var(--surface);
+  background: var(--nur-sand);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
 
+/* UNKNOWN: flat sand with a faint grid line (paint only — the 1px line is a
+   shadow, so no state ever changes the cell's box) */
 .nur-cell {
   position: relative;
-  display: grid;
-  place-items: center;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 0;
+  min-width: 0;
+  min-height: 0;
+  background: var(--nur-sand);
+  box-shadow: inset -1px -1px 0 var(--nur-sand-line);
   transition: background 0.12s ease, box-shadow 0.12s ease;
 }
 
 /* unknown cells hint interactivity on hover-capable devices */
 @media (hover: hover) {
-  .nur-board:not(.won) .nur-cell:not(.sea):not(.island):not(.clue):hover {
-    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  .nur-board:not(.won) .nur-cell:not(.sea):not(.land):hover {
+    background: color-mix(in srgb, var(--accent) 10%, var(--nur-sand));
   }
 }
 
-/* SEA: a deep tone mixed from the ocean content colors, clearly darker
-   than any island/blank cell in every surface theme */
+/* ---- SEA: calm water (the foam along its shores belongs to the land) ---- */
 .nur-cell.sea {
-  background: color-mix(in srgb, var(--play-4) 60%, color-mix(in srgb, var(--play-7) 22%, var(--surface)));
+  background: var(--nur-water);
+  overflow: hidden;
+  box-shadow: none;
   animation: nur-flood 0.16s ease;
 }
 
-:root[data-theme='light'] .nur-cell.sea {
-  background: color-mix(in srgb, var(--play-4) 46%, color-mix(in srgb, var(--play-7) 16%, #2b3550));
+/* the waves: saw-tooth stripes (a pale band over a white line, three rows
+   per cell) whose tile is exactly one cell wide and tall, so the zigzag
+   runs unbroken across neighbouring water. The layer is two cells wide
+   and drifts one tooth (a quarter cell) per loop, with a slow breathing
+   of the opacity on top. EVERY cell runs both on the same clock — no
+   per-cell delay, ever: a per-diagonal offset once put neighbouring cells
+   at different brightness and drew every tile border across the sea. */
+.nur-cell.sea::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%23ffffff' stroke-linejoin='round'%3E%3Cpath d='M0 4.8l5-2.6 5 2.6 5-2.6 5 2.6 5-2.6 5 2.6 5-2.6 5 2.6M0 18.1l5-2.6 5 2.6 5-2.6 5 2.6 5-2.6 5 2.6 5-2.6 5 2.6M0 31.4l5-2.6 5 2.6 5-2.6 5 2.6 5-2.6 5 2.6 5-2.6 5 2.6' stroke-width='3.6' opacity='.2'/%3E%3Cpath d='M0 8l5-2.6 5 2.6 5-2.6 5 2.6 5-2.6 5 2.6 5-2.6 5 2.6M0 21.3l5-2.6 5 2.6 5-2.6 5 2.6 5-2.6 5 2.6 5-2.6 5 2.6M0 34.6l5-2.6 5 2.6 5-2.6 5 2.6 5-2.6 5 2.6 5-2.6 5 2.6' stroke-width='1.6' opacity='.72'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  opacity: 0.75;
+  animation:
+    nur-drift 4s linear infinite,
+    nur-breathe 6s ease-in-out infinite;
+}
+
+@keyframes nur-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-12.5%);
+  }
+}
+
+@keyframes nur-breathe {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.95;
+  }
 }
 
 @keyframes nur-flood {
@@ -12517,58 +12594,182 @@ button.bs-ship-row.dock.placed {
   }
 }
 
-/* ISLAND (player mark): light land, with a subtle centered dot */
-.nur-cell.island {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+/* ---- LAND: a raised grass block on a dirt side ---- */
+
+/* a land cell sits above the water so its foam outline can reach 3px past
+   its own box on every exposed side (a joined side stays flush, so two
+   blocks of one island never outline each other) */
+.nur-cell.land {
+  z-index: 1;
+  box-shadow: none;
 }
 
-.nur-dot {
-  width: 22%;
-  height: 22%;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--accent) 65%, var(--text-dim));
-  animation: nur-dotin 0.14s ease;
+/* the foam: a rounded white plate behind the block, its corners
+   concentric with the top face's, following the dirt side too */
+.nur-cell.land::before {
+  content: '';
+  position: absolute;
+  top: var(--on, 0px);
+  right: var(--oe, 0px);
+  bottom: var(--os, 0px);
+  left: var(--ow, 0px);
+  border-radius: var(--ortl, 0px) var(--ortr, 0px) var(--orbr, 0px) var(--orbl, 0px);
+  background: var(--nur-foam);
+  pointer-events: none;
 }
 
-@keyframes nur-dotin {
+/* the dirt side is the bottom slice of the cell, only where nothing stands
+   south of the block (another land cell would hide it) */
+.nur-cell.land.sn {
+  --side: var(--nur-side);
+  --os: -3px;
+  --rs: 2px;
+}
+
+.nur-cell.ctl {
+  --rtl: var(--nur-r);
+  --ortl: calc(var(--nur-r) + 3px);
+}
+.nur-cell.ctr {
+  --rtr: var(--nur-r);
+  --ortr: calc(var(--nur-r) + 3px);
+}
+.nur-cell.cbr {
+  --rbr: var(--nur-r);
+  --orbr: calc(var(--nur-r) + 3px);
+}
+.nur-cell.cbl {
+  --rbl: var(--nur-r);
+  --orbl: calc(var(--nur-r) + 3px);
+}
+
+.nur-cell.rn {
+  --rn: 2px;
+  --on: -3px;
+}
+.nur-cell.re {
+  --re: 2px;
+  --oe: -3px;
+}
+.nur-cell.rw {
+  --rw: 2px;
+  --ow: -3px;
+}
+
+/* the grass top face: three shades so neighbouring blocks read as tiles
+   of one island, a faint seam, a darker rim on every shore side, and
+   exposed corners rounded. The dirt side is the face's own silhouette
+   shifted down (an outer box-shadow), so it follows the rounded corners. */
+.nur-top {
+  position: absolute;
+  inset: 0 0 var(--side, 0px) 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--rtl, 0px) var(--rtr, 0px) var(--rbr, 0px) var(--rbl, 0px);
+  background: var(--nur-grass-0);
+  --nur-top-inset:
+    inset 0 var(--rn, 0px) 0 var(--nur-rim),
+    inset calc(-1 * var(--re, 0px)) 0 0 var(--nur-rim),
+    inset var(--rw, 0px) 0 0 var(--nur-rim),
+    inset -1px -1px 0 var(--nur-seam);
+  box-shadow: var(--nur-top-inset);
+}
+
+.nur-cell.land.sn .nur-top {
+  box-shadow:
+    var(--nur-top-inset),
+    0 calc(var(--side) - 2px) 0 var(--nur-dirt),
+    0 var(--side) 0 var(--nur-dirt-deep);
+}
+
+.nur-cell.g1 .nur-top {
+  background: var(--nur-grass-1);
+}
+.nur-cell.g2 .nur-top {
+  background: var(--nur-grass-2);
+}
+
+/* a player-placed block rises out of the ground */
+.nur-cell.island .nur-top {
+  animation: nur-rise 0.2s ease;
+}
+
+@keyframes nur-rise {
   from {
-    transform: scale(0);
+    transform: translateY(18%) scale(0.85);
+    opacity: 0.4;
   }
 }
 
-/* numbered island cell: always land-styled with a bold number */
-.nur-cell.clue {
-  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+/* scenery (trees, rocks, tufts) is inline SVG on the top face; overflow
+   stays visible so a canopy may poke above its tile like the reference */
+.nur-scenery {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
 }
 
+.nur-scenery.flip {
+  transform: scaleX(-1);
+}
+
+/* numbered island cell: a bold red number with a paper halo so it reads
+   on any grass shade and over the tufts behind it */
 .nur-num {
-  font-size: clamp(11px, 3.4vw, 20px);
-  font-weight: 800;
-  line-height: 1;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-
-/* complete-islands assist: dim + outline an island that matches its number */
-.nur-cell.complete.island,
-.nur-cell.complete.clue {
-  background: color-mix(in srgb, var(--good) 16%, var(--surface));
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--good) 55%, transparent);
-}
-
-.nur-cell.complete .nur-dot {
-  background: color-mix(in srgb, var(--good) 70%, var(--text-dim));
-}
-
-/* rule-check assist: any broken rule outlines / flashes red */
-.nur-cell.violation {
-  box-shadow: inset 0 0 0 2px var(--bad);
+  position: relative;
   z-index: 1;
-  animation: nur-flag 0.9s ease infinite;
+  font-size: clamp(12px, 3.6vw, 22px);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--nur-num);
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    -1px -1px 0 var(--nur-halo),
+    1px -1px 0 var(--nur-halo),
+    -1px 1px 0 var(--nur-halo),
+    1px 1px 0 var(--nur-halo),
+    0 0 3px var(--nur-halo);
 }
 
-.nur-cell.violation.sea {
-  background: color-mix(in srgb, var(--bad) 42%, var(--play-4));
+/* complete-islands assist: a finished island brightens and its rim turns
+   bright green. The ring is drawn per EXPOSED side only (the same --rn/
+   --re/--rw/--rs the rim uses), never as a full ring per cell — that
+   doubled up between joined cells and stacked on the rim at the edges, so
+   one island wore three border weights. */
+.nur-cell.complete .nur-top {
+  filter: saturate(1.15) brightness(1.06);
+}
+
+.nur-cell.complete::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 var(--side, 0px) 0;
+  border-radius: var(--rtl, 0px) var(--rtr, 0px) var(--rbr, 0px) var(--rbl, 0px);
+  pointer-events: none;
+  --nur-done: color-mix(in srgb, var(--good) 82%, #0b3d20);
+  box-shadow:
+    inset 0 var(--rn, 0px) 0 var(--nur-done),
+    inset calc(-1 * var(--re, 0px)) 0 0 var(--nur-done),
+    inset var(--rw, 0px) 0 0 var(--nur-done),
+    inset 0 calc(-1 * var(--rs, 0px)) 0 var(--nur-done);
+}
+
+/* rule-check assist: any broken rule tints and flashes red */
+.nur-cell.violation {
+  z-index: 2;
+}
+
+.nur-cell.violation::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--bad) 26%, transparent);
+  box-shadow: inset 0 0 0 2px var(--bad);
+  animation: nur-flag 0.9s ease infinite;
 }
 
 @keyframes nur-flag {
@@ -12581,21 +12782,19 @@ button.bs-ship-row.dock.placed {
   }
 }
 
-/* hint reveal ring */
-.nur-cell.hintflash::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+/* hint reveal ring — an outline, so it never fights the foam/rim shadows */
+.nur-cell.hintflash {
   animation: nur-hintring 0.7s ease;
 }
 
 @keyframes nur-hintring {
   0% {
-    box-shadow: inset 0 0 0 3px var(--accent);
+    outline: 3px solid var(--accent);
+    outline-offset: -3px;
   }
   100% {
-    box-shadow: inset 0 0 0 0 transparent;
+    outline: 3px solid transparent;
+    outline-offset: -3px;
   }
 }
 
@@ -12614,16 +12813,16 @@ button.bs-ship-row.dock.placed {
     filter: brightness(1);
   }
   45% {
-    filter: brightness(1.55) saturate(1.3);
+    filter: brightness(1.4) saturate(1.2);
   }
   100% {
     filter: brightness(1);
   }
 }
 
-.nur-board.won .nur-cell.island,
-.nur-board.won .nur-cell.clue {
+.nur-board.won .nur-cell.land {
   animation: nur-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  z-index: 3;
 }
 
 @keyframes nur-pop {
@@ -12631,8 +12830,8 @@ button.bs-ship-row.dock.placed {
     transform: scale(1);
   }
   45% {
-    transform: scale(1.2);
-    filter: brightness(1.25);
+    transform: scale(1.16);
+    filter: brightness(1.15);
   }
   100% {
     transform: scale(1);
@@ -12650,9 +12849,16 @@ button.bs-ship-row.dock.placed {
   visibility: hidden;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .nur-cell.sea::before {
+    animation: none;
+    opacity: 0.75;
+  }
+}
+
 @media (max-width: 700px) {
   .nur-num {
-    font-size: clamp(10px, 4vw, 16px);
+    font-size: clamp(11px, 4.2vw, 17px);
   }
 
   /* keep the docked card small so the board keeps the screen */

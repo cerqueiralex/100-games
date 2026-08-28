@@ -41,6 +41,128 @@ interface NurSave {
   assistsUsed: string[];
 }
 
+/* ---------------- island scenery ----------------------------------- */
+
+/** per-cell variation (grass shade, scenery, mirroring) hashed from the cell
+    and the puzzle seed, so a board looks the same on every render, after a
+    resume, and for every player of a daily */
+function cellHash(i: number, salt: number): number {
+  let h = Math.imul(i + 1, 0x9e3779b1) ^ Math.imul(salt + 0x7f4a7c15, 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d);
+  h = Math.imul(h ^ (h >>> 12), 0x297a2d39);
+  return (h ^ (h >>> 15)) >>> 0;
+}
+
+type Scenery = 'plain' | 'grass' | 'rocks' | 'tree' | 'trees';
+
+function sceneryFor(h: number, isClue: boolean): Scenery {
+  const roll = (h >>> 8) % 100;
+  // a numbered cell keeps its face clear so the number stays legible
+  if (isClue) return roll < 55 ? 'grass' : 'plain';
+  if (roll < 34) return 'plain';
+  if (roll < 56) return 'grass';
+  if (roll < 70) return 'rocks';
+  if (roll < 87) return 'tree';
+  return 'trees';
+}
+
+/* scenery palette: game CONTENT colours (like the grass/water tokens in the
+   stylesheet), fixed so the island reads the same on every theme */
+const ART = {
+  leafDark: '#4aa83a',
+  leaf: '#63bf49',
+  leafLight: '#8fdb68',
+  trunk: '#f4efe5',
+  bark: '#6e5a47',
+  rock: '#a9a397',
+  rockLight: '#cdc7ba',
+  rockDark: '#857f74',
+  flower: '#ffd35c',
+  shade: 'rgba(30, 70, 20, 0.16)'
+};
+
+function Tree({ x, y, s }: { x: number; y: number; s: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <ellipse cx="0" cy="12" rx="9" ry="2.4" fill={ART.shade} />
+      <rect x="-1.6" y="2" width="3.2" height="10" rx="1.4" fill={ART.trunk} />
+      <path d="M-.6 5h1.4M-.4 8.5h1.2" stroke={ART.bark} strokeWidth="1" strokeLinecap="round" />
+      <circle cx="-5" cy="1" r="6" fill={ART.leafDark} />
+      <circle cx="5.5" cy="1.5" r="6.2" fill={ART.leaf} />
+      <circle cx="0" cy="-4" r="7.5" fill={ART.leaf} />
+      <circle cx="-2" cy="-6" r="4" fill={ART.leafLight} />
+    </g>
+  );
+}
+
+/** a tall-grass bush: a solid crown with four pointed tips and a lighter
+    crown inside it — stroked blades read as bird feet at tile size */
+function Tuft({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <ellipse cx="0.5" cy="0.6" rx="7.5" ry="1.5" fill={ART.shade} />
+      <path
+        d="M-7 0v-3l2-6 2 4.5 2.2-7.5 2.2 7 2.2-6 1.8 6.5 1.6-3.5V0z"
+        fill={ART.leafDark}
+        stroke={ART.leafDark}
+        strokeWidth="0.8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M-3.6 0v-1.4l1.2-3.6 1.1 2.6 1.2-4.6 1.3 4 1.2-3.4 1 2.2 .8-1.8V0z"
+        fill={ART.leaf}
+        stroke={ART.leaf}
+        strokeWidth="0.6"
+        strokeLinejoin="round"
+      />
+    </g>
+  );
+}
+
+function SceneryArt({ kind, flip, flowers }: { kind: Scenery; flip: boolean; flowers: boolean }) {
+  return (
+    <svg className={`nur-scenery ${flip ? 'flip' : ''}`} viewBox="0 0 40 40" aria-hidden>
+      {kind === 'grass' && (
+        <>
+          <Tuft x={11} y={32} />
+          <Tuft x={27} y={20} s={0.85} />
+          <Tuft x={30} y={34} s={0.75} />
+          <Tuft x={13} y={16} s={0.65} />
+          {flowers && (
+            <>
+              <circle cx="27" cy="27" r="1.7" fill={ART.flower} />
+              <circle cx="8" cy="17" r="1.4" fill={ART.flower} />
+            </>
+          )}
+        </>
+      )}
+      {kind === 'rocks' && (
+        <>
+          <ellipse cx="20" cy="31.5" rx="13" ry="2.2" fill={ART.shade} />
+          <path d="M9 30c0-6 4-9 9-9s8 4 8 9z" fill={ART.rock} />
+          <path d="M11 27c1-3 4-5 7-5s5 1.5 6 4c-4-1-9-1-13 1z" fill={ART.rockLight} />
+          <path d="M24 31c0-4 3-6 6-6s5 2.5 5 6z" fill={ART.rockDark} />
+          <path d="M25.5 28.5c1-2 3-3 4.5-3s3 1 3.5 2.5c-2.5-.8-5.5-.8-8 .5z" fill={ART.rock} />
+          <circle cx="8" cy="33" r="1.6" fill={ART.rockLight} />
+          <Tuft x={33} y={22} s={0.7} />
+        </>
+      )}
+      {kind === 'tree' && (
+        <>
+          <Tree x={20} y={21} s={1} />
+          <Tuft x={7} y={33} s={0.8} />
+        </>
+      )}
+      {kind === 'trees' && (
+        <>
+          <Tree x={11} y={25} s={0.72} />
+          <Tree x={26} y={20} s={0.98} />
+        </>
+      )}
+    </svg>
+  );
+}
+
 /** inline monochrome tool icons (no perfect match in icons.tsx) */
 function SeaIcon({ size = 16 }: { size?: number }) {
   return (
@@ -366,11 +488,11 @@ export function NurikabeGame({
         </span>
       </div>
 
-      <div className="nur-board-wrap" style={{ maxWidth: `${size * 52}px` }}>
+      <div className="nur-board-wrap" style={{ maxWidth: `${size * 54}px` }}>
         <div
           ref={cellsRef}
           className={`nur-board ${won ? 'won' : ''}`}
-          style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}
+          style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -384,24 +506,61 @@ export function NurikabeGame({
             const c = i % size;
             const clue = clueMap.get(i);
             const isClue = clue !== undefined;
+            const land = s === ISLAND;
+            // neighbours decide the block's edges: a land block shows its dirt
+            // side where nothing stands south of it, a darker rim where it
+            // meets sea or sand, and water foams along any shore it touches
+            const landN = r > 0 && grid[i - size] === ISLAND;
+            const landS = r < size - 1 && grid[i + size] === ISLAND;
+            const landW = c > 0 && grid[i - 1] === ISLAND;
+            const landE = c < size - 1 && grid[i + 1] === ISLAND;
+            // a block's corner rounds only where both sides meeting there are
+            // exposed, so single blocks are pebbles and joined blocks fuse into
+            // one island whose foam outline follows the whole silhouette
+            const ctl = land && !landN && !landW;
+            const ctr = land && !landN && !landE;
+            const cbr = land && !landS && !landE;
+            const cbl = land && !landS && !landW;
+            const h = cellHash(i, puzzle.seed);
+            const scenery = land ? sceneryFor(h, isClue) : 'plain';
+            // the win sweep is the ONLY per-cell timing: the water's own
+            // animations run on one shared clock (a per-cell wave offset
+            // drew every tile border across the sea)
+            const style = won ? { animationDelay: `${(r + c) * WAVE_STEP_MS}ms` } : undefined;
             return (
               <div
                 key={i}
                 className={[
                   'nur-cell',
                   s === SEA ? 'sea' : '',
-                  s === ISLAND ? 'island' : '',
+                  land ? `land g${h % 3}` : '',
+                  land && !isClue ? 'island' : '',
                   isClue ? 'clue' : '',
+                  land && !landS ? 'sn' : '',
+                  land && !landN ? 'rn' : '',
+                  land && !landE ? 're' : '',
+                  land && !landW ? 'rw' : '',
+                  ctl ? 'ctl' : '',
+                  ctr ? 'ctr' : '',
+                  cbr ? 'cbr' : '',
+                  cbl ? 'cbl' : '',
                   complete.has(i) ? 'complete' : '',
                   violations.has(i) ? 'violation' : '',
                   hintFlash === i ? 'hintflash' : ''
                 ]
                   .filter(Boolean)
                   .join(' ')}
-                style={won ? { animationDelay: `${(r + c) * WAVE_STEP_MS}ms` } : undefined}
+                style={style}
                 aria-label={isClue ? `Island of ${clue}` : `Cell ${r + 1},${c + 1}`}
               >
-                {isClue ? <span className="nur-num">{clue}</span> : s === ISLAND ? <span className="nur-dot" /> : null}
+                {land && (
+                  <div className="nur-top">
+                    {scenery !== 'plain' && (
+                      <SceneryArt kind={scenery} flip={((h >>> 4) & 1) === 1} flowers={((h >>> 5) & 1) === 1} />
+                    )}
+                    {isClue && <span className="nur-num">{clue}</span>}
+                  </div>
+                )}
               </div>
             );
           })}

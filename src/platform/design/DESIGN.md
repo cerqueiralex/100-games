@@ -633,7 +633,11 @@ transforms anywhere, in any theme:
 - **Flat opt-outs**: the home search bar, the in-game info strip, and
   continuous boards whose cells share edges (sudoku, crossword,
   logic-grid) stay completely flat — extrusion belongs to
-  gap-separated tiles only.
+  gap-separated tiles only. Nurikabe is the one continuous board that
+  paints depth INSIDE its cells: its blocks are island art (grass on a
+  dirt side, foam, animated water) in fixed game-content colours, the
+  same opt-out as Reversi's felt — a picture of an island, not a UI
+  surface, so the card/tile rules above do not apply to it.
 - **Flat background**: the page background is plain `var(--bg)`.
 - Effects use neutral white/black alphas by design — they are the one
   sanctioned exception to the "tokens only" color rule.
