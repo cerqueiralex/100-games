@@ -23,7 +23,7 @@ function Shell() {
    * Browsing state outlives a game visit. HomePage unmounts while playing,
    * so the search text and category filter live here, and the list's scroll
    * offset is captured on the way in and restored on the way out — trying
-   * game #40 must not dump you back at the top of a 68-game list.
+   * game #40 must not dump you back at the top of a 69-game list.
    */
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<CategoryId | null>(null);

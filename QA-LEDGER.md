@@ -341,6 +341,37 @@ they gain enforcement, delete entries obsoleted by code removal.
   and never touch `cleanWin`. Enforced: CLAUDE.md "Assist/help tracking"
   rule; `autoCheck` exists only in Crossword (grep before adding another).
 
+- **2026-09-03 · content/layout · print inside a cell must be proven to
+  FIT the cell, per cell, not eyeballed at one size.** Arrow Crossword
+  prints its clues inside the grid. The first bank passed a character cap
+  (30 per clue) and looked fine on an easy board, then the extreme board
+  (34px cells) showed "Gratuities" running under its arrowhead, "Wonderf/ul"
+  and "Countrywid/e" broken mid-word, and a cell shared by two clues
+  overflowing its lower half — three failures one screenshot at one size
+  could not show. The fix is a wrap SIMULATION in the engine's validator:
+  the print scales with the cell (container units), so a line holds about
+  the same count of characters on every tier; `clueLines` breaks a clue
+  into words and hyphen halves, refuses any segment longer than a line (a
+  printed clue must never break mid-word) and counts lines against what
+  the cell holds (four for one clue, two per half for two). Rule: any text
+  laid out inside a fixed cell gets a fit rule that models the real wrap —
+  segments, lines, and the tightest tier — and the headless pass measures
+  `scrollWidth`/`scrollHeight` of the text against its padding box on the
+  SMALLEST cell the game ships, because the cap that looks generous at
+  60px is the one that breaks at 34px. Enforced: `validateArrowPuzzle` (line
+  and segment caps) + validate's Arrow Crossword block, which also proves
+  the validator bites on an over-long clue.
+- **2026-09-03 · content · a bank puzzle's grid and its clues are two
+  authoring jobs with two kinds of proof.** Arrowword grids are laid out by
+  the committed builder (`scripts/bake-arrowword.ts`: row-by-row fill with
+  a feasible-prefix check against the app's own word banks, every result
+  proven by the real validator and scored for density/stagger/checking),
+  and the clues are hand-written into ONE alphabetical bank so a recurring
+  word is clued once. Rule for the next puzzle game with a bank: never
+  hand-place letters (the crossings will not close), never let a generator
+  write clues, and keep the offline tool in `scripts/` — the Gridlock bake
+  harness was never committed and its bank is now un-regenerable.
+
 ## Watch items (re-check every QA — not yet machine-enforced)
 
 - **2026-09-03 · input · an axis-locked paint drag drops every cell after

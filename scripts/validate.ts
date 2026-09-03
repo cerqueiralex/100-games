@@ -57,6 +57,107 @@ for (const [difficulty, defs] of Object.entries(PUZZLES)) {
   }
 }
 
+console.log('— Arrow Crossword puzzles —');
+{
+  const { PUZZLES: ARROW, CLUES: ARROW_CLUES, toDef: arrowDef } = await import('../src/games/arrow-crossword/logic/puzzles');
+  const { buildArrowPuzzle, validateArrowPuzzle, uncheckedLetters, enclosedHoles, CLUE_MAX_SINGLE, CLUE_MAX_DOUBLE } =
+    await import('../src/games/arrow-crossword/logic/engine');
+  let ok = true;
+  const bad = (msg: string) => {
+    failed = true;
+    ok = false;
+    console.error(`✗ ${msg}`);
+  };
+  // the tiers grow through ROWS more than columns — columns cost cell width
+  // on a phone (and the clue print inside it), rows are free to scroll
+  const ARROW_SIZE: Record<string, { cols: number; rows: number }> = {
+    easy: { cols: 6, rows: 7 },
+    medium: { cols: 7, rows: 8 },
+    hard: { cols: 8, rows: 10 },
+    pro: { cols: 9, rows: 12 },
+    extreme: { cols: 10, rows: 13 }
+  };
+  let puzzleCount = 0;
+  let wordCount = 0;
+  for (const [difficulty, baked] of Object.entries(ARROW)) {
+    if (baked.length < 2) bad(`arrow-crossword/${difficulty} has ${baked.length} puzzle(s) — every tier needs at least 2`);
+    const ids = new Set<string>();
+    for (const b of baked) {
+      if (ids.has(b.id)) bad(`arrow-crossword: duplicate puzzle id ${b.id}`);
+      ids.add(b.id);
+      // every answer must have a hand-written clue; toDef's fallback (the
+      // answer itself) must never reach a player
+      for (const [answer] of b.entries) {
+        if (!(answer in ARROW_CLUES)) bad(`arrow-crossword/${b.id}: ${answer} has no clue in CLUES`);
+      }
+      const def = arrowDef(b);
+      const errors = validateArrowPuzzle(def);
+      if (errors.length) {
+        bad(`arrow-crossword/${difficulty}/${b.id}:`);
+        errors.forEach((e) => console.error(`    ${e}`));
+        continue;
+      }
+      const built = buildArrowPuzzle(def);
+      const want = ARROW_SIZE[difficulty];
+      if (built.cols !== want.cols || built.rows !== want.rows) {
+        bad(`arrow-crossword/${b.id} is ${built.cols}×${built.rows}, the ${difficulty} tier is ${want.cols}×${want.rows}`);
+      }
+      // player-facing quality, not just soundness: a letter nothing checks
+      // is a guess, and an empty cell walled in by the puzzle looks like a
+      // missing tile — the builder only accepts grids under these bars
+      const unchecked = uncheckedLetters(built);
+      if (unchecked > Math.ceil(built.letterCount * 0.15)) {
+        bad(`arrow-crossword/${b.id}: ${unchecked} of ${built.letterCount} letters are unchecked (cap 15%)`);
+      }
+      if (enclosedHoles(built) > 0) bad(`arrow-crossword/${b.id} has an enclosed empty cell`);
+      // every clue cell drives at least one answer, every letter belongs to one
+      for (const cell of built.grid) {
+        if (cell.kind === 'clue' && !cell.right && !cell.down) bad(`arrow-crossword/${b.id}: clue cell ${cell.idx} has no arrow`);
+        if (cell.kind === 'letter' && !built.slotAt[cell.idx]) bad(`arrow-crossword/${b.id}: letter cell ${cell.idx} belongs to no answer`);
+      }
+      puzzleCount++;
+      wordCount += built.slots.length;
+      console.log(
+        `✓ ${difficulty}/${b.id} "${b.title}" — ${built.cols}×${built.rows}, ${built.slots.length} answers, ${built.letterCount} letters, ${unchecked} unchecked`
+      );
+    }
+  }
+  // every clue in the bank fits the tightest cell it could land in, and is
+  // written in the terse register (no trailing punctuation drift)
+  for (const [answer, clue] of Object.entries(ARROW_CLUES)) {
+    if (clue.trim() !== clue || clue.length === 0) bad(`arrow-crossword: clue for ${answer} is empty or untrimmed`);
+    if (clue.length > CLUE_MAX_SINGLE) bad(`arrow-crossword: clue for ${answer} is ${clue.length} chars (cap ${CLUE_MAX_SINGLE})`);
+    if (!/^[A-Z]{3,}$/.test(answer)) bad(`arrow-crossword: CLUES key ${answer} is not an uppercase answer`);
+  }
+  // the validator must BITE: a puzzle missing an arrow, a crossing that
+  // disagrees, a clue too long for its cell and a clue cell landing on a
+  // letter are each rejected (a check that passes broken content is worse
+  // than none — see the QA ledger)
+  const sample = arrowDef(ARROW.easy[0]);
+  const withoutOne = { ...sample, entries: sample.entries.slice(1) };
+  if (validateArrowPuzzle(withoutOne).length === 0) bad('arrow-crossword: dropping an entry (an answer with no arrow) was not rejected');
+  const conflicted = {
+    ...sample,
+    entries: sample.entries.map((e, i) => (i === 0 ? { ...e, answer: 'Z' + e.answer.slice(1) } : e))
+  };
+  if (validateArrowPuzzle(conflicted).length === 0) bad('arrow-crossword: a disagreeing crossing was not rejected');
+  const longClue = {
+    ...sample,
+    entries: sample.entries.map((e, i) => (i === 0 ? { ...e, clue: 'x'.repeat(CLUE_MAX_DOUBLE + CLUE_MAX_SINGLE) } : e))
+  };
+  if (validateArrowPuzzle(longClue).length === 0) bad('arrow-crossword: an over-long clue was not rejected');
+  const onLetter = {
+    ...sample,
+    entries: [...sample.entries, { answer: 'ZZZ', clue: 'z', row: sample.entries[0].row, col: sample.entries[0].col + 1, dir: 'down' as const }]
+  };
+  if (validateArrowPuzzle(onLetter).length === 0) bad('arrow-crossword: a clue cell on a letter cell was not rejected');
+  if (ok) {
+    console.log(
+      `  ✓ ${puzzleCount} arrow crosswords, ${wordCount} answers, every answer clued, every tier at its size, ≤15% unchecked letters, no enclosed holes; validator rejects a missing arrow, a bad crossing, an over-long clue and a clue on a letter`
+    );
+  }
+}
+
 console.log('— Sudoku generator —');
 for (const difficulty of ['easy', 'medium', 'hard', 'pro', 'extreme'] as const) {
   const t0 = Date.now();

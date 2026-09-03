@@ -8,7 +8,7 @@ import { CheckIcon } from '../design/icons';
  * (Pipes' water reaching the last tile, a card flipping, a beam landing).
  * Players read that as "something went wrong" instead of "I won".
  *
- * The rules that make it robust for all 68 games:
+ * The rules that make it robust for all 69 games:
  *  - It never covers the board: the layer is `pointer-events: none`, the
  *    glow lights only the screen EDGES, confetti is thin, and the banner
  *    lifts away before the celebration ends. Whatever the game is drawing

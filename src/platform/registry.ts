@@ -67,6 +67,7 @@ import { dotsBoxesDefinition } from '../games/dots-boxes';
 import { klondikeDefinition } from '../games/klondike';
 import { pegSolitaireDefinition } from '../games/peg-solitaire';
 import { chessDefinition } from '../games/chess';
+import { arrowCrosswordDefinition } from '../games/arrow-crossword';
 
 /**
  * Central game registry. To add a new game to the platform:
@@ -143,7 +144,8 @@ export const GAMES: GameDefinition[] = [
   dotsBoxesDefinition,
   klondikeDefinition,
   pegSolitaireDefinition,
-  chessDefinition
+  chessDefinition,
+  arrowCrosswordDefinition
 ];
 
 export function getGame(id: string): GameDefinition | undefined {

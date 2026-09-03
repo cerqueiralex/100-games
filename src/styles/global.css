@@ -3276,6 +3276,386 @@ a.settings-action {
   line-height: 1.35;
 }
 
+/* ===== arrow crossword ===== */
+
+/* The board is a printed newspaper grid: continuous cells (flat opt-out like
+   sudoku/crossword), 1px hairlines, and a darker contour wherever a cell
+   faces an EMPTY cell or the edge — that is what draws the notched
+   silhouette. The contour is 1px of border plus 1px of inset shadow per
+   side (composed through custom properties, so four sides never fight),
+   and the selection ring is an `outline`, so state never touches geometry
+   or the contour. Type sizes derive from the board's width through
+   container units: cell = 100cqw / --cols, so a 6-column easy board and a
+   10-column extreme board keep the same letter-to-cell proportion. */
+
+.arrowword {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  --ac-line: var(--border);
+  --ac-outline: color-mix(in srgb, var(--text) 60%, var(--border));
+}
+
+.ac-meta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+}
+
+.ac-title {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* a safety valve for very narrow phones: the board keeps a 34px cell floor
+   and scrolls sideways inside this wrapper instead of squeezing the clues */
+.ac-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ac-board {
+  display: grid;
+  grid-auto-rows: 1fr;
+  width: 100%;
+  max-width: calc(var(--cols) * 60px);
+  min-width: calc(var(--cols) * 34px);
+  margin: 0 auto;
+  container-type: inline-size;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ac-cell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--surface);
+  color: var(--text);
+  border-right: 1px solid var(--ac-line);
+  border-bottom: 1px solid var(--ac-line);
+  border-radius: 0;
+  --sl: 0px;
+  --st: 0px;
+  --sr: 0px;
+  --sb: 0px;
+  box-shadow:
+    inset var(--sl) 0 0 var(--ac-outline),
+    inset 0 var(--st) 0 var(--ac-outline),
+    inset calc(-1 * var(--sr)) 0 0 var(--ac-outline),
+    inset 0 calc(-1 * var(--sb)) 0 var(--ac-outline);
+  transition: background 0.08s;
+  touch-action: manipulation;
+}
+
+.ac-cell.empty {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* the silhouette contour, per side facing an empty cell or the edge */
+.ac-cell.el {
+  border-left: 1px solid var(--ac-outline);
+  --sl: 1px;
+}
+
+.ac-cell.et {
+  border-top: 1px solid var(--ac-outline);
+  --st: 1px;
+}
+
+.ac-cell.er {
+  border-right-color: var(--ac-outline);
+  --sr: 1px;
+}
+
+.ac-cell.eb {
+  border-bottom-color: var(--ac-outline);
+  --sb: 1px;
+}
+
+/* ---- letter cells ---- */
+
+.ac-cell.letter {
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.ac-letter {
+  font-size: clamp(12px, calc(100cqw / var(--cols) * 0.5), 26px);
+  line-height: 1;
+}
+
+.ac-cell.letter.word {
+  background: var(--cell-same);
+}
+
+.ac-cell.letter.sel {
+  background: var(--accent-soft);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.ac-cell.letter.wrong .ac-letter {
+  color: var(--bad);
+  text-decoration: line-through;
+}
+
+/* hint-revealed letters read like typed ones; the class only blocks re-typing */
+
+/* ---- clue cells ---- */
+
+.ac-cell.clue {
+  display: flex;
+  flex-direction: column;
+  background: var(--cell-peer);
+  text-align: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* one clue: the block fills the cell; two clues stack, the RIGHT one on
+   top (its answer starts beside the cell) and the DOWN one below (its
+   answer starts under the cell), split by a hairline */
+.ac-clue {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  padding: 3% 14% 3% 5%;
+}
+
+.ac-clue.down {
+  padding: 2% 5% 9% 5%;
+}
+
+/* a shared cell gives each clue about two lines; trim the top half's
+   vertical padding so both halves keep them at the 34px cell floor */
+.ac-cell.clue.double .ac-clue.right {
+  padding-top: 2%;
+  padding-bottom: 2%;
+}
+
+.ac-cell.clue.double .ac-clue + .ac-clue {
+  border-top: 1px solid var(--ac-line);
+}
+
+/* a block the full width of the padding box, so a long single word wraps
+   inside the cell instead of running under the arrowhead */
+.ac-clue-text {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  font-size: clamp(6.5px, calc(100cqw / var(--cols) * 0.175), 11px);
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.ac-cell.clue.double .ac-clue-text {
+  font-size: clamp(6px, calc(100cqw / var(--cols) * 0.15), 9.5px);
+  line-height: 1.05;
+}
+
+/* the clue whose answer is selected lights up in its own cell */
+.ac-clue.active {
+  background: var(--accent-soft);
+}
+
+.ac-clue.active .ac-clue-text {
+  color: var(--accent);
+}
+
+/* the arrowhead: a small triangle at the edge of the cell, pointing the
+   way the answer reads — a printed-puzzle glyph, so plain CSS */
+.ac-tri {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+}
+
+.ac-tri.right {
+  right: 1px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-right-width: 0;
+  border-left-color: var(--text);
+}
+
+.ac-tri.down {
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom-width: 0;
+  border-top-color: var(--text);
+}
+
+.ac-board .ac-tri {
+  border-width: clamp(3px, calc(100cqw / var(--cols) * 0.085), 5.5px);
+}
+
+.ac-clue.active .ac-tri.right {
+  border-left-color: var(--accent);
+}
+
+.ac-clue.active .ac-tri.down {
+  border-top-color: var(--accent);
+}
+
+.board-hidden .ac-board {
+  visibility: hidden;
+}
+
+.ac-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 30%;
+  transform: translateX(-50%);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  z-index: 60;
+  white-space: nowrap;
+}
+
+/* ---- the tools card: readout of the active clue, tools, keyboard ---- */
+
+.ac-cluebar {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.ac-arrow-btn {
+  width: 42px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 22px;
+  color: var(--text-dim);
+}
+
+.ac-clue-readout {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  min-height: 50px;
+  cursor: pointer;
+}
+
+.ac-readout-dir {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.ac-readout-dir .ac-tri {
+  position: static;
+  transform: none;
+  border-width: 6px;
+}
+
+.ac-readout-dir .ac-tri.right {
+  border-left-color: var(--accent);
+}
+
+.ac-readout-dir .ac-tri.down {
+  border-top-color: var(--accent);
+}
+
+.ac-readout-text {
+  font-size: 14px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.ac-tools {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .ac-arrow-btn {
+    width: 36px;
+  }
+
+  .ac-clue-readout {
+    min-height: 42px;
+    padding: 6px 10px;
+  }
+
+  .ac-readout-text {
+    font-size: 13px;
+  }
+}
+
+/* tutorial art: a clue cell at tutorial scale (fixed size, no container) */
+.tut-cell.tut-ac-clue {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  padding: 2px 9px 2px 3px;
+  font-size: 7.5px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-align: center;
+  background: var(--cell-peer);
+}
+
+.tut-cell.tut-ac-clue .ac-tri {
+  border-width: 4px;
+}
+
+.tut-cell.tut-ac-clue.double {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.tut-cell.tut-ac-clue.double .ac-clue {
+  padding: 1px 9px 1px 3px;
+}
+
+.tut-cell.tut-ac-clue.double .ac-clue.down {
+  padding: 1px 3px 7px 3px;
+  border-top: 1px solid var(--border);
+}
+
 /* ===== memory match ===== */
 
 .memory {

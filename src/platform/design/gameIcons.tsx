@@ -1244,6 +1244,24 @@ const lightsOut = (
   </svg>
 );
 
+
+/* Arrow Crossword: a grid whose clue cell carries the arrow — a small
+   ink block with a yellow arrow pointing into the letters it starts */
+const arrowCrossword = (
+  <svg {...base}>
+    <rect x="11" y="11" width="42" height="42" rx="6" fill={C.white} stroke={INK} strokeWidth="3" />
+    <path d="M25 12v40M39 12v40M12 25h40M12 39h40" stroke={INK} strokeWidth="2" />
+    <rect x="12.5" y="12.5" width="12" height="12" rx="2" fill={INK} />
+    <path d="M16 18.5h6M20 15.5l3 3-3 3" stroke={C.yellow} strokeWidth="2.4" />
+    <rect x="26.5" y="26.5" width="12" height="12" rx="2" fill={INK} />
+    <path d="M32.5 30v6M29.5 34l3 3 3-3" stroke={C.yellow} strokeWidth="2.4" />
+    <text x="32" y="18.9" fontSize="10" fontWeight="800" fill={INK} textAnchor="middle" dominantBaseline="central">C</text>
+    <text x="46" y="18.9" fontSize="10" fontWeight="800" fill={INK} textAnchor="middle" dominantBaseline="central">A</text>
+    <text x="32" y="46.4" fontSize="10" fontWeight="800" fill={INK} textAnchor="middle" dominantBaseline="central">T</text>
+    <rect x="40" y="40" width="12" height="12" rx="2" fill={C.yellow} opacity="0.55" />
+  </svg>
+);
+
 /** keyed by GameDefinition.id */
 export const gameIcons: Record<string, ReactNode> = {
   sudoku,
@@ -1313,5 +1331,6 @@ export const gameIcons: Record<string, ReactNode> = {
   'dots-boxes': dotsBoxes,
   klondike,
   'peg-solitaire': pegSolitaire,
-  chess
+  chess,
+  'arrow-crossword': arrowCrossword
 };

@@ -1,6 +1,6 @@
 # 100 Games
 
-A minimalist platform of sixty-eight classic puzzle and brain games — flat surfaces with an extruded "candy button" depth style. Built as a **PWA** (Progressive Web App): one codebase that runs in any browser on your machine and installs on your iPhone home screen like a native app, with offline support. All data (history, statistics, profile, settings) is stored on-device — no account, no server.
+A minimalist platform of sixty-nine classic puzzle and brain games — flat surfaces with an extruded "candy button" depth style. Built as a **PWA** (Progressive Web App): one codebase that runs in any browser on your machine and installs on your iPhone home screen like a native app, with offline support. All data (history, statistics, profile, settings) is stored on-device — no account, no server.
 
 ## Games
 
@@ -8,6 +8,7 @@ A minimalist platform of sixty-eight classic puzzle and brain games — flat sur
 | --- | --- |
 | **Sudoku** | Runtime-generated puzzles with guaranteed-unique solutions; notes mode plus 6 toggleable assists (smart hints, error limit, rule-out blocks, region highlight, same-number highlight, points) |
 | **Crossword** | Hand-crafted criss-cross puzzles (2 per difficulty) with on-screen keyboard, auto-check, check and reveal assists |
+| **Arrow Crossword** | Scandinavian-style crossword: every clue is printed inside the grid with an arrow to its answer, no numbers and no clue list — hand-built notched grids from 6×7 to 10×13, terse cell-sized clues, same keyboard and assists as Crossword |
 | **Memory Match** | Flip cards to find pairs (4×4 up to 7×8), streak bonuses, peek assists — pick a card theme: emoji, the original 151 Pokémon or an 8-bit deck |
 | **Simon** | Repeat growing color+tone sequences; reach round 8–24 to win (faster every tier); lives, slow playback and replay assists |
 | **N-Back** | Press Match when the lit position repeats from N steps back (N = 1–5); ≥70% accuracy wins |
@@ -78,7 +79,7 @@ A minimalist platform of sixty-eight classic puzzle and brain games — flat sur
 ## Platform features (shared by every game)
 
 - **Five difficulty tiers** (easy / medium / hard / pro / extreme), pause, restart, quit — all via the standard game shell; after finishing you can close the results popup to review the solved board
-- **Two ways out of a game**: the back arrow steps back to that game's own start screen (to switch difficulty or re-read the rules), the home button leaves for the game list — so changing difficulty never means a round trip through all 68 games
+- **Two ways out of a game**: the back arrow steps back to that game's own start screen (to switch difficulty or re-read the rules), the home button leaves for the game list — so changing difficulty never means a round trip through all 69 games
 - **Player level & XP**: every 100 XP is a level. You earn 10 XP for a game played, 10 for extending your daily streak, 10 for beating your own record on a game+difficulty, 80 for beating a game on all five difficulties, and 80 for each landmark earned. A win shows exactly what it earned, and a new level gets its own card (with a sound) before the results appear. The level dial sits in the home header next to your streak and heads the profile. Its two corners carry your marks — the rank crown you're wearing on the right, and on the left a rosette medal counting every game you've beaten on all five difficulties (crowns belong to the rank ladder alone) — and every badge you've earned sits in a case at the foot of the card, unlocked ones only, tap any one to see what it took
 - **Rank crowns**: six crowns mark the climb — Wood at level 10, Iron 25, Silver 50, Gold 100, Platinum 150, Challenger 200 — each one looking like what it's made of: wood grain, brushed iron, polished silver, gold with a glint, mirror platinum, gem-cut challenger. The whole ladder is on the level card with the unearned crowns greyed out, so you can always see the next one and what it costs; the crown you're wearing rides in the card's corner, next to your name on the home page, and on every win card you share
 - **Win celebration**: every win plays the same ~3.5-second green celebration — confetti, a success ring and a "Complete!" badge — *over* the finished board (it never covers or tints it), and only then does the results popup appear, so you always see your puzzle finish before the statistics
@@ -90,7 +91,7 @@ A minimalist platform of sixty-eight classic puzzle and brain games — flat sur
 - **Statistics & history**: win rate, best/avg time, best/avg score, game crowns, streaks, errors, hints, time played, high scores per difficulty, filterable per game, with a calendar to browse any day's games (Profile tab)
 - **Play streak**: playing on consecutive days builds a Duolingo-style day streak — a flame card on the profile with a Mo–Su week row (plus best-ever and total days played) and a compact flame counter next to your name on the home page; miss a full day and it resets. The flame greys out until you've played that day
 - **Completion markers**: every difficulty you've beaten gets a thick green ring and a gold-star seal on its top-left corner — on that game's difficulty picker and on the profile's high-score tiles alike; beat a game on all five tiers and it earns a green badge with a flat gold check-marked trophy, shown on its menu card and beside its name in the profile's high scores
-- **Landmarks**: a trophy collection on the profile — play your first game, streak milestones (1–3 weeks, 1 month, bimester, trimester, quadrimester, semester, a full year), finish 50/100/200/500/1000 games, win 50/100/200/500/1000 of them with no help at all, win 10/25/50/75/100 in a row with no help, reach each rank crown, complete your first Daily Challenge, keep a daily streak (7 days, a month, 100 days, a year) and solve one of every game in the daily rotation, play every game, take a Grand Slam (every game in the library beaten unaided on one difficulty — one for each tier), master each category, win one clean in every category (Renaissance) and sweep a whole category on all five tiers (Full House). Alongside them a set of one-off feats: win with no mistakes at all, win in under a minute (and under thirty seconds), win straight after a loss, win a board you'd already failed twice, play in the small hours or before six, play every category in a single day, dig out a game from the bottom of your own play counts, make your first win card, share the app's link with a friend, and export or import a backup. Locked trophies show in black & white behind a padlock with live progress ("41/68"); unlocked ones color in with their date and can be shared as a designed 1080×1350 card. Trophies are permanent — once earned they're never taken back, and they survive a history wipe
+- **Landmarks**: a trophy collection on the profile — play your first game, streak milestones (1–3 weeks, 1 month, bimester, trimester, quadrimester, semester, a full year), finish 50/100/200/500/1000 games, win 50/100/200/500/1000 of them with no help at all, win 10/25/50/75/100 in a row with no help, reach each rank crown, complete your first Daily Challenge, keep a daily streak (7 days, a month, 100 days, a year) and solve one of every game in the daily rotation, play every game, take a Grand Slam (every game in the library beaten unaided on one difficulty — one for each tier), master each category, win one clean in every category (Renaissance) and sweep a whole category on all five tiers (Full House). Alongside them a set of one-off feats: win with no mistakes at all, win in under a minute (and under thirty seconds), win straight after a loss, win a board you'd already failed twice, play in the small hours or before six, play every category in a single day, dig out a game from the bottom of your own play counts, make your first win card, share the app's link with a friend, and export or import a backup. Locked trophies show in black & white behind a padlock with live progress ("41/69"); unlocked ones color in with their date and can be shared as a designed 1080×1350 card. Trophies are permanent — once earned they're never taken back, and they survive a history wipe
 - **Easter eggs**: a separate, hidden section under the landmarks. You can see how many there are and how many you've found — nothing else. Locked ones show a dashed `?` egg with no title and no hint; find one and it colors in with its real name and story, and shares like any other trophy
 - **Profile**: name + avatar — an emoji or one of six Pokémon (Pikachu, Bulbasaur, Charmander, Squirtle, Snorlax, Mewtwo), which follows you onto the home header and every card you share — plus totals across games
 - **Profile color**: pick yellow, green, orange, blue or purple in Profile → Edit and it becomes yours across the app — a 4px frame around your avatar and the home header card, the color of your level, XP bar, streak flame and counter, and the palette your profile charts are drawn from. Every color is nudged just enough on each surface theme to stay readable (yellow darkens on warm paper so a level number never disappears into it), and **Standard** is always there to put the shipped orange back
@@ -241,7 +242,7 @@ src/
     schulte-table/  stroop-match/  odd-one-out/  count-compare/  sokoban/
     pipes/  gridlock/  tower-of-hanoi/  tangram/  untangle/  laser-mirrors/
     jigsaw/  peg-solitaire/  connect-four/  reversi/  checkers/  dots-boxes/
-    klondike/
+    klondike/  chess/  arrow-crossword/
 ```
 
 ### Adding a new game
@@ -292,8 +293,10 @@ the toggles it was saved under and restores them on Continue.
 
 ### Content integrity
 
-`npm run validate` rebuilds every hand-crafted crossword and Word Wheel
-level (checking all intersections and catching accidental words), generates
+`npm run validate` rebuilds every hand-crafted crossword, arrow crossword
+and Word Wheel level (checking all intersections and catching accidental
+words; for the arrow grids also that every answer has a clue that fits its
+cell, no letter run lacks its arrow and no cell is walled in), generates
 sudokus verifying unique solutions, checks the Cryptogram word bank and
 test-generates its picture puzzles, re-verifies all 25 Logic Puzzles presets
 plus its endless generator (unique, deduction-only solutions), and
@@ -309,6 +312,7 @@ current game count, every non-empty category must have exactly one
 mastery landmark (empty categories none), a fresh profile must start
 fully locked, and the streak day-math is spot-checked. Run it after
 editing `src/games/crossword/logic/puzzles.ts`,
+`src/games/arrow-crossword/logic/puzzles.ts`,
 `src/games/word-wheel/logic/levels.ts`,
 `src/games/cryptogram/logic/words.ts` — or after adding a game.
 

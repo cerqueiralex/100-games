@@ -22,10 +22,10 @@ borders) stays neutral, so both colors always mean something.
 
 The accent used to be a six-way user setting. It was removed: six pickable
 hues multiplied every surface that had to be checked, for one bit of taste,
-and the monochrome option was the one that kept the whole 68-game library
+and the monochrome option was the one that kept the whole 69-game library
 legible on all three surface themes. **Do NOT reintroduce an accent
 picker** — no setting may repaint `--accent`, because that is the token
-every game's tools read, and 68 games × 6 hues × 3 themes is the surface
+every game's tools read, and 69 games × 6 hues × 3 themes is the surface
 that made it unmaintainable.
 
 The **profile color** (below) is the deliberate exception, and it is drawn
@@ -177,7 +177,7 @@ which players read as "something broke", not "I won". The rules:
   wrong), confetti is thin, and the banner lifts away before the modal
   opens. Whatever the game is still drawing underneath plays in full view.
 - **The shell owns the timing, games cooperate in no way.** A game that
-  fires `onFinish` mid-transition still gets its moment, so all 68 games
+  fires `onFinish` mid-transition still gets its moment, so all 69 games
   (and every future one) inherit this for free — never re-implement a
   per-game win animation or delay `onFinish` to fake one.
 - **Purely decorative**: the result is already recorded when it mounts, so
@@ -521,7 +521,7 @@ The in-game header owns TWO exits, and they are not interchangeable:
 - **Back** (`BackIcon`) goes one step out — to this game's own setup screen
   (difficulty, assists, tutorial, Continue card). Wanting a different
   difficulty is the common case; it must not cost a trip through the
-  68-game list.
+  69-game list.
 - **Home** (`HomeIcon`) leaves the game entirely for the game list.
 
 Both run the same `leave(to, recordAbandon)` path in `GameShell`, so the
@@ -708,6 +708,22 @@ other tile. Concretely:
   present and swap its color (use `transparent` to hide it).
 - **Press feedback is `transform: scale(...)`** (per Motion & feedback),
   never a size/padding change — transforms don't reflow neighbors.
+- **Print inside a cell scales with the cell, not the viewport.** A board
+  that carries text smaller than its letters (Arrow Crossword's clue cells)
+  sizes it from the board's own width through container units
+  (`container-type: inline-size` on the board, `calc(100cqw / var(--cols))`
+  per cell), so a 6-column and a 10-column board keep the same
+  letter-to-cell proportion at every viewport. Give such text a block the
+  full width of its padding box (`display: block; width: 100%`) so a long
+  single word wraps inside the cell instead of running under the arrowhead
+  — a centered grid item shrinks to fit and does not.
+- **A silhouette contour must not fight the selection ring.** Arrow
+  Crossword draws its notched outline as a 1px border plus a 1px inset
+  shadow on each side that faces an empty cell, composed through four
+  custom properties (`--sl/--st/--sr/--sb`) so any combination of sides
+  works from one `box-shadow` rule; the selected cell then uses `outline`
+  (offset inwards) rather than a second `box-shadow`, which would cancel the
+  contour — the same trap as the daily calendar's `--cell-edge`.
 
 ## Tool buttons (the in-game toolbar standard)
 
@@ -769,8 +785,9 @@ compaction), so keyboards look and feel identical everywhere.
 - `bottomLeft`/`bottomRight` dock wide action keys (Enter, ⌫, submit) at
   the ends of the bottom row; pass `className: 'ready'` for an armed
   solid-accent submit (Word Ladder).
-- Current users: Hangman, Word Guess, Word Ladder, Crossword, Cryptogram.
-  A new letter game must reuse this component, not fork it.
+- Current users: Hangman, Word Guess, Word Ladder, Crossword, Arrow
+  Crossword, Cryptogram. A new letter game must reuse this component, not
+  fork it.
 
 ## Tutorials (required for every game)
 
