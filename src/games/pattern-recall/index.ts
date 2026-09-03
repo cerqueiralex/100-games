@@ -20,19 +20,16 @@ export const patternRecallDefinition: GameDefinition = {
       id: 'slowFlash',
       name: 'Slow flash',
       description: 'The pattern stays lit 40% longer. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'countShown',
       name: 'Count reminder',
       description: 'Shows how many cells to tap, and how many are left. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'peek',
       name: 'Peek',
       description: 'Re-flash the pattern during your turn (up to 3 times). Counts as help when used.',
-      defaultOn: false
     }
   ]
 };

@@ -22,19 +22,16 @@ export const mathdokuDefinition: GameDefinition = {
       name: 'Cage check',
       description:
         'Completed cages turn green when their arithmetic works and red when it fails. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'dupes',
       name: 'Duplicate highlight',
       description: 'Marks digits that repeat within a row or column. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'A hint button that fills one correct cell for you. Counts as help.',
-      defaultOn: true
     }
   ]
 };

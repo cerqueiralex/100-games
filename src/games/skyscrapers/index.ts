@@ -22,20 +22,17 @@ export const skyscrapersDefinition: GameDefinition = {
       name: 'Clue check',
       description:
         'When a row or column is complete, its edge clues turn green if satisfied and red if broken. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'dupes',
       name: 'Highlight repeats',
       description:
         'Flags towers that repeat a height already used in their row or column. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hints',
       description: 'A hint button that builds one correct tower for you. Counts as help.',
-      defaultOn: true
     }
   ]
 };

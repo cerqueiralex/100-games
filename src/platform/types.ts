@@ -20,12 +20,17 @@ export type CategoryId =
   | 'strategy'
   | 'reflex';
 
-/** A toggleable assist/help feature declared by a game. */
+/**
+ * A toggleable assist/help feature declared by a game. There is deliberately
+ * NO default: every assist starts off for every new game, and the player's
+ * choice lives only in the running session (see GameShell) — a passive
+ * assist counts as help the moment it is on, so one that started on was
+ * turning unaided wins into helped ones.
+ */
 export interface AssistFeature {
   id: string;
   name: string;
   description: string;
-  defaultOn: boolean;
 }
 
 /** One selectable value of a game option. */
@@ -98,7 +103,7 @@ export interface GameEvents {
 /** Props every game component receives from the platform GameShell. */
 export interface GameProps {
   difficulty: Difficulty;
-  /** assistId -> enabled, resolved from settings for this session. */
+  /** assistId -> enabled for THIS session only: every assist starts off and nothing is read from settings. */
   assists: Record<string, boolean>;
   /**
    * optionId -> chosen choice id, resolved from settings for this session
@@ -110,7 +115,7 @@ export interface GameProps {
   paused: boolean;
   elapsedSec: number;
   events: GameEvents;
-  /** Flip an assist while playing; the change persists to settings. */
+  /** Flip an assist while playing; the change lives in this session only. */
   onToggleAssist: (assistId: string, on: boolean) => void;
   /**
    * Present when resuming a saved game: the exact object this game's
@@ -160,6 +165,13 @@ export interface GameSave {
    * theme would be a board the screen cannot draw.
    */
   options?: Record<string, string>;
+  /**
+   * The assist toggles this save was made under. Restored with the save so
+   * a passive assist that was on keeps working after a resume and the run's
+   * helped verdict cannot drift. This is the ONLY place a toggle persists —
+   * assists are per-session and never stored in settings (see AssistFeature).
+   */
+  assists?: Record<string, boolean>;
 }
 
 /**
@@ -340,8 +352,6 @@ export interface PlatformSettings {
   theme: ThemeId;
   soundEnabled: boolean;
   volume: number; // 0..1
-  /** gameId -> assistId -> enabled */
-  gameAssists: Record<string, Record<string, boolean>>;
   /** gameId -> last chosen difficulty */
   lastDifficulty: Record<string, Difficulty>;
   /** gameId -> optionId -> chosen choice id (see `GameOptionDef`) */

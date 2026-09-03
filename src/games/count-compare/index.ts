@@ -20,19 +20,16 @@ export const countCompareDefinition: GameDefinition = {
       id: 'replay',
       name: 'Re-flash',
       description: 'Show the scene again for the current question, up to 3 times. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'narrow',
       name: 'Narrow questions',
       description: 'Only ask the simpler “more of which color?” comparison. Counts as help while on.',
-      defaultOn: true
     },
     {
       id: 'longerFlash',
       name: 'Longer flash',
       description: 'Shapes stay on screen 40% longer. Counts as help while on.',
-      defaultOn: false
     }
   ]
 };

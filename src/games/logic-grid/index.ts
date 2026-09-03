@@ -20,19 +20,16 @@ export const logicGridDefinition: GameDefinition = {
       id: 'autoCross',
       name: 'Auto-cross',
       description: 'Placing a ✓ automatically crosses out the rest of its row and column in that block. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'check',
       name: 'Check button',
       description: 'Flags any marks that contradict the solution (−10 each). Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint button',
       description: 'Fixes a mistake, or reveals one correct ✓ (−30). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

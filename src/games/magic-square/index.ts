@@ -21,20 +21,17 @@ export const magicSquareDefinition: GameDefinition = {
       name: 'Line sums',
       description:
         'Shows each row, column and diagonal total in the margin, turning green when a full line hits the magic sum and red when it misses. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'targetGlow',
       name: 'Target glow',
       description:
         'Lights up an empty cell when only one number can legally complete its line — a nudge toward the next move. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'A hint button that drops one correct number into the grid for you. Counts as help.',
-      defaultOn: true
     }
   ]
 };

@@ -38,7 +38,6 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   theme: 'black',
   soundEnabled: true,
   volume: 0.6,
-  gameAssists: {},
   lastDifficulty: {},
   gameOptions: {},
   favorites: []
@@ -51,8 +50,37 @@ export const DEFAULT_PROFILE: Profile = {
 };
 
 export function loadSettings(): PlatformSettings {
-  const saved = read<Partial<PlatformSettings>>(KEYS.settings);
-  return { ...DEFAULT_SETTINGS, ...saved };
+  const raw = read<Record<string, unknown>>(KEYS.settings) ?? {};
+  /* Builds before 2026-09 remembered assist toggles per game here. Assists
+     are per-session now — every new game starts with all of them off — so
+     the field is dropped. But a save written under such a build carries no
+     `assists` of its own, and this blob is the only record of what was on
+     when it was made: hand it to those saves first, then let it go. */
+  if ('gameAssists' in raw) {
+    if (isRecord(raw.gameAssists)) adoptLegacyAssists(raw.gameAssists);
+    delete raw.gameAssists;
+    write(KEYS.settings, raw);
+  }
+  return { ...DEFAULT_SETTINGS, ...(raw as Partial<PlatformSettings>) };
+}
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/** one-time: give each save that has no `assists` the toggles its game had remembered */
+function adoptLegacyAssists(legacy: Record<string, unknown>): void {
+  const saves = loadSaves();
+  let changed = false;
+  for (const save of Object.values(saves)) {
+    if (!save || save.assists) continue;
+    const entry = legacy[save.gameId];
+    if (!isRecord(entry)) continue;
+    const assists: Record<string, boolean> = {};
+    for (const [id, on] of Object.entries(entry)) if (typeof on === 'boolean') assists[id] = on;
+    save.assists = assists;
+    changed = true;
+  }
+  if (changed) write(KEYS.saves, saves);
 }
 
 export function saveSettings(settings: PlatformSettings): void {
@@ -138,17 +166,6 @@ export function resetAll(): void {
 /** Overwrite the whole history log (used by backup import). */
 export function replaceHistory(results: GameResult[]): void {
   write(KEYS.history, results.slice(0, HISTORY_LIMIT));
-}
-
-export function resolveAssists(
-  settings: PlatformSettings,
-  gameId: string,
-  defaults: { id: string; defaultOn: boolean }[]
-): Record<string, boolean> {
-  const saved = settings.gameAssists[gameId] ?? {};
-  const out: Record<string, boolean> = {};
-  for (const f of defaults) out[f.id] = saved[f.id] ?? f.defaultOn;
-  return out;
 }
 
 export function lastDifficultyFor(settings: PlatformSettings, gameId: string): Difficulty {

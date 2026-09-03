@@ -20,25 +20,21 @@ export const schulteTableDefinition: GameDefinition = {
       id: 'dim-found',
       name: 'Dim found tiles',
       description: 'Tiles you have already tapped fade back so they stop competing for your eyes. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'fixation-dot',
       name: 'Fixation dot',
       description: 'A faint dot marks the grid centre — the classic technique is to hold your gaze there. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'next-highlight',
       name: 'Next-tile outline',
       description: 'Faintly outlines the tile you are looking for — training wheels for the search. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'peek-next',
       name: 'Peek button',
       description: 'Adds a Peek tool that pulses the next tile once (−25). Counts as help when used.',
-      defaultOn: false
     }
   ]
 };

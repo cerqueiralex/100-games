@@ -21,38 +21,32 @@ export const sudokuDefinition: GameDefinition = {
       id: 'smartHints',
       name: 'Smart hints',
       description: 'A hint button that fills a correct cell for you. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'errorLimit',
       name: 'Error limit',
       description: '3 errors and the game is over. A challenge, not a help.',
-      defaultOn: true
     },
     {
       id: 'colorAssist',
       name: 'Rule out blocks',
       description:
         'Fades every 3×3 block that already contains the selected digit — no second copy fits there. The digits themselves stay bright. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'regionHighlight',
       name: 'Region highlight',
       description: 'Highlights the row, column and box of the selected cell. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'highlightSame',
       name: 'Highlight same numbers',
       description: 'Highlights every cell holding the same number as the selected cell. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'showPoints',
       name: 'Points',
       description: 'Shows your live score while playing.',
-      defaultOn: true
     }
   ]
 };

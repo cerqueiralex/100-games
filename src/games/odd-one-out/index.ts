@@ -20,19 +20,16 @@ export const oddOneOutDefinition: GameDefinition = {
       id: 'moreTime',
       name: 'More time',
       description: 'Adds 40% to every round timer. Counts as help while enabled.',
-      defaultOn: false
     },
     {
       id: 'biggerDiff',
       name: 'Bigger difference',
       description: 'Keeps the odd tile a little easier to spot at every round. Counts as help while enabled.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Hint button',
       description: 'Pulses the 2×2 region holding the odd tile — up to 3 times. Counts as help and costs points when used.',
-      defaultOn: true
     }
   ]
 };

@@ -21,19 +21,16 @@ export const aquariumDefinition: GameDefinition = {
       id: 'lineCheck',
       name: 'Line check',
       description: 'Crosses out satisfied counts and auto-marks cells that can no longer hold water. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'tankGlow',
       name: 'Tank glow',
       description: 'Press and hold a cell to highlight its whole tank. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Level hint',
       description: 'Sets one tank to its correct water level (−40). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

@@ -20,19 +20,16 @@ export const connectFourDefinition: GameDefinition = {
       id: 'threatWarn',
       name: 'Block warning',
       description: 'Lights up any column where your opponent could win on their next drop. Counts as help whenever enabled.',
-      defaultOn: true
     },
     {
       id: 'suggest',
       name: 'Suggest move',
       description: 'Highlights a strong column for you (vs the robot only). Counts as help when used.',
-      defaultOn: false
     },
     {
       id: 'undo',
       name: 'Undo (pass & play)',
       description: 'Take back the last drop in a friend match. Counts as help when used.',
-      defaultOn: false
     }
   ]
 };

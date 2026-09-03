@@ -22,19 +22,16 @@ export const wordGuessDefinition: GameDefinition = {
       name: 'Keyboard hints',
       description:
         'Keys recolor to the best result each letter has scored (green / present / absent). Counts as help while enabled. Always off on Extreme.',
-      defaultOn: true
     },
     {
       id: 'starter',
       name: 'Starter word',
       description: 'Fills a statistically strong opening word on the first row. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'reveal-one',
       name: 'Reveal a letter',
       description: 'Reveals one correct letter in its right position (once per game). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

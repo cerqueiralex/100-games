@@ -23,7 +23,7 @@ export const nurikabeTutorial: TutorialStep[] = [
   },
   {
     title: 'Paint sea or island',
-    text: 'Pick Sea or Island at the bottom, then tap a cell or drag along a row or column to paint. Start on a painted cell to erase it back to blank. Numbered cells are locked.',
+    text: 'Pick Sea or Island at the bottom, then tap a cell or drag to paint every cell under your finger — round corners and follow shores in one stroke. Start on a painted cell to erase it back to blank. Numbered cells are locked.',
     art: (
       <div className="tut-col">
         <div className="tut-row">

@@ -19,26 +19,24 @@ export const crosswordDefinition: GameDefinition = {
     {
       id: 'autoCheck',
       name: 'Auto-check',
-      description: 'Wrong letters are marked red the moment you type them. Counts as help.',
-      defaultOn: true
+      description:
+        'Wrong letters turn red — and count as errors — the moment you type them. Counts as help.',
     },
     {
       id: 'checkPuzzle',
       name: 'Check button',
-      description: 'Check the grid on demand; wrong letters get flagged. Counts as help when used.',
-      defaultOn: true
+      description:
+        'Check the grid on demand: wrong letters get flagged and counted as errors. Counts as help when used.',
     },
     {
       id: 'reveal',
       name: 'Reveal',
       description: 'Buttons to reveal the selected letter or the whole word. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'skipFilled',
       name: 'Smart cursor',
       description: 'The cursor skips over cells you already filled. Pure convenience, not counted as help.',
-      defaultOn: true
     }
   ]
 };

@@ -182,6 +182,21 @@ p {
   border-radius: var(--radius-l);
   padding: 15px 16px;
   margin: 4px 0 18px;
+  /* the whole card is a button to the Profile tab: it presses like a game
+     card (paint + transform only, so the 4px profile frame never moves) */
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: scale 0.08s ease, background 0.08s ease;
+}
+
+.home-header:active {
+  background: var(--surface-2);
+  scale: 0.98;
+}
+
+.home-header:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .home-head-text {

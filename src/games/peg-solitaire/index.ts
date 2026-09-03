@@ -20,19 +20,16 @@ export const pegSolitaireDefinition: GameDefinition = {
       id: 'legalGlow',
       name: 'Legal-move glow',
       description: 'Lights up the holes a lifted peg can jump to. Counts as help while enabled.',
-      defaultOn: true
     },
     {
       id: 'undo',
       name: 'Undo',
       description: 'Take back your last jump — as far as the start. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Show a solver-verified next jump as a ghost arrow. Adds to your hint count.',
-      defaultOn: false
     }
   ]
 };

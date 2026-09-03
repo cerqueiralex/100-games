@@ -20,14 +20,12 @@ export const battleshipDefinition: GameDefinition = {
       id: 'radar',
       name: 'Radar ping',
       description: 'A button that reveals one enemy ship cell to fire at. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'autoWater',
       name: 'Auto-mark water',
       description:
         'When an enemy ship sinks, the water around it is marked as misses for you. Counts as help.',
-      defaultOn: true
     }
   ]
 };

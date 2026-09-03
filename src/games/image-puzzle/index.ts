@@ -20,13 +20,11 @@ export const imagePuzzleDefinition: GameDefinition = {
       id: 'showNumbers',
       name: 'Tile numbers',
       description: 'Shows each tile’s number so ordering is obvious. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'preview',
       name: 'Preview image',
       description: 'Shows the finished photo for 2 seconds. Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

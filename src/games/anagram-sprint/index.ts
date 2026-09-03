@@ -21,14 +21,12 @@ export const anagramSprintDefinition: GameDefinition = {
       name: 'Hint button',
       description:
         'Locks the next correct letter into its slot (−20 points, counts as help each time you tap it).',
-      defaultOn: true
     },
     {
       id: 'firstLetter',
       name: 'First letter',
       description:
         "Softly glows the tile the answer starts with. Counts as help whenever it's enabled.",
-      defaultOn: false
     }
   ]
 };

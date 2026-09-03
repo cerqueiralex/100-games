@@ -21,19 +21,16 @@ export const checkersDefinition: GameDefinition = {
       name: 'Move hints',
       description:
         'Highlights a tapped piece’s legal squares and flags pieces that must capture. Counts as help while enabled.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Suggests a strong move via a short search (vs. the robot). Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'undo',
       name: 'Undo (2-player)',
       description: 'Take back the last move in a pass-and-play match. Counts as help when used.',
-      defaultOn: false
     }
   ]
 };

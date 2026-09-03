@@ -20,19 +20,16 @@ export const hangmanDefinition: GameDefinition = {
       id: 'vowel-peek',
       name: 'Vowel peek',
       description: 'Reveal one hidden vowel (up to twice). Counts as help each time you use it.',
-      defaultOn: true
     },
     {
       id: 'category-hint',
       name: 'Category hint',
       description: 'On the tiers where the category is hidden, reveal it. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'safe-first',
       name: 'Safe first guess',
       description: 'Your first wrong guess each game is forgiven — the balloon only wobbles. Counts as help while on.',
-      defaultOn: false
     }
   ]
 };

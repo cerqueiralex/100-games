@@ -20,25 +20,21 @@ export const klondikeDefinition: GameDefinition = {
       id: 'autoFoundation',
       name: 'Auto to foundation',
       description: 'Automatically sends obviously-safe cards up to the foundations and offers a one-tap Finish when the game is won. Counts as help while on.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Highlights a useful legal move found by the solver. Adds to your hint count.',
-      defaultOn: true
     },
     {
       id: 'undo',
       name: 'Undo',
       description: 'Take back your last move (unlimited). Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'winnableBadge',
       name: 'Winnable badge',
       description: 'On easy/medium, shows a badge confirming the deal is solver-verified winnable. Counts as help while on.',
-      defaultOn: true
     }
   ]
 };

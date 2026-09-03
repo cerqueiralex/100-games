@@ -68,6 +68,10 @@ function Shell() {
               setActiveDaily(record);
               setActiveGameId(record.gameId);
             }}
+            onOpenProfile={() => {
+              sfx.tap();
+              setTab('profile');
+            }}
           />
         )}
         {tab === 'profile' && <ProfilePage />}

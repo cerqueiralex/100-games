@@ -21,19 +21,16 @@ export const make24Definition: GameDefinition = {
       name: 'Solvable badge',
       description:
         'Shows a live check that the cards can still reach the target — reassurance while you plan. Counts as help when enabled.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint button',
       description: 'Lights up the next two cards and operator of a solution. Counts as help; costs points.',
-      defaultOn: true
     },
     {
       id: 'reveal',
       name: 'Reveal solution',
       description: 'Shows the full solution expression and resets the deal so you can follow it. Forfeits that deal’s points.',
-      defaultOn: true
     }
   ]
 };

@@ -20,21 +20,18 @@ export const letterHuntDefinition: GameDefinition = {
       id: 'wordCount',
       name: 'Word count',
       description: 'Shows how many words the board hides and how many you have found. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'minFlash',
       name: 'Stuck flash',
       description:
         'After 20 seconds without a find, briefly pulses the first tile of a findable word. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Reveal a word',
       description:
         'Draws one whole word from the board as a ghost trail for a moment (−40 points, adds a hint). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

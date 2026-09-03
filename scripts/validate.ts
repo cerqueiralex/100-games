@@ -3825,6 +3825,124 @@ console.log('— Game options & Memory Match themes —');
     );
 }
 
+console.log('— Assists start off, per session —');
+{
+  const { GAMES } = await import('../src/platform/registry');
+  const { readFileSync, readdirSync, existsSync } = (await import('node:fs')) as unknown as {
+    readFileSync: (path: string, encoding: string) => string;
+    readdirSync: (path: string) => string[];
+    existsSync: (path: string) => boolean;
+  };
+  const src = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8');
+  // look at CODE, not prose: a comment explaining why a default no longer
+  // exists must not trip a check for the default (see the ledger watch item)
+  const code = (p: string) => src(p).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  let ok = true;
+  const bad = (msg: string) => {
+    failed = true;
+    ok = false;
+    console.error(`✗ ${msg}`);
+  };
+
+  /* THE PLAYER-FACING INVARIANT: a passive assist counts as help the moment
+     it is on, so an assist that STARTS on — shipped on, or remembered from
+     the last game — turns an unaided win into a helped one: no green star,
+     no trophy, no clean-win run, for a player who never asked for help.
+     Every assist therefore starts OFF for every new game, and the toggle is
+     never stored anywhere but the running session and the save it made.
+     The type already has no default field; this re-proves it on the code,
+     because a default could come back as a plain property, a settings field
+     or a shell that reads settings without the compiler noticing. */
+  let assistCount = 0;
+  for (const game of GAMES) {
+    const ids = game.assistFeatures.map((f) => f.id);
+    if (new Set(ids).size !== ids.length) bad(`${game.id} has duplicate assist ids`);
+    for (const f of game.assistFeatures) {
+      assistCount++;
+      if ('defaultOn' in f) bad(`${game.id}/${f.id} declares a default — assists have none`);
+      if (!f.name || !f.description) bad(`${game.id}/${f.id} has no name/description for the setup screen`);
+    }
+  }
+  // every game folder (folder names do not always match ids: n-back lives in nback)
+  const gamesDir = new URL('../src/games/', import.meta.url).pathname;
+  let scanned = 0;
+  for (const dir of readdirSync(gamesDir)) {
+    if (!existsSync(`${gamesDir}${dir}/index.ts`)) continue;
+    scanned++;
+    if (/defaultOn/.test(code(`src/games/${dir}/index.ts`)))
+      bad(`src/games/${dir}/index.ts still declares an assist default`);
+  }
+  if (scanned < GAMES.length) bad(`only ${scanned} game folders scanned for assist defaults, registry has ${GAMES.length}`);
+  if (/defaultOn|gameAssists/.test(code('src/platform/types.ts')))
+    bad('types.ts: an assist must have no default and settings must have no assist field');
+  const shell = code('src/platform/components/GameShell.tsx');
+  if (/resolveAssists|setGameAssist|settings\.gameAssists|gameAssists/.test(shell))
+    bad('GameShell reads or writes assist toggles in settings — they are per-session');
+  const saveCall = shell.indexOf('putSave({');
+  if (saveCall < 0 || !/\bassists\b/.test(shell.slice(saveCall, shell.indexOf('});', saveCall))))
+    bad("GameShell's save no longer carries the session's assist toggles (a resumed passive assist would silently stop)");
+  if (!/setAssists\(freshAssists\(\)\)/.test(shell))
+    bad('GameShell no longer resets the assist toggles when the setup screen shows');
+
+  /* The one-time hand-over, through the real loader against an in-memory
+     store: a settings blob from a build that remembered toggles per game
+     gives them to the saves that lack their own, keeps a save's own toggles,
+     leaves the rest of the settings intact and drops the field from storage. */
+  {
+    const mem = new Map<string, string>();
+    (globalThis as { localStorage?: unknown }).localStorage = {
+      getItem: (k: string) => mem.get(k) ?? null,
+      setItem: (k: string, v: string) => void mem.set(k, v),
+      removeItem: (k: string) => void mem.delete(k),
+      key: (i: number) => [...mem.keys()][i] ?? null,
+      get length() {
+        return mem.size;
+      }
+    };
+    try {
+      const { loadSettings, loadSaves } = await import('../src/platform/storage');
+      mem.set(
+        '100games.v1.settings',
+        JSON.stringify({
+          theme: 'dim',
+          gameAssists: { sudoku: { hints: true, points: false, junk: 'yes' }, ghost: { x: true } }
+        })
+      );
+      mem.set(
+        '100games.v1.saves',
+        JSON.stringify({
+          sudoku: { gameId: 'sudoku', difficulty: 'easy', elapsedSec: 5, savedAt: 1, state: {} },
+          maze: { gameId: 'maze', difficulty: 'easy', elapsedSec: 5, savedAt: 1, state: {}, assists: { compass: true } },
+          pipes: { gameId: 'pipes', difficulty: 'easy', elapsedSec: 5, savedAt: 1, state: {} }
+        })
+      );
+      const settings = loadSettings() as unknown as Record<string, unknown>;
+      if ('gameAssists' in settings) bad('loadSettings passes the legacy gameAssists field through');
+      if (settings.theme !== 'dim') bad('loadSettings lost the rest of the settings while dropping gameAssists');
+      const stored = JSON.parse(mem.get('100games.v1.settings') ?? '{}') as Record<string, unknown>;
+      if ('gameAssists' in stored) bad('the legacy gameAssists field is still in storage after loadSettings');
+      if (stored.theme !== 'dim') bad('the re-written settings lost a field');
+      const saves = loadSaves();
+      if (JSON.stringify(saves.sudoku?.assists) !== JSON.stringify({ hints: true, points: false }))
+        bad(`a legacy save did not adopt its game's remembered toggles, booleans only (${JSON.stringify(saves.sudoku?.assists)})`);
+      if (JSON.stringify(saves.maze?.assists) !== JSON.stringify({ compass: true }))
+        bad('a save that already carries assists was overwritten by the legacy blob');
+      if (saves.pipes?.assists !== undefined) bad('a save whose game had nothing remembered was given assists');
+      // a second load must be a no-op: nothing legacy left to adopt
+      loadSettings();
+      if (JSON.stringify(loadSaves().sudoku?.assists) !== JSON.stringify({ hints: true, points: false }))
+        bad('a repeat load changed an adopted save');
+    } finally {
+      delete (globalThis as { localStorage?: unknown }).localStorage;
+    }
+  }
+
+  if (ok)
+    console.log(
+      `  ✓ ${assistCount} assists across ${GAMES.length} games, none with a default; toggles live in the session and its save only; legacy per-game toggles handed to saves once and dropped`
+    );
+}
+
 console.log('— Landmark catalogue (streaks & profile trophies) —');
 {
   // THE SYNC RULE: the landmark catalogue must derive entirely from the

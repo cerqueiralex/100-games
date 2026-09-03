@@ -20,19 +20,16 @@ export const backwardsSpanDefinition: GameDefinition = {
       id: 'direction-reminder',
       name: 'Direction reminder',
       description: 'Keeps the reverse/forward arrow on screen while you type. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'slow-flash',
       name: 'Slow flash',
       description: 'Shows each symbol 40% longer during presentation. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'replay',
       name: 'Replay',
       description: 'Re-watch the current sequence — up to 3 times per run. Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

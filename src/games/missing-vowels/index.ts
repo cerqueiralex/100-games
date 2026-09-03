@@ -21,20 +21,17 @@ export const missingVowelsDefinition: GameDefinition = {
       name: 'Category hint',
       description:
         'Shows the phrase theme. On Extreme it reveals the otherwise hidden category. Counts as help whenever enabled.',
-      defaultOn: false
     },
     {
       id: 'revealVowel',
       name: 'Reveal vowel',
       description: 'A button that correctly fills one random empty slot. Counts as help each time you use it.',
-      defaultOn: true
     },
     {
       id: 'keepCorrect',
       name: 'Keep correct',
       description:
         'After a wrong submission, correct vowels lock in place and only the wrong ones clear (instead of clearing all). Counts as help when enabled.',
-      defaultOn: true
     }
   ]
 };

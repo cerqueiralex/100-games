@@ -21,19 +21,16 @@ export const binaryGridDefinition: GameDefinition = {
       id: 'violations',
       name: 'Rule-break highlights',
       description: 'Cells breaking a rule glow red as you play. Counts as help while on.',
-      defaultOn: true
     },
     {
       id: 'counts',
       name: 'Row & column counters',
       description: 'Gutters show how many suns and moons each line still needs. Counts as help while on.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint button',
       description: 'Fills one logically-forced cell and explains the rule (−25). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

@@ -20,19 +20,16 @@ export const jigsawDefinition: GameDefinition = {
       id: 'preview',
       name: 'Image preview',
       description: 'Shows a faint version of the finished photo under the board. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'edgeSort',
       name: 'Edge sort',
       description: 'Gathers all edge and corner pieces to the top of the pile. Counts as help when used.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Place a piece',
       description: 'Drops one random piece straight into its home (−40 points). Counts as help when used.',
-      defaultOn: false
     }
   ]
 };

@@ -56,7 +56,7 @@ export const crosswordTutorial: TutorialStep[] = [
   },
   {
     title: 'Check, reveal, win',
-    text: 'Auto-check flags wrong letters in red as you type; Check and Reveal help when stuck — all recorded as help. Fill every cell correctly to win.',
+    text: 'Typing never costs you: errors are only counted when you press Check (or, with Auto-check on, the moment a wrong letter lands). Check and Reveal are recorded as help. Fill every cell correctly to win.',
     art: (
       <div className="tut-row">
         <Cell v="B" c="bad" />

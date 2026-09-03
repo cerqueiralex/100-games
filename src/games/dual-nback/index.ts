@@ -20,19 +20,16 @@ export const dualNBackDefinition: GameDefinition = {
       id: 'feedback',
       name: 'Instant feedback',
       description: 'Shows right/wrong after every trial. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'showHistory',
       name: 'Show N-back',
       description: 'Shows the position and letter from N steps back. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'slowMode',
       name: 'Relaxed pace',
       description: '35% more time on every trial. Counts as help.',
-      defaultOn: false
     }
   ]
 };

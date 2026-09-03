@@ -20,19 +20,16 @@ export const sokobanDefinition: GameDefinition = {
       id: 'undo',
       name: 'Undo',
       description: 'Adds an Undo tool that steps back one move. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'deadlockWarn',
       name: 'Deadlock warning',
       description: 'Highlights a crate you have pushed into an unrecoverable corner. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Shows the next move of an optimal solution as a ghost arrow. Counts as help when used.',
-      defaultOn: false
     }
   ]
 };

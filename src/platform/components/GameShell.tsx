@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, FinishPayload, GameDefinition, GameResult, GameSave, LiveStats } from '../types';
 import { DIFFICULTIES } from '../types';
 import { useAppState } from '../AppState';
-import { deleteSave, loadSaves, putSave, resolveAssists, resolveOptions } from '../storage';
+import { deleteSave, loadSaves, putSave, resolveOptions } from '../storage';
 import { formatDate, formatDuration } from '../stats';
 import { sfx } from '../audio';
 import { BackIcon, Chip, HelpIcon, HomeIcon, Modal, PartyIcon, PauseIcon, PlayIcon, RestartIcon, SaveIcon, ShareIcon, StarIcon, Toggle } from './ui';
@@ -82,7 +82,7 @@ export function GameShell({
       from the stored seed and the difficulty is locked to the assignment */
   daily?: DailyChallengeRecord;
 }) {
-  const { settings, updateSettings, setGameAssist, setGameOption, recordResult, markFeat, profile, progress } =
+  const { settings, updateSettings, setGameOption, recordResult, markFeat, profile, progress } =
     useAppState();
   // difficulties this game has been WON at — green star + border on the picker
   const beaten = beatenDifficulties(progress, game.id);
@@ -131,14 +131,24 @@ export function GameShell({
   /** the running session created a save or was resumed from one */
   const sessionHasSave = useRef(false);
 
-  useEffect(() => {
-    if (phase === 'setup') setStoredSave(saveForThisMode());
-  }, [phase, saveForThisMode]);
-
-  const assists = useMemo(
-    () => resolveAssists(settings, game.id, game.assistFeatures),
-    [settings, game]
+  /** every assist off — the only state a new game ever starts from */
+  const freshAssists = useCallback(
+    () => Object.fromEntries(game.assistFeatures.map((f) => [f.id, false])) as Record<string, boolean>,
+    [game]
   );
+  /* The assist toggles for THIS session. Every assist starts OFF for every
+     new game and nothing is remembered between games: a passive assist
+     counts as help the moment it is on, so a toggle shipped on or kept from
+     an earlier game was quietly turning unaided wins into helped ones. The
+     setup screen resets them; a resumed save restores the ones it was made
+     under (GameSave.assists); nothing about them is ever written to settings. */
+  const [assists, setAssists] = useState<Record<string, boolean>>(freshAssists);
+
+  useEffect(() => {
+    if (phase !== 'setup') return;
+    setStoredSave(saveForThisMode());
+    setAssists(freshAssists());
+  }, [phase, saveForThisMode, freshAssists]);
 
   /* The option choices this SESSION runs under. They are frozen at start()
      rather than read live from settings: an option decides how the board is
@@ -192,6 +202,19 @@ export function GameShell({
     setSessionOptions(
       resume?.options ? { ...setupOptions, ...pickKnownOptions(game, resume.options) } : setupOptions
     );
+    /* A resumed game gets back the assist toggles it was SAVED under — a
+       passive assist that was on keeps working, and the run's helped verdict
+       cannot drift. A fresh game keeps what the setup screen shows right now
+       (which began all-off). */
+    if (resume?.assists) {
+      const known = new Set(game.assistFeatures.map((f) => f.id));
+      setAssists({
+        ...freshAssists(),
+        ...Object.fromEntries(
+          Object.entries(resume.assists).filter(([id, on]) => known.has(id) && typeof on === 'boolean')
+        )
+      });
+    }
     liveStats.current = emptyStats;
     finished.current = false;
     sessionHasSave.current = !!resume;
@@ -231,7 +254,9 @@ export function GameShell({
       savedAt: Date.now(),
       state,
       ...(daily ? { daily: daily.date } : {}),
-      ...(Object.keys(sessionOptions).length > 0 ? { options: sessionOptions } : {})
+      ...(Object.keys(sessionOptions).length > 0 ? { options: sessionOptions } : {}),
+      // the toggles this run is played under — the ONE place they persist
+      ...(game.assistFeatures.length > 0 ? { assists } : {})
     });
     sessionHasSave.current = true;
     sfx.place();
@@ -500,14 +525,15 @@ export function GameShell({
             <p className="section-note">
               Assists you use are recorded with each game, so your history shows which wins were
               clean and which had help. Only a clean win — no hints, no assists — earns the green
-              star for a difficulty, the game's trophy, or a landmark.
+              star for a difficulty, the game's trophy, or a landmark. Every assist starts off for
+              each new game — turn on the ones you want for this one.
             </p>
             <div className="card-list">
               {game.assistFeatures.map((f) => (
                 <Toggle
                   key={f.id}
                   checked={assists[f.id]}
-                  onChange={(v) => setGameAssist(game.id, f.id, v)}
+                  onChange={(v) => setAssists((a) => ({ ...a, [f.id]: v }))}
                   label={f.name}
                   description={f.description}
                 />
@@ -619,7 +645,7 @@ export function GameShell({
           paused={paused}
           elapsedSec={elapsedSec}
           events={events}
-          onToggleAssist={(assistId, on) => setGameAssist(game.id, assistId, on)}
+          onToggleAssist={(assistId, on) => setAssists((a) => ({ ...a, [assistId]: on }))}
           savedState={activeSave?.state}
           registerSnapshot={(fn) => {
             snapshotRef.current = fn;

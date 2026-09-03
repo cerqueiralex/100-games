@@ -21,19 +21,16 @@ export const lightsOutDefinition: GameDefinition = {
       name: 'Best-left meter',
       description:
         'Shows the optimal number of presses remaining from the current position. Counts as help while on.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint button',
       description: 'Pulses one light that is part of a perfect solution (−25). Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'undo',
       name: 'Undo button',
       description: 'Reverts your last press. Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

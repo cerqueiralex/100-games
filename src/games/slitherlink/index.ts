@@ -22,21 +22,18 @@ export const slitherlinkDefinition: GameDefinition = {
       name: 'Branch guard',
       description:
         'Blocks a line that would make a dot branch or cross, flashing the junction red. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'auto-x',
       name: 'Auto-X',
       description:
         'Automatically X-marks the leftover sides once a clue or a dot is fully satisfied. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Hint button',
       description:
         'Fills one correct line or X at the most constrained spot (−30). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

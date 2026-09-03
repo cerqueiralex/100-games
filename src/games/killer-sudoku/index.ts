@@ -22,27 +22,23 @@ export const killerSudokuDefinition: GameDefinition = {
       name: 'Cage check',
       description:
         'Flags every completed cage: green when the sum works with no repeats, red when it does not. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'dupes',
       name: 'Duplicate highlight',
       description:
         'Highlights digits that repeat in a row, column, box or cage. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'auto-notes',
       name: 'Tidy notes',
       description:
         'Placing a digit sweeps matching pencil marks from its row, column, box and cage. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hints',
       description: 'A hint button that fills one correct cell for you. Counts as help.',
-      defaultOn: true
     }
   ]
 };

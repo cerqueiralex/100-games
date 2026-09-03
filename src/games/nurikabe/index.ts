@@ -21,19 +21,16 @@ export const nurikabeDefinition: GameDefinition = {
       id: 'ruleCheck',
       name: 'Rule check',
       description: 'Outlines broken rules in red — 2×2 sea, touching or oversized islands, cut-off sea — and flags wrong paints. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'completeIslands',
       name: 'Complete islands',
       description: 'Dims and outlines an island once it reaches its number, so finished islands drop away. Counts as help when enabled.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Hint button',
       description: 'Paints the next cell that logic forces (−30). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

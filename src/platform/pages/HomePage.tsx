@@ -20,6 +20,7 @@ import { Avatar } from '../design/avatars';
 export function HomePage({
   onOpenGame,
   onOpenDaily,
+  onOpenProfile,
   query,
   onQueryChange,
   category,
@@ -27,6 +28,8 @@ export function HomePage({
 }: {
   onOpenGame: (gameId: string) => void;
   onOpenDaily: (record: DailyChallengeRecord) => void;
+  /** the whole header card is a shortcut to the Profile tab */
+  onOpenProfile: () => void;
   query: string;
   onQueryChange: (q: string) => void;
   category: CategoryId | null;
@@ -204,7 +207,23 @@ export function HomePage({
 
   return (
     <div className="screen">
-      <header className="home-header fx-card">
+      {/* The whole card is ONE shortcut to the Profile tab — name, level,
+          streak and avatar are all the player's own, and each of them is
+          explained there. A div with role=button rather than a <button>:
+          the card holds an <h1> and a <p>, which a button may not contain. */}
+      <div
+        className="home-header fx-card"
+        role="button"
+        tabIndex={0}
+        aria-label="Open your profile"
+        onClick={onOpenProfile}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onOpenProfile();
+          }
+        }}
+      >
         <div className="home-head-text">
           <p className="home-greeting">{greeting},</p>
           <h1 className="home-title">{profile.name}</h1>
@@ -223,7 +242,7 @@ export function HomePage({
             <Avatar value={profile.emoji} />
           </span>
         </div>
-      </header>
+      </div>
 
       <div className="search-bar">
         <SearchIcon />

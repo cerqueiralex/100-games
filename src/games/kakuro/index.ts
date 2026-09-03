@@ -22,20 +22,17 @@ export const kakuroDefinition: GameDefinition = {
       name: 'Run check',
       description:
         'A completed run turns green when its digits are all different and hit the clue, red when they do not. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'combos',
       name: 'Combos',
       description:
         'For the selected cell, lists the digit sets that can still fill its across and down runs and the digits that fit both. A classic kakuro aid — counts as help.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'A hint button that fills one correct cell for you. Counts as help.',
-      defaultOn: true
     }
   ]
 };

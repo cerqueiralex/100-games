@@ -10,6 +10,23 @@ they gain enforcement, delete entries obsoleted by code removal.
 
 ## Promoted to standards (enforced — the rule exists because of the bug)
 
+- **2026-09-03 · fairness · a default-on passive assist makes every win
+  "helped".** 145 of the library's 200 assist toggles shipped
+  `defaultOn: true`, and any toggle was then remembered per game in
+  settings. Since a passive assist counts as used the moment it is on (the
+  convention that keeps clean wins honest), players who never touched a
+  help button were losing the green star, the game trophy and their
+  clean-win run to an option they never chose — or chose once, weeks ago.
+  Rule: every assist starts OFF for every new game, no exceptions, and a
+  toggle is never persisted — it is shell state reset whenever the setup
+  screen shows, written only into the save it belongs to
+  (`GameSave.assists`) so a resumed run keeps working and its verdict
+  cannot drift. Enforced: `AssistFeature` has no default field (compiler),
+  `PlatformSettings` has no `gameAssists`, and validate's "Assists start
+  off" block fails on a default, a settings field, a shell that resolves
+  assists from settings, a save that stops carrying them or a setup screen
+  that stops resetting them — and drives the legacy hand-over through the
+  real loader.
 - **2026-07-23 · generators · silent fallback shipped as the game.**
   Laser Mirrors' construction loop failed 600/600 attempts on odd-bend
   tiers (a walk mutated `dir` and the mutated value was returned as the
@@ -310,7 +327,36 @@ they gain enforcement, delete entries obsoleted by code removal.
   Validate-enforced (the badge must reference `RANK_BADGE.r`, and its svg
   must not go back to `width="100%"`).
 
+- **2026-09-03 · scoring · a keystroke charged as an error.** Crossword's
+  Auto-check assist shipped default ON and counted every wrong letter the
+  instant it was typed, so a mis-tap on the compact keyboard scored as a
+  wrong answer (user report: 10 errors on a grid with no wrong words).
+  Worse, once the grid was full-but-wrong, EVERY further keystroke — even
+  a correct one — added +1 through the "grid is full" branch of
+  `maybeFinish`, so hunting the one typo farmed errors. Rule: errors
+  measure answers, not touch accuracy — typing never charges an error on
+  its own; errors are counted at an explicit Check, or per keystroke only
+  under an opt-in real-time assist (Auto-check is now default OFF); a
+  full-but-wrong board is a toast, not a penalty. Errors are a statistic
+  and never touch `cleanWin`. Enforced: CLAUDE.md "Assist/help tracking"
+  rule; `autoCheck` exists only in Crossword (grep before adding another).
+
 ## Watch items (re-check every QA — not yet machine-enforced)
+
+- **2026-09-03 · input · an axis-locked paint drag drops every cell after
+  the first turn.** Nurikabe locked each stroke to the row/column of its
+  first move (to keep a fast drag gapless), so an L or a curve drawn in one
+  gesture painted only the first leg — the player had to lift and restart
+  per straight segment on a puzzle whose whole point is irregular shapes.
+  Rule: a paint drag follows the pointer (rect-math cell hit-testing on
+  every sample); fill the gaps a fast flick leaves by walking the straight
+  segment between consecutive pointer samples at half a cell per step,
+  never by locking an axis. Off-grid samples paint nothing. Nonogram keeps
+  its row/column lock ON PURPOSE (classic picross feel: a run is a line) —
+  re-check that any new drag-painted board chose its behaviour
+  deliberately rather than by copying whichever game it was cloned from.
+  Verified headlessly with L, U, one-event flick, diagonal flick and
+  edge-overshoot gestures.
 
 - **2026-08-24 · tooling · a file-scanning validate check must scan CODE,
   and must exempt deliberate reuse — prove it on the real file before

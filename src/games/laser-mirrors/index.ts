@@ -20,19 +20,16 @@ export const laserMirrorsDefinition: GameDefinition = {
       id: 'beamAlways',
       name: 'Live beam',
       description: 'Always show the laser beam as it re-traces. Turn off to reason blind and Fire to test. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'targetGlow',
       name: 'Target glow',
       description: 'Unlit targets pulse faintly to draw the eye. Counts as help when enabled.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint button',
       description: 'Sets one mirror to its correct orientation or position (−60). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

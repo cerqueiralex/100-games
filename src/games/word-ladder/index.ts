@@ -21,19 +21,16 @@ export const wordLadderDefinition: GameDefinition = {
       name: 'Par meter',
       description:
         'Live "rungs to go" indicator with an up/down arrow showing if your last move got you closer to the goal. Counts as help while enabled.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Places the next word on a shortest path to the goal. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'undo',
       name: 'Undo',
       description: 'Removes the top rung so you can try a different route. Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

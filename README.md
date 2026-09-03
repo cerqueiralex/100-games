@@ -86,7 +86,7 @@ A minimalist platform of sixty-eight classic puzzle and brain games — flat sur
 - **Save & resume**: a save button in every game's header snapshots the running game; a "Continue saved game" card on the start screen restores board, timer, score and assist usage — even after closing the app
 - **Illustrated tutorials**: every game ships a step-by-step "How to play" with theme-aware illustrations, on the game's start screen and behind the help button while playing
 - **Mastery guides**: every game also ships a "How to master" guide — the game's origins and history, in-depth strategies, named techniques, when-stuck advice and trusted further-reading links — behind a button right under "How to play"
-- **Assist / help tracking**: every assist is toggleable (some in-game); whatever you use is stored per game, so history and stats always distinguish **clean wins** from **wins with help**. Only a clean win — no hints, no assists — earns the green star for a difficulty, a game's trophy, or a landmark
+- **Assist / help tracking**: every assist starts off and is toggled per game session (some in-game); whatever you use is recorded with the result, so history and stats always distinguish **clean wins** from **wins with help**. Only a clean win — no hints, no assists — earns the green star for a difficulty, a game's trophy, or a landmark
 - **Statistics & history**: win rate, best/avg time, best/avg score, game crowns, streaks, errors, hints, time played, high scores per difficulty, filterable per game, with a calendar to browse any day's games (Profile tab)
 - **Play streak**: playing on consecutive days builds a Duolingo-style day streak — a flame card on the profile with a Mo–Su week row (plus best-ever and total days played) and a compact flame counter next to your name on the home page; miss a full day and it resets. The flame greys out until you've played that day
 - **Completion markers**: every difficulty you've beaten gets a thick green ring and a gold-star seal on its top-left corner — on that game's difficulty picker and on the profile's high-score tiles alike; beat a game on all five tiers and it earns a green badge with a flat gold check-marked trophy, shown on its menu card and beside its name in the profile's high scores
@@ -214,7 +214,7 @@ src/
     AppState.tsx         ← app-wide state provider (settings/profile/history)
     components/
       GameShell.tsx      ← standard structure around every game: difficulty
-                            selection, assist toggles, timer, pause, restart,
+                            selection, per-session assist toggles, timer, pause, restart,
                             back-to-options / home exits, save/resume,
                             result recording, completion + share
       ShareCard.tsx      ← canvas-rendered shareable win + landmark cards
@@ -285,6 +285,10 @@ Every game result stores `assistsEnabled`, `assistsUsed`, `hintsUsed` and a
 as used whenever enabled — even if toggled on mid-game; active assists
 (hint/peek/reveal/replay buttons) count when used. This keeps clean wins
 permanently distinguishable from assisted ones in history and statistics.
+Because of that, **every assist starts off for every new game** and no
+toggle is remembered between games — help is a choice made on the setup
+screen each time, never something that was "always on". A saved game keeps
+the toggles it was saved under and restores them on Continue.
 
 ### Content integrity
 

@@ -237,7 +237,9 @@ export function NurikabeGame({
   const hintsRef = useRef(saved?.hintsUsed ?? 0);
   const done = useRef(false);
   const cellsRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<null | { from: number; target: number; axis: 'h' | 'v' | null; start: number; last: number }>(null);
+  // the stroke in progress: what it paints, the last cell it touched and the
+  // last pointer sample (so a fast move can be walked cell by cell)
+  const dragRef = useRef<null | { from: number; target: number; last: number; x: number; y: number }>(null);
   const finishTimer = useRef<number | null>(null);
   const flashTimer = useRef<number | null>(null);
   const assistsUsed = useRef<Set<string>>(
@@ -315,7 +317,7 @@ export function NurikabeGame({
     [matchesSolution, triggerWin]
   );
 
-  /* ---------------- pointer interaction (tap + axis-locked drag) ---- */
+  /* ---------------- pointer interaction (tap + free-form drag) ------ */
 
   const cellFromPoint = (x: number, y: number): number | null => {
     const el = cellsRef.current;
@@ -345,7 +347,7 @@ export function NurikabeGame({
     const primary = mode === 'sea' ? SEA : ISLAND;
     // start on empty → paint primary; start on a placed cell → erase it
     const target = st === UNKNOWN ? primary : UNKNOWN;
-    const drag = { from: st, target, axis: null as 'h' | 'v' | null, start: cell, last: cell };
+    const drag = { from: st, target, last: cell, x: e.clientX, y: e.clientY };
     dragRef.current = drag;
     const next = gridRef.current.slice();
     const res = applyCell(next, cell, drag);
@@ -362,32 +364,36 @@ export function NurikabeGame({
 
   const onPointerMove = (e: React.PointerEvent) => {
     const drag = dragRef.current;
-    if (!drag || paused || done.current) return;
-    const cell = cellFromPoint(e.clientX, e.clientY);
-    if (cell === null || cell === drag.last) return;
-    const r0 = Math.floor(drag.start / size);
-    const c0 = drag.start % size;
-    const r = Math.floor(cell / size);
-    const c = cell % size;
-    // lock the stroke to the dominant row/col axis so fast drags never skip
-    if (drag.axis === null) {
-      if (r === r0 && c !== c0) drag.axis = 'h';
-      else if (c === c0 && r !== r0) drag.axis = 'v';
-      else drag.axis = Math.abs(c - c0) >= Math.abs(r - r0) ? 'h' : 'v';
-    }
-    const t = drag.axis === 'h' ? r0 * size + c : r * size + c0;
-    if (t === drag.last) return;
-    const step = drag.axis === 'h' ? (t > drag.last ? 1 : -1) : t > drag.last ? size : -size;
+    const el = cellsRef.current;
+    if (!drag || !el || paused || done.current) return;
+    // The stroke follows the finger wherever it goes — round a corner, along
+    // a shore, in an L — so it is NOT locked to one axis (an axis lock once
+    // dropped every cell after the first turn of a single gesture). Pointer
+    // samples arrive at ~60–120 Hz, so a fast flick can jump several cells
+    // between two of them: walk the straight segment from the previous
+    // sample to this one at half a cell per step and paint every cell it
+    // crosses, which is what keeps a fast row-drag gapless without a lock.
+    const { x: x0, y: y0 } = drag;
+    const x1 = e.clientX;
+    const y1 = e.clientY;
+    drag.x = x1;
+    drag.y = y1;
+    const pitch = Math.min(el.clientWidth, el.clientHeight) / size;
+    const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / (pitch / 2)));
     const next = gridRef.current.slice();
     let changed = 0;
     let wrong = 0;
-    for (let i = drag.last + step; ; i += step) {
-      const res = applyCell(next, i, drag);
+    for (let k = 1; k <= steps; k++) {
+      const t = k / steps;
+      const cell = cellFromPoint(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t);
+      // a sample past the board's edge paints nothing (cellFromPoint is null
+      // off-grid), so a flick that overshoots the border stays on the board
+      if (cell === null || cell === drag.last) continue;
+      drag.last = cell;
+      const res = applyCell(next, cell, drag);
       if (res === 2) wrong++;
       if (res > 0) changed++;
-      if (i === t) break;
     }
-    drag.last = t;
     if (!changed) return;
     if (wrong > 0) {
       errorsRef.current += wrong;

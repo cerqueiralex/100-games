@@ -20,14 +20,12 @@ export const mazeDefinition: GameDefinition = {
       id: 'breadcrumbs',
       name: 'Breadcrumbs',
       description: 'Tints every cell you have visited. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'showPath',
       name: 'Show path',
       description:
         'Briefly flashes the optimal route (longer on bigger mazes). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

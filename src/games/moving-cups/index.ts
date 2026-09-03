@@ -20,19 +20,16 @@ export const movingCupsDefinition: GameDefinition = {
       id: 'ballTint',
       name: 'Ball tint',
       description: "A faint accent glow stays under the ball's cup through the shuffle, making it followable. Counts as help.",
-      defaultOn: true
     },
     {
       id: 'slowMotion',
       name: 'Slow motion',
       description: 'The cups shuffle 50% slower. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'peek',
       name: 'Peek',
       description: 'Briefly lift every cup to reveal the ball before you choose — up to twice a round. Counts as help when used.',
-      defaultOn: false
     }
   ]
 };

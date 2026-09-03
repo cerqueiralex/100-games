@@ -22,20 +22,17 @@ export const tentsDefinition: GameDefinition = {
       name: 'Pair check',
       description:
         'Flags trees that can no longer reach a tent and tents that touch each other. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'autoGrass',
       name: 'Auto grass',
       description:
         'Marks the rest of a row or column as grass once its tent count is met. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Hint button',
       description: 'Places one correct tent or grass mark (−40). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

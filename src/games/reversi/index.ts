@@ -20,19 +20,16 @@ export const reversiDefinition: GameDefinition = {
       id: 'legal-dots',
       name: 'Legal-move dots',
       description: 'Marks every square you may play on. Turn it off for a stiffer challenge; counts as help.',
-      defaultOn: true
     },
     {
       id: 'disc-count',
       name: 'Live disc tally',
       description: 'Shows the running disc count for both sides. Counts as help while enabled.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Highlights a strong move via a quick search (vs Robot only). Counts as a hint.',
-      defaultOn: true
     }
   ]
 };

@@ -20,13 +20,11 @@ export const colorConnectDefinition: GameDefinition = {
       id: 'solveColor',
       name: 'Solve a color',
       description: 'Draws one complete pipe for you (−50 points). Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'progress',
       name: 'Coverage meter',
       description: 'Shows what percentage of the board your pipes cover. Counts as help.',
-      defaultOn: true
     }
   ]
 };

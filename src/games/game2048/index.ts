@@ -20,19 +20,16 @@ export const game2048Definition: GameDefinition = {
       id: 'undo',
       name: 'Undo',
       description: 'Take back your last move, up to 5 times per game. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Arrow the swipe that merges the most right now. Counts as help each use.',
-      defaultOn: true
     },
     {
       id: 'easySpawns',
       name: 'Easy spawns',
       description: 'Every new tile is a 2, never a 4, so the board fills slower. Counts as help while on.',
-      defaultOn: false
     }
   ]
 };

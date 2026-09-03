@@ -20,13 +20,11 @@ export const minesweeperDefinition: GameDefinition = {
       id: 'safeFirst',
       name: 'Protected start',
       description: 'Your first tap is never a mine and opens some space. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'hintSafe',
       name: 'Safe cell button',
       description: 'Reveals one guaranteed-safe cell (−25). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

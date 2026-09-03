@@ -20,19 +20,16 @@ export const dotsBoxesDefinition: GameDefinition = {
       id: 'box-count',
       name: 'Box count',
       description: 'Show the live box score for both sides. Counts as help while on.',
-      defaultOn: true
     },
     {
       id: 'safe-edges',
       name: 'Safe edges',
       description: 'Subtly mark edges that will not hand your opponent a box. Counts as help while on.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Suggest a strong edge (vs the robot). Each use counts as help.',
-      defaultOn: true
     }
   ]
 };

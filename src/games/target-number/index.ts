@@ -20,19 +20,16 @@ export const targetNumberDefinition: GameDefinition = {
       id: 'reachable',
       name: 'Reachable badge',
       description: 'Confirms the target is exactly reachable from the dealt numbers. Counts as help while on.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Highlights the next combine step toward a solution. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'reveal',
       name: 'Reveal solution',
       description: 'Shows a full solution and forfeits the round’s points. Counts as help when used.',
-      defaultOn: false
     }
   ]
 };

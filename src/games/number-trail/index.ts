@@ -20,19 +20,16 @@ export const numberTrailDefinition: GameDefinition = {
       id: 'outline',
       name: 'Position outline',
       description: 'After the flash, tiles that held a number keep a faint outline. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'slowFlash',
       name: 'Slow flash',
       description: 'Numbers stay visible 40% longer. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'peek',
       name: 'Peek button',
       description: 'Re-reveal the remaining numbers for a moment (max 3, −30 pts each). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

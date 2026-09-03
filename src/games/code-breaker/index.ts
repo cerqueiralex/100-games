@@ -21,21 +21,18 @@ export const codeBreakerDefinition: GameDefinition = {
       name: 'Rule-out notes',
       description:
         'Shows a tappable color tracker above your guess to strike out colors you have eliminated. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'consistency',
       name: 'Contradiction check',
       description:
         'Flags your composed guess in red before you submit if it contradicts earlier feedback. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Hint button',
       description:
         'Reveals one correct peg and locks it in place (−40, max 2 per game). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

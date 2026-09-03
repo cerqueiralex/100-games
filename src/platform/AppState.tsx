@@ -28,7 +28,6 @@ interface AppState {
   /** streak + landmark + XP store — permanent, survives the history cap */
   progress: PlayerProgress;
   updateSettings: (patch: Partial<PlatformSettings>) => void;
-  setGameAssist: (gameId: string, assistId: string, on: boolean) => void;
   /** pick a value for one of a game's setup-screen options (see GameOptionDef) */
   setGameOption: (gameId: string, optionId: string, choiceId: string) => void;
   updateProfile: (patch: Partial<Profile>) => void;
@@ -77,19 +76,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       updateSettings: (patch) => {
         setSettings((prev) => {
           const next = { ...prev, ...patch };
-          saveSettings(next);
-          return next;
-        });
-      },
-      setGameAssist: (gameId, assistId, on) => {
-        setSettings((prev) => {
-          const next: PlatformSettings = {
-            ...prev,
-            gameAssists: {
-              ...prev.gameAssists,
-              [gameId]: { ...prev.gameAssists[gameId], [assistId]: on }
-            }
-          };
           saveSettings(next);
           return next;
         });

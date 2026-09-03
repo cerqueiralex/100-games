@@ -21,19 +21,16 @@ export const gridlockDefinition: GameDefinition = {
       id: 'moveCount',
       name: 'Move counter',
       description: 'Shows your move count against par (the known minimum). Counts as help while enabled.',
-      defaultOn: true
     },
     {
       id: 'undo',
       name: 'Undo',
       description: 'Take back your last slide. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Ghosts the next car to slide on an optimal path (−60 points). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

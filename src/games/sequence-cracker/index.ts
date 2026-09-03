@@ -21,21 +21,18 @@ export const sequenceCrackerDefinition: GameDefinition = {
       name: 'Rule hint',
       description:
         'A button that names the current rule family (e.g. "Quadratic"). Counts as help and costs points.',
-      defaultOn: true
     },
     {
       id: 'showDifferences',
       name: 'Show differences',
       description:
         'Prints the gap between each pair of terms below the sequence — a big scaffold for spotting the pattern. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'narrow',
       name: 'Narrow the rules',
       description:
         'Restricts puzzles to add / multiply patterns only (no effect on easy, which is already limited to those). Counts as help.',
-      defaultOn: false
     }
   ]
 };

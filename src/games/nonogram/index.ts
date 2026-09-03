@@ -21,19 +21,16 @@ export const nonogramDefinition: GameDefinition = {
       id: 'mistakes',
       name: 'Error check',
       description: 'Filled cells that contradict the solution turn red and count as errors. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'autocross',
       name: 'Auto-cross',
       description: 'When a row or column is fully satisfied, its remaining cells are crossed out automatically. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Hint button',
       description: 'Reveals one correct cell in the most constrained line (−30). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

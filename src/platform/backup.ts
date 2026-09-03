@@ -115,7 +115,8 @@ function validResult(raw: unknown): GameResult | null {
 
 function validSettings(raw: unknown): PlatformSettings | null {
   if (!isObj(raw)) return null;
-  const assists = isObj(raw.gameAssists) ? (raw.gameAssists as PlatformSettings['gameAssists']) : {};
+  /* A `gameAssists` block in a file from before 2026-09 is ignored: assist
+     toggles are per-session now and no longer live in settings. */
   const lastDiff: PlatformSettings['lastDifficulty'] = {};
   if (isObj(raw.lastDifficulty)) {
     for (const [gameId, d] of Object.entries(raw.lastDifficulty)) {
@@ -143,7 +144,6 @@ function validSettings(raw: unknown): PlatformSettings | null {
     theme: THEMES.includes(raw.theme as ThemeId) ? (raw.theme as ThemeId) : DEFAULT_SETTINGS.theme,
     soundEnabled: typeof raw.soundEnabled === 'boolean' ? raw.soundEnabled : true,
     volume: Math.min(1, Math.max(0, num(raw.volume, DEFAULT_SETTINGS.volume))),
-    gameAssists: assists,
     lastDifficulty: lastDiff,
     gameOptions: options,
     favorites: strings(raw.favorites)

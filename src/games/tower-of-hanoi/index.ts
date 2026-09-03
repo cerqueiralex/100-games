@@ -20,19 +20,16 @@ export const towerOfHanoiDefinition: GameDefinition = {
       id: 'legalGlow',
       name: 'Legal glow',
       description: 'Valid destination pegs glow while you hold a disc. Counts as help when enabled.',
-      defaultOn: true
     },
     {
       id: 'undo',
       name: 'Undo',
       description: 'Take back your last move. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Highlights the optimal next move. Counts as help and adds a hint.',
-      defaultOn: false
     }
   ]
 };

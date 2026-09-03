@@ -22,21 +22,18 @@ export const wordSearchDefinition: GameDefinition = {
       name: 'First letters',
       description:
         'Tints the first letter of every remaining word in its list color. Counts as help while enabled.',
-      defaultOn: false
     },
     {
       id: 'directionLock',
       name: 'Direction arrows',
       description:
         'Shows arrows for the directions words can run at this difficulty. Counts as help while enabled.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Flash a word',
       description:
         'Briefly reveals the full path of one remaining word (−40 points). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

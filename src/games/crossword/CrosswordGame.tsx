@@ -110,7 +110,7 @@ export function CrosswordGame({
   }, [letters, revealed, errors, hintsUsed, assists.autoCheck, report]);
 
   const maybeFinish = useCallback(
-    (ls: string[], rev: Set<number>, errs: number, hints: number, alreadyPenalized = false) => {
+    (ls: string[], rev: Set<number>, errs: number, hints: number) => {
       if (done.current) return;
       const full = built.grid.every((c) => c === null || ls[c.idx] !== '');
       if (!full) return;
@@ -126,17 +126,15 @@ export function CrosswordGame({
           extra: { puzzle: built.title }
         });
       } else {
-        // autoCheck already charged this keystroke — don't double-count it here
-        const nextErrs = alreadyPenalized ? errs : errs + 1;
-        if (!alreadyPenalized) {
-          setErrors(nextErrs);
-          sfx.error();
-        }
-        report(ls, rev, nextErrs, hints);
+        // A full-but-wrong grid is feedback, not a penalty. Errors are only
+        // charged where the player asked for a check (the Check button) or
+        // opted into auto-check; charging here made EVERY keystroke on a
+        // full grid cost an error, including correct ones typed while
+        // hunting for the one wrong letter.
         showToast("The grid is full, but something's not right…");
       }
     },
-    [built, events, computeScore, report]
+    [built, events, computeScore]
   );
 
   const advance = useCallback(
@@ -174,12 +172,13 @@ export function CrosswordGame({
       setLetters(ls);
       const w = new Set(wrong);
       w.delete(sel);
+      // Typing is never an error on its own — a mis-tap on the compact
+      // keyboard is not a wrong answer. Only the opt-in auto-check assist
+      // charges a keystroke; otherwise errors are counted by the Check button.
       let errs = errors;
-      let penalized = false;
       if (assists.autoCheck && ch !== cell.letter) {
         w.add(sel);
         errs = errors + 1;
-        penalized = true;
         setErrors(errs);
         sfx.error();
       } else {
@@ -187,7 +186,7 @@ export function CrosswordGame({
       }
       setWrong(w);
       report(ls, revealed, errs, hintsUsed);
-      maybeFinish(ls, revealed, errs, hintsUsed, penalized);
+      maybeFinish(ls, revealed, errs, hintsUsed);
       advance(sel, currentSlot, ls);
     },
     [paused, revealed, sel, built.grid, letters, wrong, errors, assists.autoCheck, report, hintsUsed, maybeFinish, advance, currentSlot]

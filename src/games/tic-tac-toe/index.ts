@@ -20,7 +20,6 @@ export const ticTacToeDefinition: GameDefinition = {
       id: 'suggest',
       name: 'Suggest move',
       description: 'Highlights the strongest square for you. Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

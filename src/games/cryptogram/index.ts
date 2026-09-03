@@ -22,14 +22,12 @@ export const cryptogramDefinition: GameDefinition = {
       name: 'Icon echo',
       description:
         'Typing a letter also fills every empty tile that shares the same picture. Counts as help while enabled.',
-      defaultOn: true
     },
     {
       id: 'reveal',
       name: 'Hint: reveal tile',
       description:
         'The Hint button reveals the correct letter in the selected tile (−30). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

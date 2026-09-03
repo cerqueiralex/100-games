@@ -20,19 +20,16 @@ export const housePuzzlesDefinition: GameDefinition = {
       id: 'autoCross',
       name: 'Auto-cross',
       description: 'Placing a ✓ crosses out the rest of its row and column automatically. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'check',
       name: 'Check marks',
       description: 'A button that highlights any wrong marks on the grid. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Fixes a wrong mark, or reveals one correct ✓. Counts as help.',
-      defaultOn: true
     }
   ]
 };

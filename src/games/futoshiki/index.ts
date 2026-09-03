@@ -22,20 +22,17 @@ export const futoshikiDefinition: GameDefinition = {
       name: 'Rule check',
       description:
         'Highlights violated inequality signs and duplicate digits in red while you play. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'notes-auto',
       name: 'Auto note cleanup',
       description:
         'Placing a digit removes it from pencil marks in the same row and column. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hints',
       description: 'A hint button that fills one logically forced cell for you. Counts as help.',
-      defaultOn: true
     }
   ]
 };

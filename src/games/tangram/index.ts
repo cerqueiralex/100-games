@@ -20,19 +20,16 @@ export const tangramDefinition: GameDefinition = {
       id: 'snapStrong',
       name: 'Strong snap',
       description: 'Widens the catch radius so pieces click into place more easily. Counts as help while on.',
-      defaultOn: true
     },
     {
       id: 'edgeHints',
       name: 'Guides',
       description: 'Draws the piece boundaries inside the target shape. Counts as help while on.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Drops one piece straight into its correct spot (−40 points). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

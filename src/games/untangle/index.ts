@@ -21,19 +21,16 @@ export const untangleDefinition: GameDefinition = {
       name: 'Crossing highlights',
       description:
         'Tints crossed lines red, clear lines green, and shows the live crossings counter. Turn off for a pure challenge. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'auto-spread',
       name: 'Spread',
       description: 'A tool that gently relaxes the layout to reduce clutter (does not solve it). Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'A tool that slides one node into a solved position (−60 points). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

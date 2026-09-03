@@ -21,20 +21,17 @@ export const fleetSolitaireDefinition: GameDefinition = {
       name: 'Count check',
       description:
         'Row/column count chips turn green when the line is complete and red when too many ships are marked; touching ships are flagged. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'autoWater',
       name: 'Auto-water',
       description:
         'Fills the rest of a line with water once its ship count is met, and waters the diagonal corners of ship cells. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Hint',
       description: 'Reveals one correct cell (fixing a wrong mark first). Adds to your hint count.',
-      defaultOn: true
     }
   ]
 };

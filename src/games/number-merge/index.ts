@@ -20,19 +20,16 @@ export const numberMergeDefinition: GameDefinition = {
       id: 'undo',
       name: 'Undo',
       description: 'Take back up to 3 merges per game. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'showHint',
       name: 'Hint button',
       description: 'Highlights a pair you can merge. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'chainPreview',
       name: 'Chain preview',
       description: 'Shows the tile your current chain will create while dragging. Counts as help.',
-      defaultOn: true
     }
   ]
 };

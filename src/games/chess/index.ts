@@ -21,7 +21,6 @@ export const chessDefinition: GameDefinition = {
       name: 'Undo move',
       description:
         'Take back your last move (the robot’s reply comes back with it). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

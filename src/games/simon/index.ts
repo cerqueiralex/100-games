@@ -20,19 +20,16 @@ export const simonDefinition: GameDefinition = {
       id: 'secondChance',
       name: 'Second chances',
       description: 'Survive up to 2 wrong presses — the sequence replays. Counts as help when used.',
-      defaultOn: true
     },
     {
       id: 'slowPlayback',
       name: 'Slow playback',
       description: 'Sequences play back 50% slower. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'repeatSequence',
       name: 'Replay button',
       description: 'Re-watch the current sequence during your turn. Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

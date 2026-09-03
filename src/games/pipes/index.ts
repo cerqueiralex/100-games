@@ -21,20 +21,17 @@ export const pipesDefinition: GameDefinition = {
       name: 'Flow preview',
       description:
         'Fills connected pipes with water so you can see what the tank reaches. Turn it off for a no-feedback challenge. Counts as help while on.',
-      defaultOn: true
     },
     {
       id: 'lock-correct',
       name: 'Solved marks',
       description:
         'Shows a faint check on any pipe already in its correct orientation, so you can leave it be. Counts as help while on.',
-      defaultOn: false
     },
     {
       id: 'hint',
       name: 'Hint button',
       description: 'Spins one wrong pipe to its correct orientation (−30). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };

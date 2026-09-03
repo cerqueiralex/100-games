@@ -20,25 +20,21 @@ export const stroopMatchDefinition: GameDefinition = {
       id: 'ruleLabel',
       name: 'Rule label',
       description: 'Always spells out the current rule ("Tap the INK colour") instead of just a tag. Counts as help.',
-      defaultOn: true
     },
     {
       id: 'slowTimer',
       name: 'Relaxed timer',
       description: '40% more time on every trial. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'skip',
       name: 'Skip button',
       description: 'Skip the current trial with no penalty — but no points either. Counts as help when used.',
-      defaultOn: false
     },
     {
       id: 'fifty',
       name: '50/50',
       description: 'Greys out two wrong colour buttons for the current trial. Counts as a hint when used.',
-      defaultOn: false
     }
   ]
 };

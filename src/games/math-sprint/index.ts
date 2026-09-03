@@ -20,25 +20,21 @@ export const mathSprintDefinition: GameDefinition = {
       id: 'moreTime',
       name: 'More time',
       description: 'Adds 20% to the overall clock. Counts as help whenever it is enabled.',
-      defaultOn: false
     },
     {
       id: 'simpleMode',
       name: 'Simple mode',
       description: 'Stops problems from getting harder as your streak grows. Counts as help whenever it is enabled.',
-      defaultOn: false
     },
     {
       id: 'skip',
       name: 'Skip button',
       description: 'Shows a Skip tool that jumps past the current problem for a small time cost. Counts as help each time you tap it.',
-      defaultOn: true
     },
     {
       id: 'nudge',
       name: 'Nudge button',
       description: 'Shows a Nudge tool that reveals the answer’s digit count and tens digit (−15 points, counts as help each time you tap it).',
-      defaultOn: false
     }
   ]
 };

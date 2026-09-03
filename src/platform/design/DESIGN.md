@@ -843,6 +843,11 @@ Every game must support mid-game saving via two `GameProps` members:
 - **`savedState`** — when present, every state initializer must hydrate
   from it instead of generating fresh content, including refs like
   `assistsUsed` and derived counters.
+- **Assist toggles are the shell's, not the game's.** `GameSave.assists`
+  (written by `GameShell`, restored on Continue) is the only place a toggle
+  persists — assists are per-session, start off for every new game and are
+  never stored in settings. A game stores what it USED (`assistsUsed`),
+  never what was switched on.
 - **Shape-guard the save before trusting it**: `savedState` may be a
   stale snapshot from an older version of the game. Never cast and
   index into nested fields directly — verify the fields the code will

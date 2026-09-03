@@ -47,13 +47,11 @@ export const memoryMatchDefinition: GameDefinition = {
       id: 'previewStart',
       name: 'Opening peek',
       description: 'All cards are revealed for ~3 seconds when the game starts. Counts as help.',
-      defaultOn: false
     },
     {
       id: 'peek',
       name: 'Peek button',
       description: 'Briefly reveal every card for one second (−25 points). Counts as help when used.',
-      defaultOn: true
     }
   ]
 };
