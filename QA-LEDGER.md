@@ -10,6 +10,40 @@ they gain enforcement, delete entries obsoleted by code removal.
 
 ## Promoted to standards (enforced — the rule exists because of the bug)
 
+- **2026-09-04 · search · alpha-beta at the ROOT returns bounds, and a
+  "pick among the near-best" filter over bounds is a lottery.** The chess
+  built-in robot searched every root move with a window `(-∞, -alpha)`; a
+  fail-hard search returns beta exactly, so every move "no better than the
+  first one searched" tied the best to the centipawn, the slack filter kept
+  all of them and the robot moved at random — on every tier, extreme
+  included. It missed mates in one, ignored a free queen and lost 3½–½ to
+  the 300-Elo lottery; the UI regression never noticed because it only
+  checked that the robot *answered*. That robot shipped to the phone as
+  the whole opponent (the Stockfish commit was unpushed), which is the
+  "every difficulty feels the same and random" report. Rule: a root that
+  selects among candidates by score must search each root move with a
+  FULL window (or fail-soft plus re-search) — exact scores, not bounds.
+  Enforced: validate probes `chooseMove` on mate in one, a back-rank mate
+  and a hanging queen on every searching tier and fails if extreme's
+  opening spreads over more than three moves in eight draws.
+- **2026-09-04 · engine · with `UCI_LimitStrength` on, Stockfish's `info`
+  lines still show its FULL-STRENGTH move; only `bestmove` is weakened.**
+  The chess client resolved the robot's move from the ranked `info … pv`
+  lines and ignored the `bestmove` token, so the pro tier (`UCI_Elo 1600`)
+  played the same move extreme would have — measured under Node: at 1600
+  the pv said `f6e4` (cp 98) while `bestmove` was `d7d5`; at the 1320
+  floor, `h7h5`. The strength limiter is applied at the final pick, never
+  inside the search, so a tier that plays one line MUST play `bestmove`;
+  only the error-injection tiers rank lines. Rule: `robotPick` in
+  `difficulty.ts` is the one place that decides which of the engine's two
+  answers a tier plays, and an Elo-limited tier is always `multipv: 1`.
+  Enforced: validate feeds `robotPick` a "weakened vs fullStrength" result
+  and fails if pro or extreme plays the info line, if an Elo-limited tier
+  asks for several lines, or if `ChessGame` calls `pickCandidate` itself.
+  The wider lesson: a feature whose whole point is *behaviour* (a robot
+  that plays weaker) needs a behavioural test — the UI regression saw the
+  robot "answer on pro" and passed, while tactical probes and tier-vs-tier
+  matches through the real modules were what exposed the ladder.
 - **2026-09-03 · fairness · a default-on passive assist makes every win
   "helped".** 145 of the library's 200 assist toggles shipped
   `defaultOn: true`, and any toggle was then remembered per game in
@@ -373,6 +407,15 @@ they gain enforcement, delete entries obsoleted by code removal.
   harness was never committed and its bank is now un-regenerable.
 
 ## Watch items (re-check every QA — not yet machine-enforced)
+
+- **2026-09-04 · delivery · "commit everything" left the feature on the
+  laptop.** The Stockfish chess robot was committed, gated and documented —
+  and never pushed. The player tests on the installed PWA served from
+  GitHub Pages, so the phone kept the old negamax robot and the report was
+  "you did not implement Stockfish": every tier felt the same. Rule: work
+  the user will try on the phone is delivered only when `main` is pushed
+  and the Pages deploy is green; end a shipping task with `git status -sb`
+  showing no `[ahead N]` (or say explicitly that it is unpushed and why).
 
 - **2026-09-03 · third-party runtime under `public/` · three traps in one
   vendoring.** Shipping Stockfish.js as its own Web Worker looked like

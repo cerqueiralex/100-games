@@ -31,7 +31,7 @@ import {
   type Status
 } from './logic/engine';
 import { chooseMove } from './logic/ai';
-import { HINT_SEARCH, lotteryMove, pickCandidate, TIERS } from './logic/difficulty';
+import { HINT_SEARCH, lotteryMove, robotPick, rollsBlunder, TIERS } from './logic/difficulty';
 import { EngineError, stockfish, type EngineState } from './logic/engineClient';
 import { ChessPiece } from './pieces';
 
@@ -314,9 +314,12 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
   /* ---------- robot turn ---------- */
 
   /**
-   * Easy draws its lottery ticket at once; every other tier asks Stockfish
-   * for its ranked lines and lets the tier's error injection pick (see
-   * difficulty.ts). The search is cancelled by the cleanup — pause, undo
+   * Easy draws its lottery ticket at once (so does any tier whose per-move
+   * blunder roll comes up — see `TierPlan.blunder`); every other move asks
+   * Stockfish and `robotPick` decides — the engine's own `bestmove` for the
+   * one-line tiers (pro's strength limiter lives there), the error-injection
+   * lottery over the ranked lines for medium and hard (see difficulty.ts).
+   * The search is cancelled by the cleanup — pause, undo
    * and leaving all run it — and a cancelled search is simply ignored,
    * because the effect re-runs from the current position when play
    * resumes. An engine that cannot be loaded surfaces the two-way-out
@@ -330,7 +333,7 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
     const position = posRef.current;
     const wait = new Promise<void>((resolve) => schedule(resolve, THINK_MS));
     const decide: Promise<Move | null> =
-      plan.brain === 'lottery'
+      plan.brain === 'lottery' || rollsBlunder(plan)
         ? Promise.resolve(lotteryMove(position))
         : builtin.current
           ? Promise.resolve(chooseMove(position, difficulty))
@@ -342,8 +345,8 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
                 multipv: plan.multipv,
                 uciElo: plan.uciElo
               })
-              .then((lines) => {
-                const uci = pickCandidate(lines, plan);
+              .then((result) => {
+                const uci = robotPick(result, plan);
                 const move = uci ? moveFromUci(position, uci) : null;
                 if (!move) console.warn(`chess: engine move "${uci}" is not legal here — built-in robot answers`);
                 return move ?? chooseMove(position, difficulty);
@@ -488,7 +491,7 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
       ? Promise.resolve(fallback())
       : stockfish
           .search({ fen: toFen(position), ...HINT_SEARCH })
-          .then((lines) => (lines[0] ? moveFromUci(position, lines[0].move) : null) ?? fallback())
+          .then((result) => moveFromUci(position, result.best) ?? fallback())
           .catch(() => fallback());
     ask.then((move) => {
       setHintBusy(false);

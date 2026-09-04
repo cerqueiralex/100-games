@@ -3545,9 +3545,47 @@ console.log('— Chess —');
     }
   }
 
+  /* THE FALLBACK ROBOT MUST PLAY CHESS. `chooseMove` is what answers when
+     Stockfish cannot (and what the Hint falls back to). Its root loop once
+     searched every move with an alpha-beta window: a fail-hard search hands
+     back BOUNDS, so every move "no better than the first" tied the best
+     exactly, the slack filter kept them all and the robot moved at random —
+     at every tier (extreme lost 3½–½ to the 300-Elo lottery, and that
+     robot shipped to the phone). Behaviour, not shape: mates and free
+     material must be taken on every searching tier, on fixed draws. */
+  {
+    let s = 11;
+    const rng = () => {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      return s / 0x80000000;
+    };
+    const probes: [string, string, string][] = [
+      ['mate in one', 'rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq g3 0 2', 'd8h4'],
+      ['back-rank mate', '3r2k1/5ppp/8/8/8/8/5PPP/6K1 b - - 0 1', 'd8d1'],
+      ['free queen', 'rnbqkbnr/pppppp1p/6p1/7Q/4P3/8/PPPP1PPP/RNB1KBNR b KQkq - 1 2', 'g6h5']
+    ];
+    for (const diff of ['medium', 'hard', 'pro', 'extreme'] as const) {
+      for (const [name, fen, want] of probes) {
+        const pos = fromFen(fen);
+        for (let i = 0; i < 3; i++) {
+          const m = chooseMove(pos, diff, rng);
+          const got = m ? sqName(m.from) + sqName(m.to) : '(none)';
+          if (got !== want) bad(`built-in robot (${diff}) played ${got} instead of the ${name} ${want}`);
+        }
+      }
+    }
+    // exact root scores: from the start, extreme is not a lottery over twenty moves
+    const opening = new Set<string>();
+    for (let i = 0; i < 8; i++) {
+      const m = chooseMove(initialPosition(), 'extreme', rng)!;
+      opening.add(sqName(m.from) + sqName(m.to));
+    }
+    if (opening.size > 3) bad(`built-in extreme opened with ${opening.size} different moves in 8 tries — root scores are bounds again?`);
+  }
+
   if (!failed)
     console.log(
-      '  ✓ perft exact on start/kiwipete/ep-pins/promos, fool’s mate + SAN, stalemate/insufficient/fifty called, castling SAN, robot legal on all 5 tiers'
+      '  ✓ perft exact on start/kiwipete/ep-pins/promos, fool’s mate + SAN, stalemate/insufficient/fifty called, castling SAN, robot legal on all 5 tiers, fallback robot finds mates + free material'
     );
 }
 
@@ -3561,6 +3599,8 @@ console.log('— Chess robot ladder (Stockfish) —');
     MATE_SCORE,
     foldScore,
     pickCandidate,
+    robotPick,
+    rollsBlunder,
     lotteryMove,
     lotteryWeights,
     ENGINE_DIR,
@@ -3614,6 +3654,7 @@ console.log('— Chess robot ladder (Stockfish) —');
     if (t.weights.length !== t.multipv) bad(`${d}: ${t.weights.length} weights for multipv ${t.multipv}`);
     if (t.weights.some((w) => !(w > 0))) bad(`${d}: every lottery weight must be positive`);
     if (t.brain === 'engine' && !(t.movetime > 0)) bad(`${d}: an engine tier needs a movetime ceiling`);
+    if (t.blunder !== undefined && !(t.blunder > 0 && t.blunder < 0.5)) bad(`${d}: a blunder rate must be a probability well below a coin flip`);
     if (t.uciElo !== undefined && (t.uciElo < UCI_ELO_RANGE[0] || t.uciElo > UCI_ELO_RANGE[1]))
       bad(`${d}: UCI_Elo ${t.uciElo} is outside the build's ${UCI_ELO_RANGE.join('–')}`);
     if (!(t.band[0] < t.band[1])) bad(`${d}: Elo band is not a range`);
@@ -3634,6 +3675,7 @@ console.log('— Chess robot ladder (Stockfish) —');
     if ((hi.depth ?? Infinity) < (lo.depth ?? Infinity)) bad(`${b} searches shallower than ${a}`);
     if (pBest(b) < pBest(a)) bad(`${b} plays its best line less often than ${a}`);
     if (hi.maxDrop > lo.maxDrop) bad(`${b} allows worse blunders than ${a}`);
+    if ((hi.blunder ?? 0) > (lo.blunder ?? 0)) bad(`${b} blunders more often than ${a}`);
     if (lo.uciElo !== undefined && hi.uciElo !== undefined && hi.uciElo <= lo.uciElo)
       bad(`${b} is Elo-limited below ${a}`);
     if (lo.uciElo === undefined && hi.uciElo !== undefined && lo.multipv === 1)
@@ -3651,14 +3693,25 @@ console.log('— Chess robot ladder (Stockfish) —');
     ];
     const first = () => 0;
     const lastDraw = () => 0.999;
-    if (pickCandidate(lines, TIERS.medium, first) !== 'best') bad('medium: draw 0 should pick the best line');
-    if (pickCandidate(lines, TIERS.medium, lastDraw) !== 'third')
-      bad('medium: the −400 line must be dropped by maxDrop (the last draw should land on "third")');
+    // fixed shapes for the MATH, so retuning the real tiers never breaks it; the real tiers follow
+    const fourLines = { ...TIERS.medium, multipv: 4, weights: [10, 25, 30, 35], maxDrop: 300 };
+    const twoLines = { ...TIERS.hard, multipv: 2, weights: [40, 60], maxDrop: 200 };
+    if (pickCandidate(lines, fourLines, first) !== 'best') bad('four lines: draw 0 should pick the best line');
+    if (pickCandidate(lines, fourLines, lastDraw) !== 'third')
+      bad('four lines: the −400 line must be dropped by maxDrop 300 (the last draw should land on "third")');
     const close = lines.map((l, i) => ({ ...l, score: 50 - i * 10 }));
-    if (pickCandidate(close, TIERS.medium, lastDraw) !== 'blunder')
-      bad('medium: with every line inside maxDrop the last draw should reach the 4th');
+    if (pickCandidate(close, fourLines, lastDraw) !== 'blunder')
+      bad('four lines: with every line inside maxDrop the last draw should reach the 4th');
     if (pickCandidate(lines, TIERS.extreme, lastDraw) !== 'best') bad('extreme: never anything but the best line');
-    if (pickCandidate(lines, TIERS.hard, lastDraw) !== 'second') bad('hard: the last draw should reach the 2nd line');
+    if (pickCandidate(lines, twoLines, lastDraw) !== 'second') bad('two lines: the last draw should reach the 2nd line');
+    // the real medium and hard: a line further behind than THEIR maxDrop is out, the rest reachable
+    for (const d of ['medium', 'hard'] as const) {
+      const t = TIERS[d];
+      const spread = Array.from({ length: t.multipv }, (_, i) => ({ move: `line${i + 1}`, score: 50 - i }));
+      if (pickCandidate(spread, t, lastDraw) !== `line${t.multipv}`) bad(`${d}: the last draw must reach its ${t.multipv}th line`);
+      const far = spread.map((l, i) => (i === t.multipv - 1 ? { ...l, score: 50 - t.maxDrop - 1 } : l));
+      if (pickCandidate(far, t, lastDraw) === `line${t.multipv}`) bad(`${d}: a line ${t.maxDrop + 1} behind must be dropped`);
+    }
     const mate = [
       { move: 'mate', score: foldScore('mate', 1) },
       { move: 'quiet', score: 120 },
@@ -3667,13 +3720,39 @@ console.log('— Chess robot ladder (Stockfish) —');
     ];
     for (const r of [0, 0.3, 0.6, 0.999])
       if (pickCandidate(mate, TIERS.medium, () => r) !== 'mate') bad('medium must never walk past its own mate in one');
-    if (pickCandidate(lines.slice(0, 2), TIERS.medium, lastDraw) !== 'second')
+    if (pickCandidate(lines.slice(0, 2), fourLines, lastDraw) !== 'second')
       bad('fewer lines than weights: the weights renormalize over what came back');
     if (pickCandidate([], TIERS.medium) !== null) bad('no lines → null');
     if (foldScore('mate', 3) !== MATE_SCORE - 3 || foldScore('mate', -2) !== -MATE_SCORE + 2 || foldScore('cp', -15) !== -15)
       bad('foldScore does not order mates above every centipawn score');
     // scored out of order: the pick ranks by score, not by arrival
     if (pickCandidate([lines[2], lines[0], lines[1]], TIERS.extreme, lastDraw) !== 'best') bad('ranking ignores arrival order');
+
+    /* WHICH of the engine's two answers a tier plays. With UCI_LimitStrength
+       on, Stockfish's `info` lines keep showing its FULL-STRENGTH move and
+       only `bestmove` carries the weakened pick (measured: at 1600 the pv
+       said f6e4 while bestmove was d7d5) — so a one-line tier must play
+       `bestmove`, or pro silently becomes extreme. Only the error-injection
+       tiers rank the lines. */
+    const limited = { best: 'weakened', lines: [{ move: 'fullStrength', score: 98 }] };
+    if (robotPick(limited, TIERS.pro) !== 'weakened') bad('pro must play the strength limiter\'s bestmove, not the info line');
+    if (robotPick(limited, TIERS.extreme) !== 'weakened') bad('a one-line tier plays bestmove');
+    if (robotPick({ best: 'b', lines: close }, TIERS.medium, lastDraw) !== 'blunder') bad('medium ranks the lines (error injection)');
+    if (robotPick({ best: 'b', lines: [] }, TIERS.medium) !== 'b') bad('no lines → the engine\'s bestmove');
+    if (robotPick({ best: '', lines: [] }, TIERS.pro) !== null) bad('no move at all → null');
+    const game = code('src/games/chess/ChessGame.tsx');
+    // the per-move blunder roll: exact on fixed draws, never on a tier without a rate
+    if (rollsBlunder(TIERS.extreme, () => 0) || rollsBlunder(TIERS.pro, () => 0)) bad('pro/extreme must never roll a blunder');
+    const rolled = { ...TIERS.medium, blunder: 0.2 };
+    if (!rollsBlunder(rolled, () => 0.1) || rollsBlunder(rolled, () => 0.3)) bad('rollsBlunder must compare the draw against the rate');
+    if (!/rollsBlunder\(plan\)/.test(game) || !/lotteryMove\(position\)/.test(game))
+      bad('ChessGame must roll the blunder before asking the engine and answer with the beginner lottery');
+    for (const d of TIER_ORDER) {
+      const t = TIERS[d];
+      if (t.uciElo !== undefined && t.multipv !== 1) bad(`${d}: an Elo-limited tier must play one line (bestmove is the limiter's pick)`);
+    }
+    if (!/robotPick\(/.test(game)) bad('ChessGame must choose the robot move through robotPick');
+    if (/pickCandidate\(/.test(game)) bad('ChessGame must not rank engine lines itself — pro would play the full-strength info line');
   }
 
   /* the easy lottery: legal everywhere, and a beginner's instincts hold */

@@ -221,7 +221,10 @@ export const BOT: Record<Difficulty, BotConfig> = {
 
 /**
  * Pick the robot's move. Deterministic given `rng` — the game passes
- * Math.random; validate passes a seeded stream.
+ * Math.random; validate passes a seeded stream. Since Stockfish became the
+ * robot this is the FALLBACK only (engine unavailable, or an engine move
+ * that failed to resolve) and the Hint's fallback — it must still play
+ * chess, and validate probes it on mates and free captures.
  */
 export function chooseMove(
   position: Position,
@@ -240,13 +243,17 @@ export function chooseMove(
   let scored = roots.map((move) => ({ move, score: 0 }));
   for (let d = 1; d <= cfg.depth; d++) {
     const pass: { move: Move; score: number }[] = [];
-    let alpha = -Infinity;
     for (const { move } of scored) {
       const undo = make(pos, move);
-      const score = -negamax(pos, d - 1, -Infinity, -alpha, ctx);
+      // a FULL window for every root move. Alpha-beta at the root hands back
+      // BOUNDS, not scores: a fail-hard search returns beta exactly, so every
+      // move "no better than the first one searched" tied the best to the
+      // centipawn, the slack filter kept all of them, and the robot picked at
+      // random — at every tier, extreme included (it lost to a 300-Elo
+      // lottery 3½–½). The candidate filter below needs exact scores.
+      const score = -negamax(pos, d - 1, -Infinity, Infinity, ctx);
       unmake(pos, move, undo);
       pass.push({ move, score });
-      if (score > alpha) alpha = score;
       if (ctx.nodes > ctx.budget) break;
     }
     if (pass.length === scored.length) {

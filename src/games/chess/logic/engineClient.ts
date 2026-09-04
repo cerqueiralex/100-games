@@ -29,7 +29,7 @@
  *    or "play again" reuses the loaded engine while leaving another game
  *    frees its ~50 MB
  */
-import { ENGINE_DIR, ENGINE_JS, foldScore, type Candidate } from './difficulty';
+import { ENGINE_DIR, ENGINE_JS, foldScore, type Candidate, type SearchResult } from './difficulty';
 
 export type EngineState =
   | { status: 'idle' }
@@ -213,19 +213,21 @@ class StockfishClient {
   }
 
   /**
-   * Ask for the ranked lines of a position. Resolves at `bestmove`; rejects
-   * with a cancelled EngineError when `stop()` cut it short, and with a
-   * plain one when the engine is unavailable (the caller falls back).
+   * Ask for a position's `bestmove` and ranked lines. Resolves at `bestmove`;
+   * rejects with a cancelled EngineError when `stop()` cut it short, and
+   * with a plain one when the engine is unavailable (the caller falls back).
+   * The caller decides which of the two it plays (`robotPick`): with the
+   * strength limiter on, only `bestmove` carries the weakened choice.
    */
-  search(spec: SearchSpec): Promise<Candidate[]> {
+  search(spec: SearchSpec): Promise<SearchResult> {
     const run = () => this.load().then(() => this.runSearch(spec));
     const result = this.chain.then(run, run);
     this.chain = result.catch(() => undefined);
     return result;
   }
 
-  private runSearch(spec: SearchSpec): Promise<Candidate[]> {
-    return new Promise<Candidate[]>((resolve, reject) => {
+  private runSearch(spec: SearchSpec): Promise<SearchResult> {
+    return new Promise<SearchResult>((resolve, reject) => {
       if (!this.worker || this.state.status !== 'ready') {
         reject(new EngineError('The engine is not ready'));
         return;
@@ -254,11 +256,14 @@ class StockfishClient {
           reject(new EngineError('The search was stopped', true));
           return;
         }
-        const lines = [...byRank.entries()].sort((a, b) => a[0] - b[0]).map(([, c]) => c);
         const best = line.split(/\s+/)[1];
-        if (lines.length === 0 && best && best !== '(none)') lines.push({ move: best, score: 0 });
-        if (lines.length === 0) reject(new EngineError('The engine found no move'));
-        else resolve(lines);
+        if (!best || best === '(none)') {
+          reject(new EngineError('The engine found no move'));
+          return;
+        }
+        const lines = [...byRank.entries()].sort((a, b) => a[0] - b[0]).map(([, c]) => c);
+        if (lines.length === 0) lines.push({ move: best, score: 0 });
+        resolve({ best, lines });
       };
 
       if (this.freshGame) {

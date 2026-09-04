@@ -1,27 +1,45 @@
 /**
  * Difficulty → robot strength. Five REAL, perceptibly different opponents,
- * from a genuine beginner to a club player, all from one engine:
+ * from a genuine beginner to a club player, all from one engine — and
+ * CALIBRATED BY MATCHES (`npx tsx scripts/chess-ladder.ts ladder`, against
+ * Stockfish's own UCI_Elo limiter as the yardstick), because a robot's
+ * strength is behaviour, not a table:
  *
  *   easy     ≈300 Elo   no search at all — a weighted lottery over the legal
  *                       moves (captures favoured, walking into a free capture
  *                       shunned), because modern Stockfish cannot play this
  *                       badly on purpose: its UCI_Elo floor is ~1320
- *   medium   ≈750 Elo   a shallow engine search asked for its 4 best lines,
- *                       then a lottery weighted TOWARD the worse ones
- *   hard     ≈1200 Elo  a moderate search, 2 lines, slight lean to the 2nd
+ *   medium   ≈750 Elo   a depth-1 search asked for its 4 best lines, a
+ *                       lottery weighted TOWARD the worse ones, and one move
+ *                       in seven (`blunder` 0.15) answered by the beginner's
+ *                       lottery instead — the hung pieces a 750 actually
+ *                       plays; MultiPV alone never hangs one. Measured: 0–6
+ *                       against UCI_Elo 1320, checkmates easy 6–0
+ *   hard     ≈1200 Elo  a depth-2 search, 4 lines, weights leaning to the
+ *                       tail, no blunder roll — solid, sees every one-move
+ *                       threat. Measured: 2/8 against UCI_Elo 1320, beats
+ *                       medium 6–0, loses clearly to pro
  *   pro      ≈1600 Elo  the engine's own strength limiter (UCI_LimitStrength
- *                       + UCI_Elo), no error injection
- *   extreme  2000+ Elo  full strength on a time budget — enough to test a
- *                       1600 player, far short of tournament depth
+ *                       + UCI_Elo 1600), playing its `bestmove` — the only
+ *                       place the limiter's pick appears (see `robotPick`).
+ *                       Measured: splits with UCI_Elo 1600, beats hard
+ *   extreme  2000+ Elo  full strength on a 1.2 s budget — beats UCI_Elo 2000
+ *                       4–0 and pro 4–0; far short of tournament depth, far
+ *                       beyond a club player
  *
  * The error injection on medium/hard is exactly how commercial sites fake a
  * weak opponent: Stockfish playing WRONG ON PURPOSE with a controlled
  * probability, not a naturally weak engine (none exists at that level).
  * `maxDrop` keeps the lottery honest — a candidate more than that many
- * centipawns behind the best is dropped, so a 750-Elo robot may hang a
- * knight but never walks past its own mate in one. The weights and drops
- * are the tuning knob; `npm run validate` pins the ladder's ORDER (no tier
- * may be configured weaker than the one below it) and the lottery's math.
+ * centipawns behind the best is dropped, so a robot may concede a pawn but
+ * never walks past its own mate in one. What the matches taught (2026-09-04,
+ * 6–8 games per pairing): the tail WEIGHTS are the strongest knob — two
+ * lines at depth 2 beat UCI_Elo 1320 8–0 and pro 6–0, four tail-weighted
+ * lines at the same depth score 2/8 — depth 3 is already above pro, and a
+ * small blunder rate on hard moved nothing measurable, so hard has none.
+ * `npm run validate` pins the ladder's ORDER on every axis (no tier may be
+ * configured weaker than the one below it) and the lottery's math; re-run
+ * the ladder tool after touching TIERS and expect the shape above.
  *
  * Rules are never the engine's job: every engine move is resolved against
  * our own perft-proven move generator (`moveFromUci`) before it touches the
@@ -78,6 +96,16 @@ export interface TierPlan {
   maxDrop: number;
   /** UCI_LimitStrength + UCI_Elo when set; full strength when absent */
   uciElo?: number;
+  /**
+   * The second error-injection knob: the probability, rolled once per move
+   * BEFORE the engine is asked, that the robot answers with a beginner's
+   * move (easy's lottery) instead of the engine's pick. MultiPV alone can
+   * never make Stockfish hang a piece — its four best lines are its four
+   * best moves, and a move that drops a knight ranks far below them in any
+   * normal position — so a robot built from MultiPV only never blunders
+   * material and reads as far stronger than its label. Absent = never.
+   */
+  blunder?: number;
 }
 
 export const TIER_ORDER: Difficulty[] = ['easy', 'medium', 'hard', 'pro', 'extreme'];
@@ -96,21 +124,22 @@ export const TIERS: Record<Difficulty, TierPlan> = {
     brain: 'engine',
     band: [600, 900],
     label: '≈750 Elo',
-    movetime: 120,
-    depth: 2,
+    movetime: 60,
+    depth: 1,
     multipv: 4,
     weights: [10, 25, 30, 35],
-    maxDrop: 300
+    maxDrop: 500,
+    blunder: 0.15
   },
   hard: {
     brain: 'engine',
     band: [1100, 1300],
     label: '≈1200 Elo',
-    movetime: 250,
-    depth: 4,
-    multipv: 2,
-    weights: [40, 60],
-    maxDrop: 200
+    movetime: 120,
+    depth: 2,
+    multipv: 4,
+    weights: [15, 25, 30, 30],
+    maxDrop: 300
   },
   pro: {
     brain: 'engine',
@@ -132,6 +161,12 @@ export const TIERS: Record<Difficulty, TierPlan> = {
     maxDrop: 0
   }
 };
+
+/** does this move go to the beginner's lottery instead of the engine? (see `blunder`) */
+export function rollsBlunder(plan: TierPlan, rng: () => number = Math.random): boolean {
+  const p = plan.blunder ?? 0;
+  return p > 0 && rng() < p;
+}
 
 /** the Hint assist: the engine at FULL strength, whatever tier the robot plays */
 export const HINT_SEARCH = { movetime: 800, multipv: 1 } as const;
@@ -167,6 +202,28 @@ export function pickCandidate(lines: Candidate[], plan: TierPlan, rng: () => num
     .filter((line, i) => i === 0 || best - line.score <= plan.maxDrop);
   const weights = plan.weights.slice(0, pool.length);
   return pool[weightedIndex(weights, rng)].move;
+}
+
+/** what one search hands back: the engine's own choice plus its ranked lines */
+export interface SearchResult {
+  /** the `bestmove` token — the strength limiter's pick when UCI_Elo is on */
+  best: string;
+  /** the MultiPV lines, best first (at least the best move, scored 0, when none was reported) */
+  lines: Candidate[];
+}
+
+/**
+ * The robot's move from one search. A tier that plays ONE line takes the
+ * engine's own `bestmove`: with UCI_LimitStrength on, that is the only place
+ * the weakened choice appears — Stockfish's `info` lines keep reporting its
+ * full-strength move (the limiter intervenes at the final pick, not in the
+ * search), so ranking the lines by score silently hands pro the extreme
+ * robot. Validate pins this. The error-injection tiers rank the MultiPV
+ * lines instead (`pickCandidate`), falling back to `bestmove`.
+ */
+export function robotPick(result: SearchResult, plan: TierPlan, rng: () => number = Math.random): string | null {
+  if (plan.multipv === 1 || plan.uciElo !== undefined) return result.best || null;
+  return pickCandidate(result.lines, plan, rng) ?? (result.best || null);
 }
 
 /* ---------- the easy tier: no engine ---------- */
