@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Difficulty, GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
-import { FlagIcon, RestartIcon } from '../../platform/design/icons';
+import { BulbIcon, FlagIcon, PlayIcon, RestartIcon } from '../../platform/design/icons';
 import { PadTool } from '../../platform/components/ui';
 import {
   applyMove,
@@ -15,6 +15,7 @@ import {
   K,
   kingSquare,
   legalMoves,
+  moveFromUci,
   N,
   P,
   posKey,
@@ -23,17 +24,20 @@ import {
   rank,
   san,
   statusOf,
+  toFen,
   type Color,
   type Move,
   type Position,
   type Status
 } from './logic/engine';
 import { chooseMove } from './logic/ai';
+import { HINT_SEARCH, lotteryMove, pickCandidate, TIERS } from './logic/difficulty';
+import { EngineError, stockfish, type EngineState } from './logic/engineClient';
 import { ChessPiece } from './pieces';
 
 const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
 const WIN_BASE = 400;
-const THINK_MS = 450; // pause before the robot answers, so the board paints first
+const THINK_MS = 450; // the robot never answers faster than this, so the board paints first
 const PAWN_VAL: Record<number, number> = { [P]: 1, [N]: 3, [B]: 3, [R]: 5, [Q]: 9, [K]: 0 };
 
 /** the player always commands White; the robot answers as Black */
@@ -67,6 +71,7 @@ interface ChessSave {
   pos: SavedPos;
   history: HistEntry[];
   assistsUsed: string[];
+  hintsUsed?: number;
 }
 
 const freeze = (pos: Position): SavedPos => ({
@@ -113,11 +118,19 @@ const STATUS_REASON: Record<Status, string> = {
   repetition: 'The same position appeared three times'
 };
 
+/** the engine's load state, for the status line and the download meter */
+function useEngineState(): EngineState {
+  const [state, setState] = useState<EngineState>(() => stockfish.getState());
+  useEffect(() => stockfish.subscribe(setState), []);
+  return state;
+}
+
 export function ChessGame({ difficulty, assists, paused, events, savedState, registerSnapshot }: GameProps) {
   const saved =
     savedState && Array.isArray((savedState as ChessSave).history) && (savedState as ChessSave).pos
       ? (savedState as ChessSave)
       : undefined;
+  const plan = TIERS[difficulty];
 
   const [pos, setPos] = useState<Position>(() => (saved ? thaw(saved.pos) : initialPosition()));
   const [history, setHistory] = useState<HistEntry[]>(() => saved?.history ?? []);
@@ -132,6 +145,11 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
   const [promo, setPromo] = useState<{ from: number; to: number } | null>(null);
   const [resignArmed, setResignArmed] = useState(false);
   const [thinking, setThinking] = useState(false);
+  const [hint, setHint] = useState<{ from: number; to: number } | null>(null);
+  const [hintBusy, setHintBusy] = useState(false);
+  /** the engine could not load or died mid-game: the player picks a way out */
+  const [engineErr, setEngineErr] = useState<string | null>(null);
+  const engineState = useEngineState();
 
   const done = useRef(false);
   const timers = useRef<number[]>([]);
@@ -141,6 +159,9 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
   const boardEl = useRef<HTMLDivElement>(null);
   const logEl = useRef<HTMLDivElement>(null);
   const assistsUsed = useRef<Set<string>>(new Set(saved?.assistsUsed ?? []));
+  const hintCount = useRef(typeof saved?.hintsUsed === 'number' ? saved.hintsUsed : 0);
+  /** "play the built-in robot instead" — for this session only */
+  const builtin = useRef(false);
   posRef.current = pos;
   piecesRef.current = pieces;
   historyRef.current = history;
@@ -151,6 +172,17 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
     return t;
   };
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
+
+  /* the engine is shared by every chess session: hold it while this one
+     lives, stop whatever it is doing when we leave */
+  useEffect(() => {
+    stockfish.retain();
+    stockfish.newGame();
+    return () => {
+      stockfish.stop();
+      stockfish.release();
+    };
+  }, []);
 
   /* repetition counter — rebuilt from the saved history so a resumed game
      still knows every position it has been through */
@@ -192,11 +224,12 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
     setTargets(new Map());
     setDragSq(null);
     setDragXY(null);
+    setHint(null);
     events.onFinish({
       outcome,
       score: opts.score,
       errors: botCapturesRef.current.length,
-      hintsUsed: 0,
+      hintsUsed: hintCount.current,
       assistsUsed: [...assistsUsed.current],
       ...(opts.headline ? { hideStats: true, headline: opts.headline, subline: opts.subline } : {}),
       extra: { moves: Math.ceil(historyRef.current.length / 2), material: matDiffRef.current }
@@ -268,6 +301,7 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
     setSelected(null);
     setTargets(new Map());
     setPromo(null);
+    setHint(null);
 
     if (notation.endsWith('#')) sfx.hint();
     else if (notation.endsWith('+')) sfx.hint();
@@ -279,21 +313,68 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
 
   /* ---------- robot turn ---------- */
 
+  /**
+   * Easy draws its lottery ticket at once; every other tier asks Stockfish
+   * for its ranked lines and lets the tier's error injection pick (see
+   * difficulty.ts). The search is cancelled by the cleanup — pause, undo
+   * and leaving all run it — and a cancelled search is simply ignored,
+   * because the effect re-runs from the current position when play
+   * resumes. An engine that cannot be loaded surfaces the two-way-out
+   * card instead of a silent wait.
+   */
   useEffect(() => {
-    if (done.current || paused || pos.turn !== BOT) return;
+    if (done.current || paused || pos.turn !== BOT || engineErr) return;
     if (statusOf(pos, keyCounts.current) !== 'playing') return;
+    let live = true;
     setThinking(true);
-    const t = schedule(() => {
-      const move = chooseMove(posRef.current, difficulty);
-      setThinking(false);
-      if (move && !done.current) performMove(move);
-    }, THINK_MS);
+    const position = posRef.current;
+    const wait = new Promise<void>((resolve) => schedule(resolve, THINK_MS));
+    const decide: Promise<Move | null> =
+      plan.brain === 'lottery'
+        ? Promise.resolve(lotteryMove(position))
+        : builtin.current
+          ? Promise.resolve(chooseMove(position, difficulty))
+          : stockfish
+              .search({
+                fen: toFen(position),
+                movetime: plan.movetime,
+                depth: plan.depth,
+                multipv: plan.multipv,
+                uciElo: plan.uciElo
+              })
+              .then((lines) => {
+                const uci = pickCandidate(lines, plan);
+                const move = uci ? moveFromUci(position, uci) : null;
+                if (!move) console.warn(`chess: engine move "${uci}" is not legal here — built-in robot answers`);
+                return move ?? chooseMove(position, difficulty);
+              });
+    Promise.all([decide, wait])
+      .then(([move]) => {
+        if (!live || done.current) return;
+        setThinking(false);
+        if (move) performMove(move);
+      })
+      .catch((e: unknown) => {
+        if (!live || (e instanceof EngineError && e.cancelled)) return;
+        setThinking(false);
+        setEngineErr(e instanceof Error ? e.message : 'The engine failed');
+      });
     return () => {
-      clearTimeout(t);
+      live = false;
       setThinking(false);
+      stockfish.stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pos, paused]);
+  }, [pos, paused, engineErr]);
+
+  const retryEngine = () => {
+    stockfish.reset();
+    setEngineErr(null);
+  };
+  const playBuiltin = () => {
+    builtin.current = true;
+    setEngineErr(null);
+  };
 
   useEffect(() => {
     if (paused) {
@@ -389,7 +470,33 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
     setDragSq(null);
   };
 
-  /* ---------- undo & resign ---------- */
+  /* ---------- hint, undo & resign ---------- */
+
+  const canHint =
+    !!assists['hint'] && !done.current && !paused && pos.turn === ME && !thinking && !hintBusy && !engineErr;
+
+  /** the engine at full strength, whatever the robot's tier — an active assist */
+  const requestHint = () => {
+    if (!canHint) return;
+    hintCount.current++;
+    assistsUsed.current.add('hint');
+    setHintBusy(true);
+    setHint(null);
+    const position = posRef.current;
+    const fallback = () => chooseMove(position, 'extreme');
+    const ask: Promise<Move | null> = builtin.current
+      ? Promise.resolve(fallback())
+      : stockfish
+          .search({ fen: toFen(position), ...HINT_SEARCH })
+          .then((lines) => (lines[0] ? moveFromUci(position, lines[0].move) : null) ?? fallback())
+          .catch(() => fallback());
+    ask.then((move) => {
+      setHintBusy(false);
+      if (posRef.current !== position || done.current || !move) return;
+      setHint({ from: move.from, to: move.to });
+      sfx.hint();
+    });
+  };
 
   const undoTargetIdx = (() => {
     for (let i = historyRef.current.length - 1; i >= 0; i--) {
@@ -416,6 +523,7 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
     setSelected(null);
     setTargets(new Map());
     setPromo(null);
+    setHint(null);
   };
 
   const resign = () => {
@@ -439,18 +547,19 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
     events.onStats({
       score: Math.max(0, matDiff) * 10,
       errors: botCaptures.length,
-      hintsUsed: 0,
+      hintsUsed: hintCount.current,
       assistsUsed: [...assistsUsed.current],
       extra: { moves: Math.ceil(history.length / 2), material: matDiff }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [history]);
+  }, [history, hint]);
 
   useEffect(() => {
     registerSnapshot(() => ({
       pos: freeze(posRef.current),
       history: historyRef.current,
-      assistsUsed: [...assistsUsed.current]
+      assistsUsed: [...assistsUsed.current],
+      hintsUsed: hintCount.current
     }));
   });
 
@@ -461,15 +570,23 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
 
   /* ---------- render ---------- */
 
+  const loading = engineState.status === 'loading';
+  const loadPct = loading && engineState.percent !== null ? Math.round(engineState.percent * 100) : null;
   const status = done.current
     ? 'Game over'
-    : pos.turn === ME
-      ? check
-        ? 'Check — defend your king!'
-        : 'Your move'
-      : check
-        ? 'The robot is in check'
-        : 'Robot is thinking…';
+    : engineErr
+      ? 'The engine is unavailable'
+      : pos.turn === ME
+        ? check
+          ? 'Check — defend your king!'
+          : hintBusy
+            ? 'Looking for a hint…'
+            : 'Your move'
+        : loading
+          ? `Loading the engine (once, 7 MB)…${loadPct !== null ? ` ${loadPct}%` : ''}`
+          : check
+            ? 'The robot is in check'
+            : 'Robot is thinking…';
 
   const tray = (caps: number[], color: Color) => {
     const sorted = [...caps].sort((a, b) => PAWN_VAL[a] - PAWN_VAL[b]);
@@ -509,6 +626,7 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
           <ChessPiece kind={K} color="b" />
         </span>
         <span className="chess-hud-name">Robot</span>
+        <span className="chess-hud-elo">{plan.label}</span>
         <span className="chess-tray">{tray(botCaptures, 'w')}</span>
         {matDiff < 0 && <b className="chess-adv">+{-matDiff}</b>}
       </div>
@@ -530,6 +648,7 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
             light ? 'light' : 'dark',
             last && (last.from === sq || last.to === sq) ? 'last' : '',
             selected === sq ? 'sel' : '',
+            hint && (hint.from === sq || hint.to === sq) ? 'hint' : '',
             checkedKingSq === sq ? 'check' : '',
             dragSq !== null && hoverSq === sq ? 'hover' : ''
           ]
@@ -598,6 +717,30 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
       </div>
 
       <p className="chess-turn">{status}</p>
+      {loading && !done.current && pos.turn === BOT && (
+        <div className="chess-engine-bar" role="progressbar" aria-valuenow={loadPct ?? undefined}>
+          <i style={{ width: `${loadPct ?? 0}%` }} />
+        </div>
+      )}
+
+      {engineErr && !done.current && (
+        <div className="chess-engine-note fx-card">
+          <p>
+            <b>The chess engine could not run.</b> {engineErr}. Try again, or play this game against the
+            built-in robot instead.
+          </p>
+          <div className="chess-engine-actions">
+            <PadTool onClick={retryEngine}>
+              <RestartIcon />
+              <span>Try again</span>
+            </PadTool>
+            <PadTool onClick={playBuiltin}>
+              <PlayIcon />
+              <span>Built-in robot</span>
+            </PadTool>
+          </div>
+        </div>
+      )}
 
       {history.length > 0 && (
         <div className="chess-log fx-card" ref={logEl}>
@@ -613,6 +756,12 @@ export function ChessGame({ difficulty, assists, paused, events, savedState, reg
 
       <div className="game-tools fx-card">
         <div className="sudoku-controls">
+          {assists['hint'] && (
+            <PadTool onClick={requestHint} disabled={!canHint}>
+              <BulbIcon />
+              <span>Hint</span>
+            </PadTool>
+          )}
           {assists['undo'] && (
             <PadTool onClick={undo} disabled={!canUndo}>
               <RestartIcon />

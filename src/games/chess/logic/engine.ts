@@ -119,6 +119,58 @@ export function clonePosition(pos: Position): Position {
   return { ...pos, board: new Int8Array(pos.board) };
 }
 
+/**
+ * FEN writer — the inverse of `fromFen`, and the form a UCI engine takes a
+ * position in (`position fen …`). The en-passant field is written whenever
+ * a double push just happened, which is what the rules above track; an
+ * engine ignores it when no capture is actually possible.
+ */
+export function toFen(pos: Position): string {
+  const glyph: Record<number, string> = { [P]: 'p', [N]: 'n', [B]: 'b', [R]: 'r', [Q]: 'q', [K]: 'k' };
+  const rows: string[] = [];
+  for (let r = 7; r >= 0; r--) {
+    let row = '';
+    let empty = 0;
+    for (let f = 0; f < 8; f++) {
+      const p = pos.board[r * 16 + f];
+      if (p === 0) {
+        empty++;
+        continue;
+      }
+      if (empty > 0) {
+        row += empty;
+        empty = 0;
+      }
+      const g = glyph[Math.abs(p)];
+      row += p > 0 ? g.toUpperCase() : g;
+    }
+    if (empty > 0) row += empty;
+    rows.push(row);
+  }
+  const rights =
+    (pos.castling & 1 ? 'K' : '') +
+    (pos.castling & 2 ? 'Q' : '') +
+    (pos.castling & 4 ? 'k' : '') +
+    (pos.castling & 8 ? 'q' : '');
+  return `${rows.join('/')} ${pos.turn} ${rights || '-'} ${pos.ep >= 0 ? sqName(pos.ep) : '-'} ${pos.halfmove} ${pos.fullmove}`;
+}
+
+const PROMO_LETTER: Record<number, string> = { [N]: 'n', [B]: 'b', [R]: 'r', [Q]: 'q' };
+
+/** long algebraic ("e2e4", "e7e8q") — the move form every UCI engine speaks */
+export function uciOf(move: Move): string {
+  return sqName(move.from) + sqName(move.to) + (move.promo ? PROMO_LETTER[move.promo] : '');
+}
+
+/**
+ * The engine's answer, resolved against OUR legal moves — so an engine move
+ * is only ever applied through the same rules the player is held to, and a
+ * malformed or illegal one is `null` rather than a corrupted board.
+ */
+export function moveFromUci(pos: Position, uci: string): Move | null {
+  return legalMoves(pos).find((m) => uciOf(m) === uci) ?? null;
+}
+
 /** is `sq` attacked by side `by`? */
 export function isAttacked(board: Int8Array, sq: number, by: Color): boolean {
   const sign = by === 'w' ? 1 : -1;

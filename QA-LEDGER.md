@@ -374,6 +374,23 @@ they gain enforcement, delete entries obsoleted by code removal.
 
 ## Watch items (re-check every QA — not yet machine-enforced)
 
+- **2026-09-03 · third-party runtime under `public/` · three traps in one
+  vendoring.** Shipping Stockfish.js as its own Web Worker looked like
+  "copy two files into public/". It was, plus: (1) the repo's root
+  `"type": "module"` makes Node parse ANY `.js` below it as an ES module,
+  so the CommonJS engine loader crashed the instant validate ran it
+  directly — a `package.json` `{"type": "commonjs"}` beside the vendored
+  files scopes them back (the browser never reads it); (2) a 7 MB asset must
+  stay OUT of the PWA precache (`globIgnores`) or every install pays for
+  it, and then needs a runtime `CacheFirst` route or it is offline-dead —
+  with the engine version in the FILE NAME, because a CacheFirst entry is
+  never refreshed under the same URL; (3) a plain-text link inside the app
+  scope (the license) is a navigation, and the SPA `navigateFallback`
+  answers it with index.html unless the path is denylisted. All three are
+  now validate-pinned for `public/stockfish/`; re-check them for the next
+  vendored runtime, and re-run the real files under Node rather than
+  trusting a size check (validate's smoke test drives `uci`/`isready`/`go`).
+
 - **2026-09-03 · input · an axis-locked paint drag drops every cell after
   the first turn.** Nurikabe locked each stroke to the row/column of its
   first move (to keep a fast drag gapless), so an L or a curve drawn in one

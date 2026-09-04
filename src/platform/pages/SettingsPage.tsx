@@ -247,7 +247,25 @@ export function SettingsPage() {
             <ExternalLinkIcon />
             <span>Updates and patches</span>
           </a>
+          {/* Chess plays against Stockfish (GPLv3), shipped as a separate
+              program under public/stockfish/ and spoken to over UCI — the
+              credit and the license are the one obligation that brings */}
+          <a
+            className="settings-action"
+            href={`${import.meta.env.BASE_URL}stockfish/LICENSE-STOCKFISH.txt`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => sfx.tap()}
+          >
+            <ExternalLinkIcon />
+            <span>Stockfish engine license (GPLv3)</span>
+          </a>
         </div>
+        <p className="section-note">
+          Chess is played against the Stockfish engine (Stockfish.js build by Nathan Rugg / Chess.com,
+          GPLv3), which runs on this device as a separate program the app talks to over UCI. It is
+          downloaded once, the first time a medium-or-harder game starts.
+        </p>
       </section>
 
       <p className="about-note">100 Games · built as a PWA — install it from your browser menu.</p>

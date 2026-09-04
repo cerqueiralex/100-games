@@ -74,7 +74,7 @@ A minimalist platform of sixty-nine classic puzzle and brain games — flat surf
 | **Checkers** | Jump, chain captures, crown kings and clear the board vs a minimax robot or a friend |
 | **Dots & Boxes** | Draw lines to close the most boxes — mind the chains — versus the AI or a friend |
 | **Klondike Solitaire** | Build the four suits up from Ace; the easier draws use winnable-verified deals |
-| **Chess** | The full royal game vs a robot that deepens with difficulty — drag to move, checks flare red, captures fill the trays, every move logged; castling, en passant, promotion and all the draws called honestly |
+| **Chess** | The full royal game vs the Stockfish engine held to five real strengths — a ≈300-Elo beginner on easy up to club level on extreme — drag to move, checks flare red, captures fill the trays, every move logged; castling, en passant, promotion and all the draws called honestly; a full-strength Hint if you want it |
 
 ## Platform features (shared by every game)
 
@@ -105,6 +105,7 @@ A minimalist platform of sixty-nine classic puzzle and brain games — flat surf
 - **Search** on the home page to find games as the catalog grows, plus a category filter that scrolls sideways on one line (arrows and edge fades show when there's more) so the list keeps the screen
 - **Backup & transfer**: export everything (profile, history, streak, landmarks, settings) to a single JSON file, and import it on another device — or share your profile with a friend. Importing previews what's in the file first and validates it, so a wrong or damaged file is refused instead of breaking the app
 - Sound effects synthesized with WebAudio (no assets), volume control, data reset
+- **A real chess engine, on the device**: Chess plays against [Stockfish](https://stockfishchess.org) (the Stockfish.js WASM build, GPLv3), loaded as a separate Web Worker the first time a medium-or-harder game starts — a one-time 7 MB download with a progress meter, cached for offline play afterwards, never part of the app's own bundle. The five tiers are genuinely different opponents: easy is an engine-free weighted lottery over the legal moves (≈300 Elo), medium and hard let the engine choose loosely among its best few lines (≈750 / ≈1200), pro uses the engine's own Elo limiter (≈1600) and extreme plays full strength. The engine's license and credit are under Settings → About
 
 ## Running it
 
@@ -306,7 +307,11 @@ banks — every deduction puzzle (Nonograms, Killer Sudoku, Kakuro,
 Skyscrapers, Futoshiki, Binary Grid, Aquarium, Tents & Trees, Bridges,
 Slitherlink, Nurikabe, Fleet Finder…) for a unique, guess-free solution,
 and the baked puzzle banks (Gridlock, Klondike, Peg Solitaire) for
-solvability. It also re-proves the landmark/achievement catalogue stays
+solvability, and the Chess robot: the five Stockfish tiers ordered on
+every strength axis, the error-injection lottery's math, FEN/UCI round
+trips, and a UCI smoke test that runs the shipped engine files under
+Node (`uci` → `uciok`, `isready` → `readyok`, a `go`) with their GPLv3
+license present. It also re-proves the landmark/achievement catalogue stays
 derived from the game registry: library-wide trophies must cover the
 current game count, every non-empty category must have exactly one
 mastery landmark (empty categories none), a fresh profile must start

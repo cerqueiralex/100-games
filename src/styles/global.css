@@ -24736,6 +24736,74 @@ button.bs-ship-row.dock.placed {
   min-height: 18px;
 }
 
+/* the robot's strength beside its name — the five tiers are meant to feel
+   different, and this is where the player learns which one is sitting
+   across the board before the first move */
+.chess-hud-elo {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* a hinted move: the engine's suggestion washes its two squares in a
+   translucent blue — a third fixed highlight beside the yellow of the last
+   move and the red of check, so the three never read as one another */
+.chess-sq.hint::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(66, 135, 245, 0.5);
+}
+
+/* the one-time engine download: a slim meter under the status line;
+   paint-only, the fill width is the only thing that moves */
+.chess-engine-bar {
+  width: 60%;
+  max-width: 240px;
+  height: 4px;
+  margin: -2px auto 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+  overflow: hidden;
+}
+
+.chess-engine-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+/* the engine could not run: the two ways out, on a card — never a silent
+   "thinking…" the player cannot leave */
+.chess-engine-note {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-l);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chess-engine-note p {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.chess-engine-note p b {
+  color: var(--text);
+}
+
+.chess-engine-actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
 /* ---- the move log: numbered two-column SAN with figurine icons ---- */
 
 .chess-log {

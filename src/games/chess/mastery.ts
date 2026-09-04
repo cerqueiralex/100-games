@@ -8,7 +8,7 @@ export const mastery: MasteryGuide = {
   origins:
     'Chess descends from chaturanga, played in India by the 6th century, which travelled through Persia (shatranj) into Europe. The modern queen and bishop arrived in 15th-century Spain and Italy — the "mad queen" reform that made the game fast and tactical. Standardized rules, clocks and notation came with the 19th-century tournament scene; today it is the most studied game on earth, and engines have been stronger than every human since the late 1990s.',
   intro:
-    'Chess mastery is three habits stacked: develop with purpose in the opening, calculate forcing moves before quiet ones in the middlegame, and count material like a ledger — every trade should serve a plan. Against this robot, the difficulty mostly changes how deeply it punishes loose moves: the sharper the tier, the more every undefended piece matters.',
+    'Chess mastery is three habits stacked: develop with purpose in the opening, calculate forcing moves before quiet ones in the middlegame, and count material like a ledger — every trade should serve a plan. The robot is the Stockfish engine held to a real strength per tier — a ~300-Elo beginner on easy that only notices free captures, a ~750 and ~1200 player on medium and hard that still blunder on purpose now and then, ~1600 on pro and full strength on extreme — so what changes with the tier is how reliably a loose move gets punished: the sharper the tier, the more every undefended piece matters.',
   sections: [
     {
       title: 'Opening: develop, castle, connect',

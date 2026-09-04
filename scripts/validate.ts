@@ -24,7 +24,7 @@ import { generateFlowLevel, FLOW_CONFIG } from '../src/games/color-connect/logic
  * (and see the QA-LEDGER entry for hunting a suspected generator flake).
  */
 // this script only ever runs under tsx/node; the repo has no @types/node
-declare const process: { env: Record<string, string | undefined> };
+declare const process: { env: Record<string, string | undefined>; execPath: string };
 const VALIDATE_SEED = Number(process.env.VALIDATE_SEED ?? 20260823);
 {
   let s = VALIDATE_SEED >>> 0;
@@ -3548,6 +3548,296 @@ console.log('— Chess —');
   if (!failed)
     console.log(
       '  ✓ perft exact on start/kiwipete/ep-pins/promos, fool’s mate + SAN, stalemate/insufficient/fifty called, castling SAN, robot legal on all 5 tiers'
+    );
+}
+
+console.log('— Chess robot ladder (Stockfish) —');
+{
+  const {
+    TIERS,
+    TIER_ORDER,
+    UCI_ELO_RANGE,
+    HINT_SEARCH,
+    MATE_SCORE,
+    foldScore,
+    pickCandidate,
+    lotteryMove,
+    lotteryWeights,
+    ENGINE_DIR,
+    ENGINE_JS,
+    ENGINE_WASM,
+    ENGINE_LICENSE
+  } = await import('../src/games/chess/logic/difficulty');
+  const { initialPosition, fromFen, toFen, legalMoves, applyMove, moveFromUci, uciOf, sqName, F_CASTLE_K, Q, N } =
+    await import('../src/games/chess/logic/engine');
+  const { chessDefinition } = await import('../src/games/chess');
+  const { readFileSync, existsSync, statSync, openSync, readSync, closeSync } = (await import('node:fs')) as unknown as {
+    readFileSync: (path: string, encoding: string) => string;
+    existsSync: (path: string) => boolean;
+    statSync: (path: string) => { size: number };
+    openSync: (path: string, flags: string) => number;
+    readSync: (fd: number, buf: Uint8Array, offset: number, length: number, position: number) => number;
+    closeSync: (fd: number) => void;
+  };
+  const { spawn } = (await import('node:child_process')) as unknown as {
+    spawn: (
+      cmd: string,
+      args: string[],
+      opts: { stdio: string[] }
+    ) => {
+      stdout: { on: (ev: 'data', fn: (chunk: { toString(): string }) => void) => void };
+      stdin: { write: (s: string) => void };
+      on: (ev: 'exit' | 'error', fn: (arg: unknown) => void) => void;
+      kill: () => void;
+    };
+  };
+  const bad = (msg: string) => {
+    failed = true;
+    console.error(`✗ chess ladder: ${msg}`);
+  };
+  const pathOf = (rel: string) => new URL(`../${rel}`, import.meta.url).pathname;
+  const code = (rel: string) =>
+    readFileSync(pathOf(rel), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  let before = failed;
+
+  /* THE LADDER IS ORDERED. Five tiers must be five perceptibly different
+     opponents, and a configuration slip ("hard" given a shorter search or a
+     looser lottery than "medium") would silently break that promise. The
+     compiler forces five entries; this pins that each tier is at least as
+     strong as the one below it on every axis the plan controls. */
+  const tiers = Object.keys(TIERS);
+  if (tiers.length !== 5 || TIER_ORDER.some((d) => !tiers.includes(d))) bad('the ladder is not exactly the five tiers');
+  if (TIERS.easy.brain !== 'lottery') bad('easy must be the engine-free lottery — Stockfish cannot play that badly');
+  for (const d of TIER_ORDER.slice(1)) if (TIERS[d].brain !== 'engine') bad(`${d} must use the engine`);
+  for (const d of TIER_ORDER) {
+    const t = TIERS[d];
+    if (t.weights.length !== t.multipv) bad(`${d}: ${t.weights.length} weights for multipv ${t.multipv}`);
+    if (t.weights.some((w) => !(w > 0))) bad(`${d}: every lottery weight must be positive`);
+    if (t.brain === 'engine' && !(t.movetime > 0)) bad(`${d}: an engine tier needs a movetime ceiling`);
+    if (t.uciElo !== undefined && (t.uciElo < UCI_ELO_RANGE[0] || t.uciElo > UCI_ELO_RANGE[1]))
+      bad(`${d}: UCI_Elo ${t.uciElo} is outside the build's ${UCI_ELO_RANGE.join('–')}`);
+    if (!(t.band[0] < t.band[1])) bad(`${d}: Elo band is not a range`);
+    if (!/Elo/.test(t.label)) bad(`${d}: the HUD label should name the strength`);
+  }
+  const pBest = (d: (typeof TIER_ORDER)[number]) => {
+    const w = TIERS[d].weights;
+    return w[0] / w.reduce((a, b) => a + b, 0);
+  };
+  for (let i = 1; i < TIER_ORDER.length; i++) {
+    const lo = TIERS[TIER_ORDER[i - 1]];
+    const hi = TIERS[TIER_ORDER[i]];
+    const a = TIER_ORDER[i - 1];
+    const b = TIER_ORDER[i];
+    if (lo.band[1] > hi.band[0]) bad(`${a} and ${b} Elo bands overlap`);
+    if (lo.brain === 'lottery') continue; // the engine axes only compare engine tiers
+    if (hi.movetime < lo.movetime) bad(`${b} searches shorter than ${a}`);
+    if ((hi.depth ?? Infinity) < (lo.depth ?? Infinity)) bad(`${b} searches shallower than ${a}`);
+    if (pBest(b) < pBest(a)) bad(`${b} plays its best line less often than ${a}`);
+    if (hi.maxDrop > lo.maxDrop) bad(`${b} allows worse blunders than ${a}`);
+    if (lo.uciElo !== undefined && hi.uciElo !== undefined && hi.uciElo <= lo.uciElo)
+      bad(`${b} is Elo-limited below ${a}`);
+    if (lo.uciElo === undefined && hi.uciElo !== undefined && lo.multipv === 1)
+      bad(`${a} plays full strength but ${b} above it is Elo-limited`);
+  }
+  if (HINT_SEARCH.multipv !== 1 || 'uciElo' in HINT_SEARCH) bad('the hint must be the engine at full strength');
+
+  /* the error-injection lottery: exact behaviour on fixed draws */
+  {
+    const lines = [
+      { move: 'best', score: 50 },
+      { move: 'second', score: 40 },
+      { move: 'third', score: 30 },
+      { move: 'blunder', score: -400 }
+    ];
+    const first = () => 0;
+    const lastDraw = () => 0.999;
+    if (pickCandidate(lines, TIERS.medium, first) !== 'best') bad('medium: draw 0 should pick the best line');
+    if (pickCandidate(lines, TIERS.medium, lastDraw) !== 'third')
+      bad('medium: the −400 line must be dropped by maxDrop (the last draw should land on "third")');
+    const close = lines.map((l, i) => ({ ...l, score: 50 - i * 10 }));
+    if (pickCandidate(close, TIERS.medium, lastDraw) !== 'blunder')
+      bad('medium: with every line inside maxDrop the last draw should reach the 4th');
+    if (pickCandidate(lines, TIERS.extreme, lastDraw) !== 'best') bad('extreme: never anything but the best line');
+    if (pickCandidate(lines, TIERS.hard, lastDraw) !== 'second') bad('hard: the last draw should reach the 2nd line');
+    const mate = [
+      { move: 'mate', score: foldScore('mate', 1) },
+      { move: 'quiet', score: 120 },
+      { move: 'other', score: 100 },
+      { move: 'meh', score: 90 }
+    ];
+    for (const r of [0, 0.3, 0.6, 0.999])
+      if (pickCandidate(mate, TIERS.medium, () => r) !== 'mate') bad('medium must never walk past its own mate in one');
+    if (pickCandidate(lines.slice(0, 2), TIERS.medium, lastDraw) !== 'second')
+      bad('fewer lines than weights: the weights renormalize over what came back');
+    if (pickCandidate([], TIERS.medium) !== null) bad('no lines → null');
+    if (foldScore('mate', 3) !== MATE_SCORE - 3 || foldScore('mate', -2) !== -MATE_SCORE + 2 || foldScore('cp', -15) !== -15)
+      bad('foldScore does not order mates above every centipawn score');
+    // scored out of order: the pick ranks by score, not by arrival
+    if (pickCandidate([lines[2], lines[0], lines[1]], TIERS.extreme, lastDraw) !== 'best') bad('ranking ignores arrival order');
+  }
+
+  /* the easy lottery: legal everywhere, and a beginner's instincts hold */
+  {
+    let s = 7;
+    const rng = () => {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      return s / 0x80000000;
+    };
+    for (const fen of [
+      null,
+      'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1',
+      '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1'
+    ]) {
+      const pos = fen ? fromFen(fen) : initialPosition();
+      for (let i = 0; i < 40; i++) {
+        const m = lotteryMove(pos, rng);
+        const legal = m && legalMoves(pos).some((x) => x.from === m.from && x.to === m.to && x.promo === m.promo);
+        if (!legal) bad(`lottery move is missing or illegal in ${fen ?? 'the start'}`);
+      }
+    }
+    // a white queen hangs on h5: the free capture must be the heaviest ticket
+    const hang = fromFen('rnbqkbnr/pppppp1p/6p1/7Q/4P3/8/PPPP1PPP/RNB1KBNR b KQkq - 1 2');
+    const tickets = lotteryWeights(hang);
+    const top = [...tickets].sort((a, b) => b.weight - a.weight)[0];
+    if (uciOf(top.move) !== 'g6h5') bad(`the free queen (g6h5) should be the heaviest ticket, got ${uciOf(top.move)}`);
+    // a queen stepping onto an attacked, undefended square loses most of its tickets
+    const hangQueen = fromFen('rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2');
+    const hq = lotteryWeights(hangQueen);
+    const qh4 = hq.find((t) => uciOf(t.move) === 'd8h4'); // Nxh4 takes it for free
+    const quiet = hq.find((t) => uciOf(t.move) === 'b8c6');
+    if (!qh4 || !quiet || !(qh4.weight < quiet.weight)) bad('a move that hangs the queen should weigh less than a quiet move');
+    // over many draws the capture actually dominates
+    let caps = 0;
+    for (let i = 0; i < 400; i++) if (uciOf(lotteryMove(hang, rng)!) === 'g6h5') caps++;
+    if (caps < 100) bad(`the hanging queen was taken only ${caps}/400 times`);
+    if (lotteryMove(fromFen('7k/5Q2/6K1/8/8/8/8/8 b - - 0 1')) !== null) bad('no legal move → null');
+  }
+
+  /* FEN out = FEN in, and engine moves resolve through OUR legality */
+  {
+    const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    if (toFen(initialPosition()) !== START) bad(`toFen(start) = ${toFen(initialPosition())}`);
+    for (const fen of [
+      'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1',
+      '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1',
+      'r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1',
+      '4k3/8/8/8/8/8/4P3/R3K2R w KQ - 0 1'
+    ]) {
+      if (toFen(fromFen(fen)) !== fen) bad(`FEN round trip changed "${fen}" → "${toFen(fromFen(fen))}"`);
+    }
+    const afterE4 = applyMove(initialPosition(), moveFromUci(initialPosition(), 'e2e4')!);
+    if (toFen(afterE4) !== 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1')
+      bad(`FEN after e4 = ${toFen(afterE4)}`);
+    const kiwi = fromFen('r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1');
+    for (const m of legalMoves(kiwi)) {
+      const back = moveFromUci(kiwi, uciOf(m));
+      if (!back || back.from !== m.from || back.to !== m.to || back.promo !== m.promo)
+        bad(`uci round trip lost ${uciOf(m)}`);
+    }
+    const promo = fromFen('8/P7/8/8/8/8/8/k6K w - - 0 1');
+    if (moveFromUci(promo, 'a7a8q')?.promo !== Q) bad('a7a8q should promote to a queen');
+    if (moveFromUci(promo, 'a7a8n')?.promo !== N) bad('a7a8n should underpromote to a knight');
+    if (moveFromUci(promo, 'a7a8') !== null) bad('a promotion without its piece letter is not a legal uci move');
+    const castle = fromFen('4k3/8/8/8/8/8/4P3/R3K2R w KQ - 0 1');
+    if (!(moveFromUci(castle, 'e1g1')!.flags & F_CASTLE_K)) bad('e1g1 should resolve to O-O');
+    if (moveFromUci(initialPosition(), 'e2e5') !== null) bad('an illegal engine move must resolve to null, never a board edit');
+    if (sqName(moveFromUci(initialPosition(), 'g1f3')!.to) !== 'f3') bad('g1f3 lands on f3');
+  }
+
+  /* the shipped engine: present, whole, licensed, credited, off the precache */
+  {
+    const js = `public/${ENGINE_DIR}${ENGINE_JS}`;
+    const wasm = `public/${ENGINE_DIR}${ENGINE_WASM}`;
+    const lic = `public/${ENGINE_DIR}${ENGINE_LICENSE}`;
+    if (ENGINE_WASM !== ENGINE_JS.replace(/\.js$/, '.wasm'))
+      bad('the loader finds its .wasm by its own name — ENGINE_WASM must be ENGINE_JS with the extension swapped');
+    if (!existsSync(pathOf(js))) bad(`${js} is missing`);
+    else {
+      const head = readFileSync(pathOf(js), 'utf8').slice(0, 600);
+      if (!/Stockfish/.test(head) || !/GPLv3/.test(head)) bad(`${js} does not carry the Stockfish/GPLv3 banner`);
+    }
+    if (!existsSync(pathOf(wasm))) bad(`${wasm} is missing`);
+    else {
+      const size = statSync(pathOf(wasm)).size;
+      if (size < 5 * 1024 * 1024) bad(`${wasm} is ${size} bytes — not a whole engine`);
+      const fd = openSync(pathOf(wasm), 'r');
+      const magic = new Uint8Array(4);
+      readSync(fd, magic, 0, 4, 0);
+      closeSync(fd);
+      if (!(magic[0] === 0 && magic[1] === 0x61 && magic[2] === 0x73 && magic[3] === 0x6d))
+        bad(`${wasm} does not start with the wasm magic — an LFS pointer or an error page?`);
+    }
+    if (!existsSync(pathOf(lic))) bad(`${lic} is missing — GPLv3 requires the license to ship with the engine`);
+    else {
+      const text = readFileSync(pathOf(lic), 'utf8');
+      if (!/GNU GENERAL PUBLIC LICENSE/.test(text) || !/Version 3/.test(text)) bad(`${lic} is not the GPLv3 text`);
+      if (!/stockfish/i.test(text.slice(0, 2000))) bad(`${lic} does not say what it licenses`);
+    }
+    const settings = code('src/platform/pages/SettingsPage.tsx');
+    if (!/Stockfish/.test(settings) || !settings.includes(ENGINE_LICENSE))
+      bad('Settings → About must credit Stockfish and link its license');
+    const client = code('src/games/chess/logic/engineClient.ts');
+    if (!/new Worker\(/.test(client)) bad('the engine must run in a Web Worker, never on the main thread');
+    if (!/import\.meta\.env\.BASE_URL/.test(client)) bad('the worker URL must go through BASE_URL (subpath hosting)');
+    if (/import .*stockfish-18|from '.*\/stockfish\//.test(client)) bad('the engine is a separate program — never import it');
+    const vite = code('vite.config.ts');
+    if (!/globIgnores:\s*\[[^\]]*stockfish/.test(vite)) bad('vite.config.ts must keep the engine out of the precache');
+    if (!/runtimeCaching[\s\S]*stockfish/.test(vite)) bad('vite.config.ts must runtime-cache the engine for offline play');
+    if (!/navigateFallbackDenylist[\s\S]*stockfish/.test(vite)) bad('the license link would be swallowed by the SPA fallback');
+    if (chessDefinition.dailyChallenge) bad('chess must not join the Daily Challenge — the variance is the opponent, not the board');
+    if (!chessDefinition.assistFeatures.some((a) => a.id === 'hint')) bad('the Hint assist is missing');
+  }
+
+  /* SMOKE TEST on the real files: the shipped build answers UCI under Node —
+     `uci` → uciok, `isready` → readyok, `quit`. Proves the static files are
+     whole and the protocol works, without playing a game in CI. */
+  await new Promise<void>((resolve) => {
+    const js = pathOf(`public/${ENGINE_DIR}${ENGINE_JS}`);
+    if (!existsSync(js)) return resolve();
+    const child = spawn(process.execPath, [js], { stdio: ['pipe', 'pipe', 'pipe'] });
+    let sawUci = false;
+    let sawReady = false;
+    let sawBest = '';
+    let settled = false;
+    const finish = (msg?: string) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (msg) bad(msg);
+      try {
+        child.kill();
+      } catch {
+        /* already gone */
+      }
+      resolve();
+    };
+    const timer = setTimeout(() => finish(`engine smoke test timed out (uciok ${sawUci}, readyok ${sawReady})`), 20000);
+    child.on('error', (e) => finish(`could not spawn node on the engine: ${String(e)}`));
+    child.on('exit', () => {
+      if (!sawUci || !sawReady) finish('the engine exited before answering uci/isready');
+      else if (!/^[a-h][1-8][a-h][1-8]/.test(sawBest)) finish(`engine bestmove was "${sawBest}"`);
+      else finish();
+    });
+    child.stdout.on('data', (chunk) => {
+      for (const line of chunk.toString().split('\n')) {
+        if (line === 'uciok') {
+          sawUci = true;
+          child.stdin.write('setoption name MultiPV value 2\nisready\n');
+        } else if (line === 'readyok') {
+          sawReady = true;
+          child.stdin.write('position startpos moves e2e4\ngo depth 1 movetime 300\n');
+        } else if (line.startsWith('bestmove')) {
+          sawBest = line.split(/\s+/)[1] ?? '';
+          child.stdin.write('quit\n');
+        }
+      }
+    });
+    child.stdin.write('uci\n');
+  });
+
+  if (failed === before)
+    console.log(
+      '  ✓ ladder ordered on every axis (5 tiers, easy engine-free), lottery math + mate-in-one guard, easy legal + capture-biased, FEN/UCI round trips, engine files whole + GPLv3 shipped + credited, worker/BASE_URL/PWA cache rules, not a daily, node smoke test uciok/readyok/bestmove'
     );
 }
 

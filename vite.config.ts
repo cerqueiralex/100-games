@@ -134,7 +134,29 @@ export default defineConfig({
            needed a runtime-cache carve-out to stay off every install — the
            pixel sprites made that complexity unnecessary.) */
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,webp,json,woff2}'],
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        /* The Stockfish engine (public/stockfish/, ~7 MB) is deliberately NOT
+           precached: installing the app must stay light and 68 games never
+           need it. It is cached on FIRST USE instead (CacheFirst below) and
+           then works offline like everything else. The file names carry the
+           engine version, so a new build is a new URL and an old cache
+           entry simply goes unused — never bump the engine without renaming
+           the files. */
+        globIgnores: ['**/stockfish/**'],
+        /* the license opens in a tab — a navigation the SPA fallback must not
+           answer with index.html */
+        navigateFallbackDenylist: [/\/stockfish\//],
+        runtimeCaching: [
+          {
+            urlPattern: /\/stockfish\/[^/?#]+$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'stockfish-engine',
+              expiration: { maxEntries: 6 },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          }
+        ]
       }
     })
   ]

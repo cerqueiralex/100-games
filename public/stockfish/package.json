@@ -1,0 +1,4 @@
+{
+  "type": "commonjs",
+  "description": "Scopes the Stockfish.js loader beside this file as CommonJS: the app's package.json says \"type\": \"module\", which would make Node parse the loader as an ES module and crash when `npm run validate` runs it directly as a UCI program. The app itself loads it as a Web Worker, where this file is never read."
+}

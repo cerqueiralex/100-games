@@ -32,7 +32,7 @@ const grid3 = { display: 'grid', gridTemplateColumns: 'repeat(3, 38px)', gap: 0 
 export const chessTutorial: TutorialStep[] = [
   {
     title: 'Drag a piece to move',
-    text: 'You play White; the robot answers as Black. Press a piece and drag it — every square it can legally reach lights up with a dot. Release on one to move (a tap-then-tap works too).',
+    text: 'You play White; the robot — the Stockfish engine, held to the strength of the tier you picked, from a true beginner on easy to club level on extreme — answers as Black. Press a piece and drag it — every square it can legally reach lights up with a dot. Release on one to move (a tap-then-tap works too).',
     art: (
       <div style={grid3}>
         <Sq dot />
