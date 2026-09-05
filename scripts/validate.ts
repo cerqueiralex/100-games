@@ -4214,6 +4214,58 @@ console.log('— Snake —');
     console.log('  ✓ tiers ordered (size, speed, target), speed-up + floor, start shape, step/eat/wall/wrap/self rules, apples never on the body, definition + egg');
 }
 
+console.log('— Untangle ropes —');
+{
+  /* The ropes' spring (src/games/untangle/logic/rope.ts): underdamped so a
+     dragged rope BOUNCES, damped enough to be still within a few seconds,
+     clamped so it can never fly off, and lagging behind a moving screw. */
+  const bad = (msg: string) => {
+    failed = true;
+    console.error(`✗ untangle ropes: ${msg}`);
+  };
+  const before = failed;
+  const { ROPE, initRope, restPoint, settled, stepRope } = await import('../src/games/untangle/logic/rope');
+  if (ROPE.damping >= 2 * Math.sqrt(ROPE.k)) bad('the rope is critically damped or more — it would not bounce');
+  const a = { x: 0.2, y: 0.5 };
+  const b = { x: 0.8, y: 0.5 };
+  const rest = restPoint(a, b);
+  if (!(rest.y > 0.5) || Math.abs(rest.x - 0.5) > 1e-9) bad('a rope must sag DOWN from the midpoint at rest');
+  // released 10% of the board off rest: it must cross rest (bounce), then be still within 3 s
+  let s = { ...initRope(rest), py: rest.y - 0.1 };
+  let crossings = 0;
+  let last = s.py - rest.y;
+  let peak = 0;
+  let stillAt = -1;
+  for (let t = 0; t < 4; t += 1 / 60) {
+    s = stepRope(s, rest, 0.6, 1 / 60);
+    const off = s.py - rest.y;
+    if (Math.sign(off) !== Math.sign(last) && Math.abs(off) > 1e-6) crossings++;
+    last = off;
+    peak = Math.max(peak, Math.abs(off));
+    if (stillAt < 0 && settled(s, rest)) stillAt = t;
+  }
+  if (crossings < 2) bad(`a released rope should swing past rest at least twice, crossed ${crossings} times`);
+  if (stillAt < 0 || stillAt > 3.2) bad(`a released rope must be still within ~3 s (was ${stillAt < 0 ? 'never' : stillAt.toFixed(2) + ' s'})`);
+  if (stillAt >= 0 && stillAt < 0.8) bad(`the rope settled in ${stillAt.toFixed(2)} s — no visible bounce`);
+  if (peak > ROPE.maxBow * 0.6 + 1e-9) bad('the rope overshot beyond its clamp');
+  // yanked far away: the bow is clamped to maxBow × length
+  let y = { ...initRope(rest), py: rest.y + 5 };
+  y = stepRope(y, rest, 0.6, 1 / 60);
+  if (Math.hypot(y.px - rest.x, y.py - rest.y) > ROPE.maxBow * 0.6 + 1e-9) bad('the bow is not clamped to maxBow × length');
+  // a moving screw: the mass lags BEHIND the moving rest point (bows against the motion)
+  let m = initRope(rest);
+  let bx = b.x;
+  for (let t = 0; t < 0.25; t += 1 / 60) {
+    bx += 0.5 / 60; // the far screw drags right at half a board a second
+    const r = restPoint(a, { x: bx, y: b.y });
+    m = stepRope(m, r, bx - a.x, 1 / 60);
+  }
+  const rNow = restPoint(a, { x: bx, y: b.y });
+  if (!(m.px < rNow.x - 0.005)) bad('a rope should lag behind a screw being dragged');
+  if (failed === before)
+    console.log(`  ✓ underdamped spring (ζ≈${(ROPE.damping / (2 * Math.sqrt(ROPE.k))).toFixed(2)}): sags at rest, bounces ${crossings}× and is still at ${stillAt.toFixed(2)} s, bow clamped, lags a dragged screw`);
+}
+
 console.log('— Profile tabs —');
 {
   /* The profile is four tabs (General / Statistics / Achievements / History)

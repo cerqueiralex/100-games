@@ -13,6 +13,7 @@ import {
   type Graph,
   type Pt
 } from './logic/generator';
+import { initRope, restPoint, settled, stepRope, stillRope, type RopeState } from './logic/rope';
 
 const MULT: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3, pro: 4, extreme: 5 };
 const PAR_SEC: Record<Difficulty, number> = { easy: 60, medium: 120, hard: 210, pro: 330, extreme: 540 };
@@ -27,6 +28,8 @@ const NODE_PCT: Record<Difficulty, string> = {
   pro: '6.4%',
   extreme: '5.4%'
 };
+/** rope thickness in screen px (non-scaling stroke), thinner as the web gets denser */
+const ROPE_PX: Record<Difficulty, number> = { easy: 7, medium: 6.2, hard: 5.6, pro: 5, extreme: 4.5 };
 
 interface UntangleSave {
   graph: Graph;
@@ -86,6 +89,8 @@ export function UntangleGame({
   });
   const elapsedRef = useRef(elapsedSec);
   elapsedRef.current = elapsedSec;
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   const highlightOn = !!assists['highlight-crossings'];
   const assistsUsed = useRef<Set<string>>(
@@ -96,9 +101,57 @@ export function UntangleGame({
     if (highlightOn) assistsUsed.current.add('highlight-crossings');
   }, [highlightOn]);
 
+  /* ------------------------------ the ropes ------------------------------
+     Each edge is a rope: a Bézier whose control point is a mass on a damped
+     spring (logic/rope.ts). The loop below runs only while any rope is
+     still moving — woken by every position commit (a drag, a shuffle, a
+     hint) and by a resume — and sleeps once they all settle, so an idle
+     board costs nothing. Rope state is visual only: never saved, never
+     part of the puzzle. */
+  const ropes = useRef<RopeState[] | null>(null);
+  if (!ropes.current) {
+    ropes.current = edges.map((e) => initRope(restPoint(positions[e.a], positions[e.b])));
+  }
+  const ropeRaf = useRef(0);
+  const ropeLast = useRef(0);
+  const [, setRopeFrame] = useState(0);
+  const ropeTick = (now: number) => {
+    ropeRaf.current = 0;
+    const dt = Math.min(1 / 30, (now - (ropeLast.current || now)) / 1000);
+    ropeLast.current = now;
+    const pos = posRef.current;
+    let active = false;
+    ropes.current = (ropes.current ?? []).map((r, i) => {
+      const a = pos[edges[i].a];
+      const b = pos[edges[i].b];
+      const rest = restPoint(a, b);
+      const next = stepRope(r, rest, Math.hypot(b.x - a.x, b.y - a.y), dt);
+      if (settled(next, rest)) return stillRope(rest);
+      active = true;
+      return next;
+    });
+    setRopeFrame((f) => f + 1);
+    if (active && !pausedRef.current) ropeRaf.current = requestAnimationFrame(ropeTick);
+    else ropeLast.current = 0;
+  };
+  const wakeRopes = () => {
+    if (ropeRaf.current || pausedRef.current) return;
+    ropeLast.current = 0;
+    ropeRaf.current = requestAnimationFrame(ropeTick);
+  };
+  useEffect(() => {
+    if (!paused) wakeRopes();
+    return () => {
+      cancelAnimationFrame(ropeRaf.current);
+      ropeRaf.current = 0;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paused]);
+
   const commit = (next: Pt[]) => {
     posRef.current = next;
     setPositions(next);
+    wakeRopes();
   };
 
   const crossCount = useMemo(() => countCrossings(positions, edges), [positions, edges]);
@@ -370,10 +423,20 @@ export function UntangleGame({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <svg className="utg-edges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+        {/* the ropes: three strokes on one Bézier each — a dark outline, the
+            hemp body, a dashed lighter strand for the twist */}
+        <svg
+          className="utg-edges"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          aria-hidden
+          style={{ '--rope-w': `${ROPE_PX[difficulty]}px` } as CSSProperties}
+        >
           {edges.map((e, i) => {
             const a = positions[e.a];
             const b = positions[e.b];
+            const r = ropes.current![i];
+            const d = `M${a.x * 100} ${a.y * 100} Q${r.px * 100} ${r.py * 100} ${b.x * 100} ${b.y * 100}`;
             const state = won
               ? 'good'
               : crossSet
@@ -382,15 +445,15 @@ export function UntangleGame({
                   : 'good'
                 : 'idle';
             return (
-              <line
+              <g
                 key={i}
-                className={`utg-edge ${state}`}
-                x1={a.x * 100}
-                y1={a.y * 100}
-                x2={b.x * 100}
-                y2={b.y * 100}
+                className={`utg-rope ${state}`}
                 style={won ? ({ '--wd': `${(i % 8) * 0.05}s` } as CSSProperties) : undefined}
-              />
+              >
+                <path className="utg-rope-shade" d={d} />
+                <path className="utg-rope-body" d={d} />
+                <path className="utg-rope-twist" d={d} />
+              </g>
             );
           })}
         </svg>
@@ -407,7 +470,9 @@ export function UntangleGame({
                 '--wd': won ? `${(i % 10) * 0.04}s` : undefined
               } as CSSProperties
             }
-          />
+          >
+            <ScrewHead />
+          </div>
         ))}
       </div>
 
@@ -434,6 +499,32 @@ export function UntangleGame({
         </div>
       )}
     </div>
+  );
+}
+
+/** a screw head: steel disc on an extruded underside, Phillips slot, one
+    flat highlight — fixed content colours (`--utg-*` on .untangle), flat
+    fills only, no gradients (the extruded look is the app's own) */
+function ScrewHead() {
+  return (
+    <svg viewBox="0 0 40 40" aria-hidden>
+      <circle cx="20" cy="22.5" r="18" fill="var(--utg-steel-deep)" />
+      <circle cx="20" cy="19" r="18" fill="var(--utg-steel-dark)" />
+      <circle cx="20" cy="19" r="14.6" fill="var(--utg-steel)" />
+      <path
+        d="M11 19h18M20 10v18"
+        stroke="var(--utg-slot)"
+        strokeWidth="4.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M11 19h18M20 10v18"
+        stroke="var(--utg-slot-deep)"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <ellipse cx="13.5" cy="11.5" rx="4.6" ry="2.4" transform="rotate(-38 13.5 11.5)" fill="#fff" opacity="0.5" />
+    </svg>
   );
 }
 

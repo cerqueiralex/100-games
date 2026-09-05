@@ -20048,6 +20048,23 @@ button.bs-ship-row.dock.placed {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* fixed content colours — the ropes' hemp (and their red / green tints)
+     and the screws' steel — the same deliberate token opt-out as Nurikabe
+     and Snake; nothing but this board paints with them */
+  --utg-rope: #c9a26c;
+  --utg-rope-dark: #6e4f2b;
+  --utg-rope-light: #efdcb4;
+  --utg-rope-bad: #cf6a58;
+  --utg-rope-bad-dark: #7a3328;
+  --utg-rope-bad-light: #f2bfb2;
+  --utg-rope-good: #7db86a;
+  --utg-rope-good-dark: #35602b;
+  --utg-rope-good-light: #cfe9bf;
+  --utg-steel: #cfd4dc;
+  --utg-steel-dark: #8d949e;
+  --utg-steel-deep: #575d66;
+  --utg-slot: #3a3f47;
+  --utg-slot-deep: #1e2126;
 }
 
 /* ---- HUD: prominent live crossings chip + move counter ---- */
@@ -20141,7 +20158,11 @@ button.bs-ship-row.dock.placed {
   overflow: hidden;
 }
 
-/* ---- edges: straight lines that follow the nodes live ---- */
+/* ---- edges: ROPES strung between the screws (UntangleGame.tsx draws one
+   Bézier per edge whose control point swings on a damped spring — see
+   logic/rope.ts). Three strokes per rope: a dark outline, the hemp body,
+   and a dashed lighter strand that reads as the twist. Widths are screen
+   px (non-scaling) from --rope-w, set per difficulty on the svg. ---- */
 
 .utg-edges {
   position: absolute;
@@ -20150,36 +20171,57 @@ button.bs-ship-row.dock.placed {
   height: 100%;
   pointer-events: none;
   overflow: visible;
+  --rope-w: 6px;
 }
 
-.utg-edge {
-  stroke-width: 3.2;
+.utg-rope path {
+  fill: none;
   vector-effect: non-scaling-stroke;
   stroke-linecap: round;
-  transition:
-    stroke 0.18s ease,
-    stroke-width 0.18s ease;
+  transition: stroke 0.18s ease;
 }
 
-/* highlights off: neutral lines, no progress feedback */
-.utg-edge.idle {
-  stroke: color-mix(in srgb, var(--text-dim) 55%, transparent);
+.utg-rope-shade {
+  stroke: var(--utg-rope-dark);
+  stroke-width: calc(var(--rope-w) + 2.4px);
 }
 
-/* clear line — progress is visible in green */
-.utg-edge.good {
-  stroke: color-mix(in srgb, var(--good) 72%, transparent);
+.utg-rope-body {
+  stroke: var(--utg-rope);
+  stroke-width: var(--rope-w);
 }
 
-/* crossed line — tinted red and a touch thicker so tangles pop */
-.utg-edge.bad {
-  stroke: var(--bad);
-  stroke-width: 3.8;
+.utg-rope-twist {
+  stroke: var(--utg-rope-light);
+  stroke-width: calc(var(--rope-w) * 0.42);
+  stroke-dasharray: 3.2 4.8;
+  opacity: 0.85;
 }
 
-/* win: every line flushes green with a staggered ripple */
-.utg-board.won .utg-edge {
-  stroke: var(--good);
+/* crossed rope — tinted red so tangles pop */
+.utg-rope.bad .utg-rope-shade {
+  stroke: var(--utg-rope-bad-dark);
+}
+.utg-rope.bad .utg-rope-body {
+  stroke: var(--utg-rope-bad);
+}
+.utg-rope.bad .utg-rope-twist {
+  stroke: var(--utg-rope-bad-light);
+}
+
+/* clear rope — progress is visible in green */
+.utg-rope.good .utg-rope-shade {
+  stroke: var(--utg-rope-good-dark);
+}
+.utg-rope.good .utg-rope-body {
+  stroke: var(--utg-rope-good);
+}
+.utg-rope.good .utg-rope-twist {
+  stroke: var(--utg-rope-good-light);
+}
+
+/* win: every rope flushes green with a staggered ripple */
+.utg-board.won .utg-rope {
   animation: utg-flush 0.5s ease both;
   animation-delay: var(--wd);
 }
@@ -20187,15 +20229,13 @@ button.bs-ship-row.dock.placed {
 @keyframes utg-flush {
   0% {
     opacity: 0.25;
-    stroke-width: 6.5;
   }
   100% {
     opacity: 1;
-    stroke-width: 3.2;
   }
 }
 
-/* ---- nodes: chunky extruded accent circles, dragged with pointer capture ---- */
+/* ---- nodes: SCREW HEADS (an SVG each, see ScrewHead), dragged with pointer capture ---- */
 
 .utg-node {
   position: absolute;
@@ -20205,27 +20245,29 @@ button.bs-ship-row.dock.placed {
   transform: translate(-50%, -50%);
   width: 28px; /* overridden inline per difficulty */
   aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow:
-    inset 0 -3px 0 rgba(0, 0, 0, 0.28),
-    0 1px 3px rgba(0, 0, 0, 0.22);
   z-index: 2;
   cursor: grab;
-  transition:
-    transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.15s ease;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* lifted + enlarged while dragged */
+.utg-node svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  transition: filter 0.15s ease;
+}
+
+/* lifted + enlarged while dragged: the screw comes up off the board */
 .utg-node.grab {
   transform: translate(-50%, -50%) scale(1.32);
-  box-shadow:
-    inset 0 -3px 0 rgba(0, 0, 0, 0.28),
-    0 8px 18px color-mix(in srgb, var(--accent) 45%, transparent),
-    0 0 0 3px var(--accent-soft);
   z-index: 6;
   cursor: grabbing;
+}
+
+.utg-node.grab svg {
+  filter: drop-shadow(0 9px 12px rgba(0, 0, 0, 0.45));
 }
 
 /* win pop */
@@ -20261,6 +20303,7 @@ button.bs-ship-row.dock.placed {
 .utg-tut-edge {
   stroke-width: 3;
   stroke-linecap: round;
+  stroke: var(--utg-rope);
 }
 
 .utg-tut-edge.good {

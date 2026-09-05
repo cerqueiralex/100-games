@@ -55,12 +55,12 @@ function MiniGraph({ tangled }: { tangled: boolean }) {
 export const untangleTutorial: TutorialStep[] = [
   {
     title: 'Untangle the web',
-    text: 'Every puzzle is a web of nodes joined by lines. It starts scrambled, with lines crossing all over.',
+    text: 'Every puzzle is a web of screws joined by ropes. It starts scrambled, with ropes crossing all over.',
     art: <MiniGraph tangled />
   },
   {
-    title: 'Drag the nodes',
-    text: 'Drag any node to a new spot — its lines follow. Nudge nodes around to pull the crossings apart.',
+    title: 'Drag the screws',
+    text: 'Drag any screw to a new spot — its ropes follow, swing a little and settle. Nudge screws around to pull the crossings apart.',
     art: (
       <div className="tut-row">
         <MiniGraph tangled />
@@ -71,7 +71,7 @@ export const untangleTutorial: TutorialStep[] = [
   },
   {
     title: 'Reach zero crossings',
-    text: 'Crossed lines glow red, clear lines glow green. Untwist the whole web so no two lines cross — the counter hits zero and you win.',
+    text: 'Crossed ropes turn red, clear ropes turn green. Untwist the whole web so no two ropes cross — the counter hits zero and you win.',
     art: (
       <div className="tut-col">
         <MiniGraph tangled={false} />
@@ -91,7 +91,7 @@ export const untangleTutorial: TutorialStep[] = [
   },
   {
     title: 'Assists that help',
-    text: 'Spread gently relaxes the layout, and Hint slides one node into a solved spot (−points). Turn off crossing highlights for a pure challenge — each assist counts as help.',
+    text: 'Spread gently relaxes the layout, and Hint slides one screw into a solved spot (−points). Turn off crossing highlights for a pure challenge — each assist counts as help.',
     art: (
       <div className="tut-row">
         <span className="chip accent">Spread</span>
