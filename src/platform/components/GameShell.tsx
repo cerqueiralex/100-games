@@ -186,6 +186,14 @@ export function GameShell({
     setClockHeld(hold);
   }, []);
 
+  /* the game's own way to the pause button (see GameProps.requestPause):
+     only a running session can pause — never setup, never the finish */
+  const requestPause = (p: boolean) => {
+    if (phase !== 'playing') return;
+    setPaused(p);
+  };
+  const veil = game.pauseStyle === 'translucent';
+
   const start = (resume?: GameSave | null) => {
     const diff = daily?.difficulty ?? resume?.difficulty ?? difficulty;
     if (resume || daily) setDifficulty(diff);
@@ -651,16 +659,38 @@ export function GameShell({
             snapshotRef.current = fn;
           }}
           holdClock={holdClock}
+          requestPause={requestPause}
           dailySeed={daily?.seed}
           options={sessionOptions}
         />
-        {paused && phase === 'playing' && (
+        {paused && phase === 'playing' && !veil && (
           <div className="pause-overlay">
             <h2>Paused</h2>
             <p>The board is hidden while paused.</p>
             <button className="primary-btn" onClick={() => setPaused(false)}>
               Resume
             </button>
+          </div>
+        )}
+        {/* the real-time games' pause: the board stays in view behind a
+            veil, and the whole veil is the resume control (see
+            GameDefinition.pauseStyle) */}
+        {paused && phase === 'playing' && veil && (
+          <div
+            className="pause-overlay pause-veil"
+            role="button"
+            tabIndex={0}
+            aria-label="Resume"
+            onClick={() => setPaused(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setPaused(false);
+            }}
+          >
+            <div className="pause-veil-card fx-card">
+              <h2>Paused</h2>
+              <p>The board stays in view. Tap anywhere to resume.</p>
+              <span className="primary-btn">Resume</span>
+            </div>
           </div>
         )}
       </div>

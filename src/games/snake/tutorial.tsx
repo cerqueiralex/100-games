@@ -17,7 +17,7 @@ export const snakeTutorial: TutorialStep[] = [
   },
   {
     title: 'Steer',
-    text: 'Swipe on the board, tap the D-pad, or use the arrow keys / WASD. Quick turns queue up, so a corner tapped early still lands on the right cell.',
+    text: 'Swipe on the board, tap the D-pad, or use the arrow keys / WASD. Quick turns queue up, so a corner tapped early still lands on the right cell. A plain tap on the board (or Space) pauses in place, and a 3-2-1 countdown runs before the snake moves again.',
     art: (
       <div className="tut-col">
         <div className="tut-row">

@@ -13,8 +13,10 @@ export const snakeDefinition: GameDefinition = {
   component: SnakeGame,
   tutorial: snakeTutorial,
   mastery,
+  // real-time: the player must see the board to be ready for the snake to move
+  pauseStyle: 'translucent',
   scoringNote:
-    'Steer the snake into the apples — swipe, the D-pad or the arrow keys. Every apple adds a segment and a little speed; hit a wall or your own body and the run is over. Each tier plays on a bigger board, faster, and asks for more apples: 12 on easy up to 40 on extreme. An apple pays 10 × difficulty (1–5), apples eaten within 2.5 s of each other build a combo worth 2 × difficulty extra per link, and reaching the target adds 100 × difficulty. No daily challenge — the apples land at random while you play.',
+    'Steer the snake into the apples — swipe, the D-pad or the arrow keys. A 3-2-1 countdown runs before the snake moves, at the start and after every pause, and a plain tap on the board (or Space) pauses in place with the board kept in view. Every apple adds a segment and a little speed; hit a wall or your own body and the run is over. Each tier plays on a bigger board, faster, and asks for more apples: 12 on easy up to 40 on extreme. An apple pays 10 × difficulty (1–5), apples eaten within 2.5 s of each other build a combo worth 2 × difficulty extra per link, and reaching the target adds 100 × difficulty. No daily challenge — the apples land at random while you play.',
   assistFeatures: [
     {
       id: 'slow',

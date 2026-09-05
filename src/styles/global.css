@@ -1510,6 +1510,39 @@ p {
   padding: 12px 32px;
 }
 
+/* the Reflex games' pause (GameDefinition.pauseStyle 'translucent'): a
+   tinted, lightly blurred veil the board shows through — the player must
+   see the snake before it moves again — and the WHOLE veil is the resume
+   control, so the tap that paused on the board resumes on the board */
+.pause-overlay.pause-veil {
+  /* a light tint and NO blur: the point is to see the board */
+  background: color-mix(in srgb, var(--bg) 30%, transparent);
+  cursor: pointer;
+  /* the card docks at the bottom — over the tools, off the board — and
+     sticks to the viewport bottom when the game column is taller than it */
+  justify-content: flex-end;
+  padding: 0 16px 18px;
+}
+
+.pause-veil-card {
+  position: sticky;
+  bottom: 18px;
+  width: min(300px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 22px 16px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: var(--shadow), inset 0 -4px 0 var(--edge);
+}
+
+.pause-veil-card .primary-btn {
+  display: inline-block;
+  pointer-events: none;
+}
+
 .board-hidden .sudoku-board,
 .board-hidden .cw-board {
   visibility: hidden;
@@ -24929,6 +24962,15 @@ button.bs-ship-row.dock.placed {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* the island's fixed content colours — the Nurikabe grass and dirt,
+     the same deliberate token opt-out as `--nur-*` (a saturated, healthy
+     green on every theme). SnakeGame reads them off the stage with
+     getComputedStyle; nothing else may paint with them. */
+  --snk-grass-0: #8ccf52;
+  --snk-grass-1: #97d75d;
+  --snk-dirt: #e5ad79;
+  --snk-dirt-deep: #cb905d;
+  --snk-rim: rgba(34, 92, 24, 0.3);
 }
 
 /* the apple / line target meter under the info strip (both Reflex games) */
@@ -24949,8 +24991,10 @@ button.bs-ship-row.dock.placed {
   transition: width 0.25s ease;
 }
 
-/* the canvas is the whole board: 100% of the column, square, no page
-   gestures — every frame is drawn by the game (see SnakeGame.tsx) */
+/* the canvas is the whole board: 100% of the column, a square of grass on
+   a dirt side (the game sets the exact height), no page gestures — every
+   frame is drawn by the game (see SnakeGame.tsx). A plain tap on it is
+   the pause. */
 .snk-stage {
   position: relative;
   width: 100%;
@@ -24959,9 +25003,10 @@ button.bs-ship-row.dock.placed {
 .snk-canvas {
   display: block;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 1; /* until the game sizes it */
   touch-action: none;
   border-radius: 18px;
+  cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -25070,10 +25115,6 @@ button.bs-ship-row.dock.placed {
   opacity: 0.4;
 }
 
-.board-hidden .snk-stage {
-  visibility: hidden;
-}
-
 @media (max-width: 700px) {
   .snk-dpad {
     width: min(150px, 44vw);
@@ -25171,6 +25212,3 @@ button.bs-ship-row.dock.placed {
   rotate: 180deg;
 }
 
-.board-hidden .bd-stage {
-  visibility: hidden;
-}

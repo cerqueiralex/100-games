@@ -4214,6 +4214,69 @@ console.log('— Snake —');
     console.log('  ✓ tiers ordered (size, speed, target), speed-up + floor, start shape, step/eat/wall/wrap/self rules, apples never on the body, definition + egg');
 }
 
+console.log('— Reflex pause veil —');
+{
+  /* A real-time game's pause keeps the board in view (GameDefinition.pauseStyle
+     'translucent', the whole veil resumes on tap) and pauses from the board
+     itself (GameProps.requestPause): hiding the board or making the player
+     travel to the header turned every resume into a crash. A puzzle keeps the
+     opaque hidden-board pause — its clock must not be beaten by thinking
+     during a pause. Both directions are pinned to the CATEGORY so a new
+     Reflex game cannot ship the wrong pause by default. */
+  const bad = (msg: string) => {
+    failed = true;
+    console.error(`✗ pause veil: ${msg}`);
+  };
+  const before = failed;
+  const { GAMES } = await import('../src/platform/registry');
+  const { readFileSync } = await import('node:fs');
+  const src = (p: string) => readFileSync(p, 'utf8');
+  for (const g of GAMES) {
+    if (g.category === 'reflex' && g.pauseStyle !== 'translucent')
+      bad(`${g.id} is a Reflex game and must declare pauseStyle 'translucent' (the board stays in view on pause)`);
+    if (g.category !== 'reflex' && g.pauseStyle === 'translucent')
+      bad(`${g.id} declares the translucent pause — only real-time games may keep the board in view while the clock is stopped`);
+  }
+  const shell = src('src/platform/components/GameShell.tsx');
+  if (!shell.includes("game.pauseStyle === 'translucent'") || !shell.includes('pause-veil'))
+    bad('GameShell no longer renders the translucent pause veil for pauseStyle translucent');
+  if (!shell.includes('requestPause={requestPause}')) bad('GameShell no longer hands games GameProps.requestPause');
+  if (!/if \(phase !== 'playing'\) return;\s*setPaused\(p\)/.test(shell))
+    bad('requestPause must be ignored outside a running session (never during setup or after the finish)');
+  const css = src('src/styles/global.css');
+  if (!css.includes('.pause-overlay.pause-veil')) bad('global.css lost the .pause-veil rule');
+  for (const [id, file] of [
+    ['snake', 'src/games/snake/SnakeGame.tsx'],
+    ['block-drop', 'src/games/block-drop/BlockDropGame.tsx']
+  ]) {
+    const code = src(file);
+    if (code.includes('board-hidden')) bad(`${id} hides its board on pause — a translucent-pause game must keep it in view`);
+    if (!code.includes('requestPause')) bad(`${id} no longer pauses from the board (GameProps.requestPause)`);
+  }
+  const snake = src('src/games/snake/SnakeGame.tsx');
+  if (!/COUNTDOWN_MS = 3000/.test(snake)) bad('Snake lost its 3-second ready countdown');
+  if (!snake.includes('holdRef.current(true)') || !snake.includes('holdRef.current(false)'))
+    bad("Snake's countdown must hold the shell's clock and release it");
+  if (!snake.includes('new Path2D()')) bad('Snake must draw its body as a Path2D union of right-angled pieces (a polyline cuts corners)');
+  if (!snake.includes('--snk-grass-0') || !css.includes('--snk-grass-0: #8ccf52'))
+    bad('Snake must read the Nurikabe grass green from the --snk-* tokens on .snake');
+  for (const [id, file] of [
+    ['snake', 'src/games/snake/SnakeGame.tsx'],
+    ['block-drop', 'src/games/block-drop/BlockDropGame.tsx']
+  ]) {
+    const code = src(file);
+    if (!/function popText[\s\S]*strokeText[\s\S]*fillStyle = '#ffffff'/.test(code))
+      bad(`${id}'s floating points must be white type with a dark outline (popText), not --text ink`);
+  }
+  const bd = src('src/games/block-drop/BlockDropGame.tsx');
+  const blockFn = bd.slice(bd.indexOf('const block = ('), bd.indexOf('const ghostBlock'));
+  if (/roundRect/.test(blockFn)) bad("Block Drop's cubes must be sharp squares (fillRect), not rounded");
+  if (failed === before)
+    console.log(
+      `  ✓ ${GAMES.filter((g) => g.category === 'reflex').length} Reflex games keep the board in view on pause and pause from the board; no other game does; Snake counts down 3 s with the clock held, draws a right-angled Path2D body on the Nurikabe green; square cubes and outlined points type in Block Drop`
+    );
+}
+
 console.log('— Block Drop —');
 {
   type BPiece = import('../src/games/block-drop/logic/engine').Piece;

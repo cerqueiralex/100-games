@@ -74,8 +74,8 @@ A minimalist platform of sixty-nine classic puzzle and brain games — flat surf
 | **Checkers** | Jump, chain captures, crown kings and clear the board vs a minimax robot or a friend |
 | **Dots & Boxes** | Draw lines to close the most boxes — mind the chains — versus the AI or a friend |
 | **Klondike Solitaire** | Build the four suits up from Ace; the easier draws use winnable-verified deals |
-| **Snake** | The classic on a canvas that glides: eat apples, grow, never bite your tail — five board sizes and speeds, a turn queue, combos, wall-wrap and slow-pace assists |
-| **Block Drop** | Falling tetrominoes in a ten-wide well: SRS turns with wall kicks, 7-bag, hold, three-piece preview, ghost, hard drop with a trail; clear the tier's lines before the speed wins |
+| **Snake** | The classic on a canvas: a blocky snake gliding over Nurikabe-green grass, a 3-2-1 countdown before it moves, tap the board to pause with the board kept in view — five board sizes and speeds, a turn queue, combos, wall-wrap and slow-pace assists |
+| **Block Drop** | Falling tetrominoes in a ten-wide well: SRS turns with wall kicks, 7-bag, hold, three-piece preview, ghost, hard drop with a trail, P to pause with the well in view; clear the tier's lines before the speed wins |
 | **Chess** | The full royal game vs the Stockfish engine held to five real strengths — a ≈300-Elo beginner on easy up to club level on extreme — drag to move, checks flare red, captures fill the trays, every move logged; castling, en passant, promotion and all the draws called honestly; a full-strength Hint if you want it |
 
 ## Platform features (shared by every game)

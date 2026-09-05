@@ -135,6 +135,14 @@ export interface GameProps {
    */
   holdClock: (hold: boolean) => void;
   /**
+   * Pause or resume the session from inside the game — the shell's own
+   * pause button, but reachable from the board. A real-time game needs it:
+   * moving the eyes and the pointer up to the header is a crash in Snake,
+   * so a tap on its board (or Space) pauses in place. Ignored unless the
+   * session is actually playing (never during setup or after the finish).
+   */
+  requestPause: (paused: boolean) => void;
+  /**
    * Present only when this session is the Daily Challenge. An eligible game
    * MUST build its board inside `withSeed(dailySeed, …)` (platform/daily) —
    * that is what makes every player's board identical — and must list it in
@@ -316,6 +324,16 @@ export interface GameDefinition {
    * `EasterEggDef`). Omit — as almost every game does — when it has none.
    */
   easterEggs?: EasterEggDef[];
+  /**
+   * What a pause looks like. Default (`hidden`): the game hides its board
+   * behind the shell's opaque overlay, so a puzzle cannot be studied while
+   * the clock is stopped. `translucent`: the board stays in view under a
+   * veil and the whole veil resumes on tap — for the REAL-TIME games, whose
+   * clock is not the score and whose player must see the board to be ready
+   * for it to move again. A Reflex game must declare this (validate
+   * enforces it) and must not hide its board on pause.
+   */
+  pauseStyle?: 'hidden' | 'translucent';
 }
 
 /** A finished (or abandoned) play, persisted in history. */

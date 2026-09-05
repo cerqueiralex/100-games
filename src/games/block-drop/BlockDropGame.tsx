@@ -150,6 +150,20 @@ function readPalette(): Palette {
   };
 }
 
+/** floating points: heavy white type with a dark outline, so it reads over
+    the coloured stack in every theme (plain ink text vanished on it) */
+function popText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, px: number) {
+  ctx.font = `900 ${px}px system-ui, -apple-system, 'Segoe UI', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(3, px * 0.24);
+  ctx.strokeStyle = 'rgba(24, 18, 12, 0.9)';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(text, x, y);
+}
+
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   const rr = Math.max(0, Math.min(r, w / 2, h / 2));
   ctx.beginPath();
@@ -173,7 +187,15 @@ const validSave = (s: unknown): s is DropSave => {
   );
 };
 
-export function BlockDropGame({ difficulty, assists, paused, events, savedState, registerSnapshot }: GameProps) {
+export function BlockDropGame({
+  difficulty,
+  assists,
+  paused,
+  events,
+  savedState,
+  registerSnapshot,
+  requestPause
+}: GameProps) {
   const tier = TIERS[difficulty];
   const mult = MULT[difficulty];
   const saved = validSave(savedState) ? savedState : undefined;
@@ -230,6 +252,8 @@ export function BlockDropGame({ difficulty, assists, paused, events, savedState,
   const running = useRef(false);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+  const requestPauseRef = useRef(requestPause);
+  requestPauseRef.current = requestPause;
   const palette = useRef<Palette | null>(null);
   const timers = useRef<number[]>([]);
   const touch = useRef<{ x: number; y: number; t: number; dragged: number; rows: number; moved: boolean } | null>(null);
@@ -560,6 +584,11 @@ export function BlockDropGame({ difficulty, assists, paused, events, savedState,
         case 'Shift':
           if (!e.repeat) holdPiece();
           break;
+        case 'p':
+        case 'P':
+          // pause from the keyboard; the shell keeps the well in view (pauseStyle)
+          if (!e.repeat && !done.current) requestPauseRef.current(!pausedRef.current);
+          break;
         default:
           return;
       }
@@ -747,35 +776,36 @@ export function BlockDropGame({ difficulty, assists, paused, events, savedState,
     const wellW = COLS * c;
     const wellH = ROWS * c;
 
+    /* a block is a SQUARE, corners sharp: the whole silhouette is s × s, the
+       face is its top and the bottom band is the same colour darkened — the
+       extruded look of every tile in the app (rounded blocks read as
+       jellybeans, not bricks) */
     const block = (x: number, y: number, size: number, color: string, alpha = 1, scale = 1) => {
-      const gap = size * 0.08;
+      const gap = Math.max(1, size * 0.08);
       const s = (size - gap) * scale;
       const rx = x + gap / 2 + (size - gap - s) / 2;
       const ry = y + gap / 2 + (size - gap - s) / 2;
       const e = Math.max(2, s * 0.16);
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
-      roundRect(ctx, rx, ry + e * 0.4, s, s - e * 0.4 + e * 0.4, s * 0.22);
-      ctx.fill();
       ctx.fillStyle = color;
-      roundRect(ctx, rx, ry, s, s - e, s * 0.22);
-      ctx.fill();
+      ctx.fillRect(rx, ry, s, s);
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(rx, ry + s - e, s, e);
       ctx.fillStyle = 'rgba(255,255,255,0.24)';
-      roundRect(ctx, rx + s * 0.16, ry + s * 0.12, s * 0.46, s * 0.14, s * 0.07);
-      ctx.fill();
+      ctx.fillRect(rx + s * 0.14, ry + s * 0.1, s * 0.5, s * 0.13);
       ctx.globalAlpha = 1;
     };
     const ghostBlock = (x: number, y: number, size: number, color: string) => {
-      const gap = size * 0.08;
+      const gap = Math.max(1, size * 0.08);
       const s = size - gap;
+      const lw = Math.max(1.5, size * 0.09);
       ctx.globalAlpha = 0.55;
       ctx.strokeStyle = color;
-      ctx.lineWidth = Math.max(1.5, size * 0.09);
-      roundRect(ctx, x + gap / 2 + 1, y + gap / 2 + 1, s - 2, s - 2, s * 0.22);
-      ctx.stroke();
+      ctx.lineWidth = lw;
+      ctx.strokeRect(x + gap / 2 + lw / 2, y + gap / 2 + lw / 2, s - lw, s - lw);
       ctx.globalAlpha = 0.12;
       ctx.fillStyle = color;
-      ctx.fill();
+      ctx.fillRect(x + gap / 2, y + gap / 2, s, s);
       ctx.globalAlpha = 1;
     };
     /** a plate: flat fill with the darker bottom band, like every card */
@@ -910,15 +940,8 @@ export function BlockDropGame({ difficulty, assists, paused, events, savedState,
     for (const f of g.fx.floats) {
       const age = now - f.at;
       ctx.globalAlpha = 1 - Math.max(0, (age - 350) / 450);
-      ctx.fillStyle = pal.text;
-      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-      ctx.lineWidth = 3;
-      ctx.font = `800 ${Math.max(13, c * 0.9)}px system-ui, -apple-system, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
       const fy = cellY(f.y) + c / 2 - (age / 800) * c * 1.6;
-      ctx.strokeText(f.text, cellX(f.x), fy);
-      ctx.fillText(f.text, cellX(f.x), fy);
+      popText(ctx, f.text, cellX(f.x), fy, Math.max(16, c * 1.05));
       ctx.globalAlpha = 1;
     }
 
@@ -949,7 +972,7 @@ export function BlockDropGame({ difficulty, assists, paused, events, savedState,
   });
 
   return (
-    <div className={`bdrop ${paused ? 'board-hidden' : ''}`}>
+    <div className="bdrop">
       <div className="sudoku-info">
         <span className="info-item">
           <b>{hud.score.toLocaleString()}</b> pts

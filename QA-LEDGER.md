@@ -408,6 +408,22 @@ they gain enforcement, delete entries obsoleted by code removal.
 
 ## Watch items (re-check every QA — not yet machine-enforced)
 
+- **2026-09-05 · canvas games · three things the first Snake got wrong.**
+  (1) A gliding body drawn as a polyline through cell centres cuts every
+  corner DIAGONALLY mid-slide — the snake looked like a bent hose. A
+  grid creature is a union of per-cell pieces (`Path2D`, one rounded rect
+  per neighbouring pair, nonzero fill), and gliding is the head growing
+  into its next cell and the tail shrinking out of its last; everything
+  between stands still. (2) A real-time game whose pause lives only in the
+  header is unpausable: moving eyes and pointer to the button is the crash.
+  Pause from the board (tap / Space), keep the board in view under the veil
+  (`pauseStyle: 'translucent'`), and count down before moving again — at
+  the start too, because the first tick came before the player's hand was
+  on the controls. (3) Floating points in `--text` ink vanish on saturated
+  content colours (black on green in the light theme). Canvas text over
+  content is white with a dark outline. Also: rounded cubes in Block Drop
+  read as jellybeans — a brick is a sharp square with a darker bottom band.
+
 - **2026-09-05 · real-time games · a HUD that only syncs on discrete
   events lags the loop.** Block Drop's score grew inside the animation
   loop (soft-drop and hard-drop points per row) but the React HUD was

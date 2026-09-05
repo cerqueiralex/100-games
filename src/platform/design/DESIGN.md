@@ -540,6 +540,38 @@ the header is a centered column, and a row of shrinkable children would
 otherwise shrink-wrap to min-content and collapse the squares to icon size
 (see QA-LEDGER, same class as `.game-tools`).
 
+### Pausing (hidden board vs. veil)
+
+The shell owns the pause, and a game declares which of two looks it gets
+(`GameDefinition.pauseStyle`):
+
+- **`hidden` (default).** The game adds `board-hidden` to its root and its
+  board rule hides the board; the shell's opaque `.pause-overlay` says so
+  and carries the Resume button. A puzzle must not be studied while the
+  clock is stopped — that is the whole reason the board goes away.
+- **`translucent` (the Reflex games).** The board STAYS in view under
+  `.pause-veil` — a tinted, lightly blurred sheet with one small
+  `.pause-veil-card` — and the WHOLE veil is the resume control. A
+  real-time game's clock is not its score, and its player must see where
+  the snake is before it moves again; hiding the board would turn every
+  resume into a crash. A game with this style must not add `board-hidden`
+  (validate checks both directions: every Reflex game declares the veil,
+  no other game does).
+
+Two things follow for real-time games. They pause from the BOARD — a plain
+tap on the canvas (a press that never became a swipe), Space or P — through
+`GameProps.requestPause`, because asking the player to look up and travel
+to the header while the snake keeps moving is asking them to crash. And
+they run a **3-2-1 countdown** before the board moves, at the start and
+after every resume, drawn on the canvas as a card in the app's own
+material (surface face, extruded edge, a draining ring) with the shell's
+clock held through it (`holdClock`), so the recorded time is play time.
+
+Canvas text over saturated content colours (floating points, the GO!) is
+heavy white type with a dark rounded outline (`popText` in each game) —
+plain `--text` ink is invisible on the grass in one theme and on the
+coloured stack in the other.
+
 ## Horizontal scrollers (the category row pattern)
 
 A row that would wrap to several lines on a phone (the home category
