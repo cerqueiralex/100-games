@@ -54,6 +54,25 @@ export function LandmarkArt({
   hidden?: boolean;
 }) {
   const lm = `var(--play-${def.slot})`;
+  /* An unfound secret draws the mystery plate WHATEVER its kind — the
+     emblem's shape alone gives a trophy away (a paper plane says "share"
+     before any title does), and Spread the Word is a secret with share art */
+  if (hidden) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+        <path
+          d="M32 5c11 0 21 16 21 29a21 21 0 0 1-42 0C11 21 21 5 32 5Z"
+          fill="none"
+          stroke="var(--ink)"
+          strokeWidth="3"
+          strokeDasharray="5 5"
+        />
+        <text x="32" y="45" textAnchor="middle" fontSize="27" fontWeight="800" fill="var(--ink)">
+          ?
+        </text>
+      </svg>
+    );
+  }
   switch (def.kind) {
     case 'streak':
       return <FlameArt size={size} color={lm} label={String(def.days)} />;
@@ -501,21 +520,8 @@ export function LandmarkArt({
         </svg>
       );
     case 'egg':
-      // found: a decorated egg. Still hidden: the mystery plate below.
-      return hidden ? (
-        <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
-          <path
-            d="M32 5c11 0 21 16 21 29a21 21 0 0 1-42 0C11 21 21 5 32 5Z"
-            fill="none"
-            stroke="var(--ink)"
-            strokeWidth="3"
-            strokeDasharray="5 5"
-          />
-          <text x="32" y="45" textAnchor="middle" fontSize="27" fontWeight="800" fill="var(--ink)">
-            ?
-          </text>
-        </svg>
-      ) : (
+      // found: a decorated egg (the still-hidden mystery plate is above the switch)
+      return (
         <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
           <path
             d="M32 5c11 0 21 16 21 29a21 21 0 0 1-42 0C11 21 21 5 32 5Z"
@@ -864,7 +870,7 @@ export function LandmarksSection({
             </div>
             <p className="lm-req">
               {selectedHidden
-                ? 'A secret somewhere in the games. Play around — it will find you.'
+                ? 'A secret somewhere in the app. Play around — it will find you.'
                 : selected.requirement}
             </p>
             {selectedUnlock ? (

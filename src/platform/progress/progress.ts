@@ -538,7 +538,11 @@ export const LANDMARKS: LandmarkDef[] = [
     kind: 'share',
     feat: FEATS.sharedApp,
     slot: 5,
-    emoji: '💌'
+    emoji: '💌',
+    /* The platform's ONE secret: an easter egg found by sharing the app,
+       never chased from a checklist. Still a feat-backed moment like every
+       other secret; validate sanctions exactly this one outside the games. */
+    secret: true
   },
   {
     id: 'backup-export',

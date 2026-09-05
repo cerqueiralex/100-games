@@ -1791,6 +1791,49 @@ p {
   margin-bottom: 22px;
 }
 
+/* ===== profile tabs: one segmented strip under the header =====
+   Sticky under the safe area so a long gallery or log can be left from
+   anywhere; painted on the page ground so content scrolls under it. The
+   four tabs are fixed-count columns that squeeze rather than wrap, and
+   the active tab is the raised (extruded) segment. */
+.profile-tabs {
+  position: sticky;
+  top: env(safe-area-inset-top);
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  margin: 0 0 20px;
+  border-radius: 16px;
+  background: var(--surface-2);
+  box-shadow: 0 0 0 6px var(--bg);
+}
+
+.profile-tab {
+  padding: 10px 2px;
+  border-radius: 12px;
+  /* "Achievements" must fit a quarter of a 360px screen without an ellipsis */
+  font-size: clamp(10.5px, 2.75vw, 13px);
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s, background 0.15s, box-shadow 0.12s;
+}
+
+.profile-tab.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 -3px 0 var(--edge);
+}
+
+.profile-tab:active {
+  transform: translateY(1px);
+}
+
 /* ===== design-system dropdown (use instead of native <select>) ===== */
 
 .dropdown {

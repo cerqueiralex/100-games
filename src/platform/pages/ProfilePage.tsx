@@ -19,6 +19,62 @@ import type { CategoryId, GameResult } from '../types';
 
 const EMOJIS = ['🎮', '🦊', '🐼', '🦉', '🐯', '🚀', '🌙', '⚡', '🎯', '🧩', '👾', '🏆'];
 
+/**
+ * The profile is FOUR TABS, not one scroll: the landmark gallery alone is
+ * dozens of plates, and with three charts, the level card, two streak
+ * cards and the game log the page had become a wall. What lives where:
+ *
+ * - General:      the level card (with its badge case), the play streak,
+ *                 the Daily Challenge card — the player's identity.
+ * - Statistics:   a scope dropdown (all / category / game), the charts,
+ *                 the KPI grid.
+ * - Achievements: the landmark gallery, the high scores by difficulty
+ *                 (with their own scope dropdown — 71 cards unscoped is
+ *                 the wall again).
+ * - History:      a scope dropdown, the calendar and the game log.
+ *
+ * Each tab keeps its OWN scope filter so switching tabs never silently
+ * re-scopes another; the strip is sticky under the header so a long
+ * gallery or log can be left from anywhere, and a switch scrolls to the
+ * top. Validate pins the four tabs and their order.
+ */
+export type ProfileTab = 'general' | 'stats' | 'achievements' | 'history';
+export const PROFILE_TABS: { id: ProfileTab; label: string }[] = [
+  { id: 'general', label: 'General' },
+  { id: 'stats', label: 'Statistics' },
+  { id: 'achievements', label: 'Achievements' },
+  { id: 'history', label: 'History' }
+];
+
+/** the scope a dropdown picks: everything, one category ('cat:<id>'), or one game */
+function scopeOf(history: GameResult[], filter: string) {
+  const cat = filter.startsWith('cat:') ? (filter.slice(4) as CategoryId) : null;
+  const results =
+    filter === 'all'
+      ? history
+      : cat
+        ? history.filter((r) => gameCategory(r.gameId) === cat)
+        : history.filter((r) => r.gameId === filter);
+  const games =
+    filter === 'all' ? GAMES : cat ? GAMES.filter((g) => g.category === cat) : GAMES.filter((g) => g.id === filter);
+  return { cat, results, games };
+}
+
+function ScopeDropdown({ value, onChange, ariaLabel }: { value: string; onChange: (v: string) => void; ariaLabel: string }) {
+  return (
+    <Dropdown
+      value={value}
+      onChange={onChange}
+      ariaLabel={ariaLabel}
+      options={[
+        { value: 'all', label: 'All games' },
+        ...activeCategories().map((c) => ({ value: `cat:${c.id}`, label: `Category · ${c.name}` })),
+        ...GAMES.map((g) => ({ value: g.id, label: g.name }))
+      ]}
+    />
+  );
+}
+
 /** The "standard" swatch: four flat quarters of the content palette, which is
     what the charts keep when no profile color is picked. Four fills rather
     than a gradient, per the flat-surface rule. */
@@ -81,7 +137,11 @@ function HistoryRow({ result }: { result: GameResult }) {
 
 export function ProfilePage() {
   const { profile, updateProfile, history, progress, settings } = useAppState();
-  const [filter, setFilter] = useState<string>('all');
+  const [tab, setTab] = useState<ProfileTab>('general');
+  // one scope per tab, so switching tabs never silently re-scopes another
+  const [statsFilter, setStatsFilter] = useState<string>('all');
+  const [scoresFilter, setScoresFilter] = useState<string>('all');
+  const [historyFilter, setHistoryFilter] = useState<string>('all');
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(profile.name);
   const streak = useMemo(() => computeStreak(progress.days), [progress]);
@@ -89,21 +149,20 @@ export function ProfilePage() {
   // the best-ever, which is what UNLOCKS them — see landmarkMeter)
   const dailyCurrent = useMemo(() => dailyStreakInfo(loadDaily()).current, []);
 
-  // scopes: everything, one category ('cat:<id>'), or a single game
-  const catScope = filter.startsWith('cat:') ? (filter.slice(4) as CategoryId) : null;
-  const filtered =
-    filter === 'all'
-      ? history
-      : catScope
-        ? history.filter((r) => gameCategory(r.gameId) === catScope)
-        : history.filter((r) => r.gameId === filter);
+  const switchTab = (next: ProfileTab) => {
+    if (next === tab) return;
+    sfx.tap();
+    setTab(next);
+    window.scrollTo({ top: 0 });
+  };
+
+  const statsScope = useMemo(() => scopeOf(history, statsFilter), [history, statsFilter]);
+  const scoresScope = useMemo(() => scopeOf(history, scoresFilter), [history, scoresFilter]);
+  const historyScope = useMemo(() => scopeOf(history, historyFilter), [history, historyFilter]);
+  const catScope = statsScope.cat;
+  const filtered = statsScope.results;
   const stats = computeStats(filtered);
-  const scopeGames =
-    filter === 'all'
-      ? GAMES
-      : catScope
-        ? GAMES.filter((g) => g.category === catScope)
-        : GAMES.filter((g) => g.id === filter);
+  const scopeGames = statsScope.games;
 
   /* Games wearing the swept-all-difficulties crown. Two readings, on purpose:
      the KPI in the statistics grid is SCOPED like every other card there, so
@@ -140,9 +199,10 @@ export function ProfilePage() {
       ...(d.getFullYear() !== today.getFullYear() ? { year: 'numeric' } : {})
     });
   };
+  const logged = historyScope.results;
   const dateOptions = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const r of filtered) {
+    for (const r of logged) {
       const k = dayOf(r.finishedAt);
       counts.set(k, (counts.get(k) ?? 0) + 1);
     }
@@ -150,14 +210,14 @@ export function ProfilePage() {
       .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
       .map(([key, count]) => ({ key, label: dayLabel(key), count }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered]);
+  }, [logged]);
   // a day emptied by a scope change silently falls back to all dates
   const effectiveDate = dateOptions.some((d) => d.key === dateFilter) ? dateFilter : 'all';
   const historyGroups = useMemo(() => {
     const shown =
       effectiveDate === 'all'
-        ? filtered.slice(0, 100)
-        : filtered.filter((r) => dayOf(r.finishedAt) === effectiveDate);
+        ? logged.slice(0, 100)
+        : logged.filter((r) => dayOf(r.finishedAt) === effectiveDate);
     const groups: [string, GameResult[]][] = [];
     for (const r of shown) {
       const k = dayOf(r.finishedAt);
@@ -167,7 +227,7 @@ export function ProfilePage() {
     }
     return groups;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, effectiveDate]);
+  }, [logged, effectiveDate]);
 
   return (
     <div className="screen">
@@ -190,188 +250,215 @@ export function ProfilePage() {
         </button>
       </header>
 
-      {/* level is the first section: it summarises everything below it, and
-          the badge panel at its foot is the display case for what that
-          summary has actually earned */}
-      <section className="setup-section">
-        <LevelHero
-          xp={progress.xp}
-          crowns={totalCrowns}
-          badges={<LandmarkBadges progress={progress} />}
-        />
-      </section>
+      <nav className="profile-tabs" role="tablist" aria-label="Profile sections">
+        {PROFILE_TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
+            className={`profile-tab ${tab === t.id ? 'active' : ''}`}
+            onClick={() => switchTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
 
-      <section className="setup-section">
-        <StreakHero streak={streak} />
-      </section>
-
-      {/* the two streaks sit together: "played anything" above, "played
-          today's board" below, so the difference between them is visible */}
-      <DailyHistorySection />
-
-      <div className="filter-bar">
-        <Dropdown
-          value={filter}
-          onChange={setFilter}
-          ariaLabel="Filter statistics by game"
-          options={[
-            { value: 'all', label: 'All games' },
-            ...activeCategories().map((c) => ({ value: `cat:${c.id}`, label: `Category · ${c.name}` })),
-            ...GAMES.map((g) => ({ value: g.id, label: g.name }))
-          ]}
-        />
-      </div>
-
-      {filter === 'all' ? (
+      {tab === 'general' && (
         <>
+          {/* level is the first section: it summarises everything below it, and
+              the badge panel at its foot is the display case for what that
+              summary has actually earned */}
           <section className="setup-section">
-            <h3 className="section-title">Categories</h3>
-            <div className="chart-card fx-card">
-              <CategoryBarChart history={history} />
-            </div>
+            <LevelHero
+              xp={progress.xp}
+              crowns={totalCrowns}
+              badges={<LandmarkBadges progress={progress} />}
+            />
           </section>
+
           <section className="setup-section">
-            <h3 className="section-title">Most played</h3>
-            <div className="chart-card fx-card">
-              <GamesPieChart history={history} />
-            </div>
+            <StreakHero streak={streak} />
           </section>
-          <section className="setup-section">
-            <h3 className="section-title">Activity — last 30 days</h3>
-            <div className="chart-card fx-card">
-              <ActivityChart history={history} />
-            </div>
-          </section>
+
+          {/* the two streaks sit together: "played anything" above, "played
+              today's board" below, so the difference between them is visible */}
+          <DailyHistorySection />
         </>
-      ) : (
+      )}
+
+      {tab === 'stats' && (
         <>
-          {catScope && (
-            <section className="setup-section">
-              <h3 className="section-title">Most played — {categoryName(catScope)}</h3>
-              <div className="chart-card fx-card">
-                <GamesPieChart history={filtered} />
-              </div>
-            </section>
+          <div className="filter-bar">
+            <ScopeDropdown value={statsFilter} onChange={setStatsFilter} ariaLabel="Filter statistics by game" />
+          </div>
+
+          {statsFilter === 'all' ? (
+            <>
+              <section className="setup-section">
+                <h3 className="section-title">Categories</h3>
+                <div className="chart-card fx-card">
+                  <CategoryBarChart history={history} />
+                </div>
+              </section>
+              <section className="setup-section">
+                <h3 className="section-title">Most played</h3>
+                <div className="chart-card fx-card">
+                  <GamesPieChart history={history} />
+                </div>
+              </section>
+              <section className="setup-section">
+                <h3 className="section-title">Activity — last 30 days</h3>
+                <div className="chart-card fx-card">
+                  <ActivityChart history={history} />
+                </div>
+              </section>
+            </>
+          ) : (
+            <>
+              {catScope && (
+                <section className="setup-section">
+                  <h3 className="section-title">Most played — {categoryName(catScope)}</h3>
+                  <div className="chart-card fx-card">
+                    <GamesPieChart history={filtered} />
+                  </div>
+                </section>
+              )}
+              <section className="setup-section">
+                <h3 className="section-title">Progress — last 30 days</h3>
+                <div className="chart-card fx-card">
+                  <TrendChart results={filtered} />
+                </div>
+              </section>
+            </>
           )}
+
           <section className="setup-section">
-            <h3 className="section-title">Progress — last 30 days</h3>
-            <div className="chart-card fx-card">
-              <TrendChart results={filtered} />
+            <h3 className="section-title">Statistics</h3>
+            <div className="stat-grid">
+              <StatCard label="Games played" value={stats.played} />
+              {/* The crown a game earns for being beaten on all five tiers: read
+                  from the PROGRESS store like every other completion marker,
+                  never recomputed from the capped-and-clearable history (see
+                  CLAUDE.md "Completion markers"). Named "Game crowns" rather than
+                  "Crowns" because the rank ladder on this same page has six
+                  crowns of its own, and the hint stays to one line — every other
+                  hint in this grid does, and one card growing a third row breaks
+                  the row rhythm. */}
+              <StatCard
+                label="Game crowns"
+                value={crowns}
+                hint={`of ${scopeGames.length} ${scopeGames.length === 1 ? 'game' : 'games'}`}
+              />
+              <StatCard
+                label="Top category"
+                value={topCat ? categoryName(topCat[0]) : '—'}
+                hint={topCat ? `${topCat[1]} plays` : 'no games yet'}
+              />
+              <StatCard label="Win rate" value={`${Math.round(stats.winRate * 100)}%`} hint={`${stats.won} won · ${stats.lost} lost`} />
+              <StatCard label="Best time" value={stats.bestTime !== null ? formatDuration(stats.bestTime) : '—'} />
+              <StatCard label="Avg time" value={stats.avgTime !== null ? formatDuration(stats.avgTime) : '—'} />
+              <StatCard label="High score" value={stats.bestScore?.toLocaleString() ?? '—'} />
+              <StatCard label="Avg score" value={stats.avgScore !== null ? Math.round(stats.avgScore).toLocaleString() : '—'} />
+              <StatCard label="Clean wins" value={stats.cleanWins} hint="won without help" />
+              <StatCard label="Wins with help" value={stats.assistedWins} />
+              <StatCard label="Total errors" value={stats.totalErrors} />
+              <StatCard label="Hints used" value={stats.totalHints} />
+              <StatCard label="Win streak" value={stats.currentStreak} hint={`best ${stats.bestStreak}`} />
+              <StatCard label="Time played" value={formatDuration(stats.totalTimeSec)} />
             </div>
           </section>
         </>
       )}
 
-      <section className="setup-section">
-        <h3 className="section-title">Statistics</h3>
-        <div className="stat-grid">
-          <StatCard label="Games played" value={stats.played} />
-          {/* The crown a game earns for being beaten on all five tiers: read
-              from the PROGRESS store like every other completion marker,
-              never recomputed from the capped-and-clearable history (see
-              CLAUDE.md "Completion markers"). Named "Game crowns" rather than
-              "Crowns" because the rank ladder on this same page has six
-              crowns of its own, and the hint stays to one line — every other
-              hint in this grid does, and one card growing a third row breaks
-              the row rhythm. */}
-          <StatCard
-            label="Game crowns"
-            value={crowns}
-            hint={`of ${scopeGames.length} ${scopeGames.length === 1 ? 'game' : 'games'}`}
-          />
-          <StatCard
-            label="Top category"
-            value={topCat ? categoryName(topCat[0]) : '—'}
-            hint={topCat ? `${topCat[1]} plays` : 'no games yet'}
-          />
-          <StatCard label="Win rate" value={`${Math.round(stats.winRate * 100)}%`} hint={`${stats.won} won · ${stats.lost} lost`} />
-          <StatCard label="Best time" value={stats.bestTime !== null ? formatDuration(stats.bestTime) : '—'} />
-          <StatCard label="Avg time" value={stats.avgTime !== null ? formatDuration(stats.avgTime) : '—'} />
-          <StatCard label="High score" value={stats.bestScore?.toLocaleString() ?? '—'} />
-          <StatCard label="Avg score" value={stats.avgScore !== null ? Math.round(stats.avgScore).toLocaleString() : '—'} />
-          <StatCard label="Clean wins" value={stats.cleanWins} hint="won without help" />
-          <StatCard label="Wins with help" value={stats.assistedWins} />
-          <StatCard label="Total errors" value={stats.totalErrors} />
-          <StatCard label="Hints used" value={stats.totalHints} />
-          <StatCard label="Win streak" value={stats.currentStreak} hint={`best ${stats.bestStreak}`} />
-          <StatCard label="Time played" value={formatDuration(stats.totalTimeSec)} />
-        </div>
-      </section>
+      {tab === 'achievements' && (
+        <>
+          <LandmarksSection progress={progress} streak={streak} dailyCurrent={dailyCurrent} />
 
-      <LandmarksSection progress={progress} streak={streak} dailyCurrent={dailyCurrent} />
+          <section className="setup-section">
+            <h3 className="section-title">High scores by difficulty</h3>
+            <div className="filter-bar">
+              <ScopeDropdown value={scoresFilter} onChange={setScoresFilter} ariaLabel="Filter high scores by game" />
+            </div>
+            {scoresScope.games.map((g) => {
+              const gs = computeStats(history.filter((r) => r.gameId === g.id));
+              const beaten = beatenDifficulties(progress, g.id);
+              return (
+                <div key={g.id} className="highscore-card fx-card">
+                  {allDifficultiesBeaten(progress, g.id) && (
+                    <span
+                      className="game-card-trophy hs-trophy"
+                      title="Beaten on every difficulty"
+                      aria-label="Beaten on every difficulty"
+                    >
+                      <RosetteIcon size={18} />
+                    </span>
+                  )}
+                  <span className="highscore-game">{g.name}</span>
+                  <div className="highscore-cols">
+                    {(['easy', 'medium', 'hard', 'pro', 'extreme'] as const).map((d) => (
+                      <div key={d} className={`highscore-col ${beaten.includes(d) ? 'beaten' : ''}`}>
+                        {beaten.includes(d) && (
+                          <span className="beat-seal" aria-label="completed">
+                            <StarIcon size={10} filled />
+                          </span>
+                        )}
+                        <span className="highscore-diff">{d}</span>
+                        <span className="highscore-val">
+                          {gs.perDifficulty[d].bestScore?.toLocaleString() ?? '—'}
+                        </span>
+                        <span className="highscore-time">
+                          {gs.perDifficulty[d].bestTime !== null
+                            ? formatDuration(gs.perDifficulty[d].bestTime!)
+                            : ''}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+        </>
+      )}
 
-      <section className="setup-section">
-        <h3 className="section-title">High scores by difficulty</h3>
-        {scopeGames.map((g) => {
-          const gs = computeStats(history.filter((r) => r.gameId === g.id));
-          const beaten = beatenDifficulties(progress, g.id);
-          return (
-            <div key={g.id} className="highscore-card fx-card">
-              {allDifficultiesBeaten(progress, g.id) && (
-                <span
-                  className="game-card-trophy hs-trophy"
-                  title="Beaten on every difficulty"
-                  aria-label="Beaten on every difficulty"
-                >
-                  <RosetteIcon size={18} />
-                </span>
-              )}
-              <span className="highscore-game">{g.name}</span>
-              <div className="highscore-cols">
-                {(['easy', 'medium', 'hard', 'pro', 'extreme'] as const).map((d) => (
-                  <div key={d} className={`highscore-col ${beaten.includes(d) ? 'beaten' : ''}`}>
-                    {beaten.includes(d) && (
-                      <span className="beat-seal" aria-label="completed">
-                        <StarIcon size={10} filled />
-                      </span>
-                    )}
-                    <span className="highscore-diff">{d}</span>
-                    <span className="highscore-val">
-                      {gs.perDifficulty[d].bestScore?.toLocaleString() ?? '—'}
-                    </span>
-                    <span className="highscore-time">
-                      {gs.perDifficulty[d].bestTime !== null
-                        ? formatDuration(gs.perDifficulty[d].bestTime!)
-                        : ''}
-                    </span>
+      {tab === 'history' && (
+        <>
+          <div className="filter-bar">
+            <ScopeDropdown value={historyFilter} onChange={setHistoryFilter} ariaLabel="Filter history by game" />
+          </div>
+          <section className="setup-section">
+            <h3 className="section-title">History</h3>
+            {logged.length === 0 ? (
+              <p className="empty-note">No games yet. Play something!</p>
+            ) : (
+              <>
+                <div className="history-datebar">
+                  <CalendarPicker
+                    value={effectiveDate}
+                    onChange={setDateFilter}
+                    ariaLabel="Filter history by date"
+                    days={new Map(dateOptions.map((d) => [d.key, d.count]))}
+                  />
+                </div>
+                {historyGroups.map(([key, rows]) => (
+                  <div key={key} className="history-group">
+                    <h4 className="history-day-head">
+                      {dayLabel(key)}
+                      <span>{rows.length}</span>
+                    </h4>
+                    <div className="history-list">
+                      {rows.map((r) => (
+                        <HistoryRow key={r.id} result={r} />
+                      ))}
+                    </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          );
-        })}
-      </section>
-
-      <section className="setup-section">
-        <h3 className="section-title">History</h3>
-        {filtered.length === 0 ? (
-          <p className="empty-note">No games yet. Play something!</p>
-        ) : (
-          <>
-            <div className="history-datebar">
-              <CalendarPicker
-                value={effectiveDate}
-                onChange={setDateFilter}
-                ariaLabel="Filter history by date"
-                days={new Map(dateOptions.map((d) => [d.key, d.count]))}
-              />
-            </div>
-            {historyGroups.map(([key, rows]) => (
-              <div key={key} className="history-group">
-                <h4 className="history-day-head">
-                  {dayLabel(key)}
-                  <span>{rows.length}</span>
-                </h4>
-                <div className="history-list">
-                  {rows.map((r) => (
-                    <HistoryRow key={r.id} result={r} />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </>
-        )}
-      </section>
+              </>
+            )}
+          </section>
+        </>
+      )}
 
       <Modal open={editing} onClose={() => setEditing(false)} title="Edit profile">
         <label className="field-label" htmlFor="profile-name">

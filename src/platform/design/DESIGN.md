@@ -135,7 +135,11 @@ tokens. Rules:
   ordinary landmark in every way — real art, real title, shareable card.
   The split lives in the component (`def.secret`), never in progress: a
   secret unlocks, pays XP and is stamped exactly like every other
-  trophy.
+  trophy. Secrets are the games' eggs plus ONE of the platform's own —
+  Spread the Word, found by sharing the app — so the mystery plate is
+  drawn for any hidden def before the art switches on its kind: an
+  emblem's shape (a paper plane) gives the trophy away as surely as its
+  title.
 - **One art per landmark KIND, parameterized by the def** — never one
   drawing per landmark id. Two comebacks are one chart with one dip or
   two (`def.count`); two speed trophies are one stopwatch wearing
@@ -571,6 +575,24 @@ Canvas text over saturated content colours (floating points, the GO!) is
 heavy white type with a dark rounded outline (`popText` in each game) —
 plain `--text` ink is invisible on the grass in one theme and on the
 coloured stack in the other.
+
+### Profile tabs (four sections, one sticky strip)
+
+The profile grew past what one scroll can hold — a landmark gallery of
+dozens of plates, the eggs, three charts, the level card, two streak cards
+and the game log — so it is four tabs under one segmented strip
+(`.profile-tabs`, right under the profile header): **General** (level card
+with its badge case, play streak, Daily Challenge card — the player's
+identity), **Statistics** (scope dropdown, charts, KPI grid),
+**Achievements** (landmark gallery, high scores by difficulty with their
+own scope dropdown) and **History** (scope dropdown, calendar, game log).
+Rules: the strip is `position: sticky` under the safe-area inset, painted
+on the page ground (`box-shadow: 0 0 0 6px var(--bg)`) so content scrolls
+under it; it is a fixed four-column grid that squeezes rather than wraps,
+with the active tab as the raised extruded segment; every tab keeps its
+OWN scope filter so a pick on one never silently re-scopes another; and a
+switch scrolls to the top. Validate pins the tab order and that each
+section renders in exactly one tab.
 
 ## Horizontal scrollers (the category row pattern)
 

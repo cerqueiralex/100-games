@@ -4214,6 +4214,57 @@ console.log('— Snake —');
     console.log('  ✓ tiers ordered (size, speed, target), speed-up + floor, start shape, step/eat/wall/wrap/self rules, apples never on the body, definition + egg');
 }
 
+console.log('— Profile tabs —');
+{
+  /* The profile is four tabs (General / Statistics / Achievements / History)
+     under one sticky strip — see ProfilePage.tsx. Pinned so a section cannot
+     quietly drift back into one endless scroll, and so each tab keeps its
+     own scope filter. */
+  const bad = (msg: string) => {
+    failed = true;
+    console.error(`✗ profile tabs: ${msg}`);
+  };
+  const before = failed;
+  const { PROFILE_TABS } = await import('../src/platform/pages/ProfilePage');
+  const { readFileSync } = await import('node:fs');
+  if (PROFILE_TABS.map((t) => t.label).join() !== 'General,Statistics,Achievements,History')
+    bad(`tabs must be General, Statistics, Achievements, History in that order — got ${PROFILE_TABS.map((t) => t.label).join(', ')}`);
+  if (PROFILE_TABS.map((t) => t.id).join() !== 'general,stats,achievements,history') bad('tab ids changed');
+  const page = readFileSync('src/platform/pages/ProfilePage.tsx', 'utf8');
+  const branch = (id: string) => {
+    const at = page.indexOf(`{tab === '${id}' && (`);
+    if (at < 0) return '';
+    const next = PROFILE_TABS.map((t) => page.indexOf(`{tab === '${t.id}' && (`)).filter((i) => i > at);
+    return page.slice(at, next.length ? Math.min(...next) : page.indexOf('<Modal open={editing}'));
+  };
+  const expect: [string, string[]][] = [
+    ['general', ['<LevelHero', '<StreakHero', '<DailyHistorySection']],
+    ['stats', ['<CategoryBarChart', '<GamesPieChart', '<ActivityChart', 'className="stat-grid"', 'statsFilter']],
+    ['achievements', ['<LandmarksSection', 'High scores by difficulty', 'scoresFilter']],
+    ['history', ['<CalendarPicker', '<HistoryRow', 'historyFilter']]
+  ];
+  for (const [id, needles] of expect) {
+    const b = branch(id);
+    if (!b) bad(`no branch renders the ${id} tab`);
+    for (const n of needles) if (!b.includes(n)) bad(`${n} must render inside the ${id} tab`);
+  }
+  for (const [id, needles] of expect) {
+    for (const [other] of expect) {
+      if (other === id) continue;
+      const b = branch(other);
+      for (const n of needles) if (n.startsWith('<') && b.includes(n)) bad(`${n} renders in the ${other} tab as well as ${id}`);
+    }
+  }
+  if (!/const \[statsFilter, setStatsFilter\]|const \[historyFilter, setHistoryFilter\]|const \[scoresFilter, setScoresFilter\]/.test(page))
+    bad('each tab must keep its own scope filter');
+  if (!page.includes("window.scrollTo({ top: 0 })")) bad('switching tabs must scroll to the top');
+  const css = readFileSync('src/styles/global.css', 'utf8');
+  const strip = css.match(/\.profile-tabs\s*\{[^}]*\}/)?.[0] ?? '';
+  if (!/position:\s*sticky/.test(strip)) bad('.profile-tabs must be sticky');
+  if (!/repeat\(4, minmax\(0, 1fr\)\)/.test(strip)) bad('.profile-tabs must be four fixed columns that squeeze rather than wrap');
+  if (failed === before) console.log('  ✓ four tabs in order, each section in exactly one tab, one scope filter per tab, sticky four-column strip');
+}
+
 console.log('— Reflex pause veil —');
 {
   /* A real-time game's pause keeps the board in view (GameDefinition.pauseStyle
@@ -4867,7 +4918,7 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
   // what the registry declares and nothing else, so a game's secret cannot
   // be forgotten here and the platform never learns a game id
   {
-    const { eggFeat } = await import('../src/platform/progress/progress');
+    const { eggFeat, FEATS } = await import('../src/platform/progress/progress');
     const declared = GAMES.flatMap((g) => (g.easterEggs ?? []).map((e) => ({ g, e })));
     const eggs = LANDMARKS.filter((d) => d.kind === 'egg');
     if (eggs.length !== declared.length)
@@ -4883,11 +4934,23 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
       if (def.gameId !== g.id) bad(`${def.id} lost the game that declared it`);
       if (!e.requirement || !e.title || !e.emoji) bad(`${def.id} is missing title/requirement/emoji`);
     }
-    // nothing but an egg may hide: a hidden meter on an ordinary trophy is
-    // just a trophy nobody can chase
+    // nothing but a MOMENT may hide: a hidden meter on an ordinary ladder is
+    // just a trophy nobody can chase. The games' eggs hide, plus the
+    // platform's ONE secret — Spread the Word, found by sharing the app
     for (const d of LANDMARKS.filter((x) => x.secret)) {
-      if (d.kind !== 'egg') bad(`${d.id} is secret but is not an easter egg`);
+      if (d.kind !== 'egg' && !d.feat) bad(`${d.id} is secret but is not a moment (no feat behind it)`);
     }
+    const platformSecrets = LANDMARKS.filter((d) => d.secret && d.kind !== 'egg').map((d) => d.id);
+    if (platformSecrets.join() !== 'share-app')
+      bad(`the platform's secrets must be exactly Spread the Word (share-app), got [${platformSecrets.join(', ')}]`);
+    const spread = LANDMARKS.find((d) => d.id === 'share-app');
+    if (!spread?.secret || spread.feat !== FEATS.sharedApp)
+      bad('Spread the Word must be a secret unlocked by the share-app feat');
+    // a secret's art must not leak through its kind: the mystery plate is
+    // drawn for ANY hidden def before the kind switch
+    const lmArt = (await import('node:fs')).readFileSync('src/platform/components/Landmarks.tsx', 'utf8');
+    if (!/if \(hidden\) \{\s*return \(/.test(lmArt) || lmArt.indexOf('if (hidden) {') > lmArt.indexOf('switch (def.kind)'))
+      bad('LandmarkArt must draw the mystery plate for every hidden secret BEFORE switching on the kind');
   }
 
   // the two cross-category trophies re-measure the live registry
