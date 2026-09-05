@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import type { GameProps } from '../../platform/types';
 import { sfx } from '../../platform/audio';
 import { DpadArrowIcon } from '../../platform/design/icons';
-import { PadTool } from '../../platform/components/ui';
 import {
   APPLE_POINTS,
   COMBO_WINDOW_MS,
@@ -875,21 +874,25 @@ export function SnakeGame({
         {over === 'won' && <span className="snk-banner chip good">Full belly — {tier.target} apples!</span>}
       </div>
 
+      {/* the D-pad: the Maze's segmented unit — tall left/right, up and down
+          stacked between them — because it is two rows tall, not three, and
+          on a phone the board needs that height more than the pad does */}
       <div className="game-tools fx-card">
         <div className="snk-dpad" role="group" aria-label="Steer">
-          <PadTool className="snk-dbtn up" silent onClick={() => turn(0)} disabled={!!over} aria-label="Up">
+          <button className="snk-dbtn left" onClick={() => turn(3)} disabled={!!over} aria-label="Left">
             <DpadArrowIcon />
-          </PadTool>
-          <PadTool className="snk-dbtn left" silent onClick={() => turn(3)} disabled={!!over} aria-label="Left">
+          </button>
+          <div className="snk-dpad-mid">
+            <button className="snk-dbtn up" onClick={() => turn(0)} disabled={!!over} aria-label="Up">
+              <DpadArrowIcon />
+            </button>
+            <button className="snk-dbtn down" onClick={() => turn(2)} disabled={!!over} aria-label="Down">
+              <DpadArrowIcon />
+            </button>
+          </div>
+          <button className="snk-dbtn right" onClick={() => turn(1)} disabled={!!over} aria-label="Right">
             <DpadArrowIcon />
-          </PadTool>
-          <span className="snk-dhub" aria-hidden />
-          <PadTool className="snk-dbtn right" silent onClick={() => turn(1)} disabled={!!over} aria-label="Right">
-            <DpadArrowIcon />
-          </PadTool>
-          <PadTool className="snk-dbtn down" silent onClick={() => turn(2)} disabled={!!over} aria-label="Down">
-            <DpadArrowIcon />
-          </PadTool>
+          </button>
         </div>
       </div>
     </div>
