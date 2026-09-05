@@ -1262,6 +1262,42 @@ const arrowCrossword = (
   </svg>
 );
 
+const snake = (
+  <svg {...base}>
+    <rect x="6" y="6" width="52" height="52" rx="10" fill={C.green} stroke={INK} strokeWidth="3" />
+    <path d="M15 17h13v13H15zM41 17h11v13H41zM28 30h13v13H28zM15 43h13v11H15zM41 43h11v11H41z" fill={C.white} opacity="0.14" />
+    <path d="M16 45c0-9 8-9 12-5s11 5 12-3-7-9-4-16" fill="none" stroke={INK} strokeWidth="11.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M16 45c0-9 8-9 12-5s11 5 12-3-7-9-4-16" fill="none" stroke={C.blue} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="36" cy="20" r="6.5" fill={C.blue} stroke={INK} strokeWidth="3" />
+    <circle cx="34" cy="18.5" r="1.7" fill={C.white} />
+    <circle cx="38.5" cy="18.5" r="1.7" fill={C.white} />
+    <circle cx="34.4" cy="18.7" r="0.8" fill={INK} />
+    <circle cx="38.9" cy="18.7" r="0.8" fill={INK} />
+    <circle cx="49" cy="46" r="5.5" fill={C.red} stroke={INK} strokeWidth="2.5" />
+    <path d="M49 40.5c1-2.5 2.5-3.5 4.5-3.5" fill="none" stroke={INK} strokeWidth="2" />
+    <ellipse cx="46.5" cy="44" rx="1.6" ry="1" fill={C.white} opacity="0.55" />
+  </svg>
+);
+
+const blockDrop = (
+  <svg {...base}>
+    <rect x="8" y="6" width="48" height="52" rx="8" fill={C.paper} stroke={INK} strokeWidth="3" />
+    <rect x="12" y="46" width="9" height="9" rx="2" fill={C.blue} stroke={INK} strokeWidth="2" />
+    <rect x="21" y="46" width="9" height="9" rx="2" fill={C.blue} stroke={INK} strokeWidth="2" />
+    <rect x="30" y="46" width="9" height="9" rx="2" fill={C.yellow} stroke={INK} strokeWidth="2" />
+    <rect x="39" y="46" width="9" height="9" rx="2" fill={C.yellow} stroke={INK} strokeWidth="2" />
+    <rect x="12" y="37" width="9" height="9" rx="2" fill={C.green} stroke={INK} strokeWidth="2" />
+    <rect x="30" y="37" width="9" height="9" rx="2" fill={C.yellow} stroke={INK} strokeWidth="2" />
+    <rect x="39" y="37" width="9" height="9" rx="2" fill={C.yellow} stroke={INK} strokeWidth="2" />
+    <rect x="12" y="28" width="9" height="9" rx="2" fill={C.green} stroke={INK} strokeWidth="2" />
+    <rect x="30" y="11" width="9" height="9" rx="2" fill={C.pink} stroke={INK} strokeWidth="2" />
+    <rect x="21" y="20" width="9" height="9" rx="2" fill={C.pink} stroke={INK} strokeWidth="2" />
+    <rect x="30" y="20" width="9" height="9" rx="2" fill={C.pink} stroke={INK} strokeWidth="2" />
+    <rect x="39" y="20" width="9" height="9" rx="2" fill={C.pink} stroke={INK} strokeWidth="2" />
+    <rect x="32.5" y="13" width="4" height="2.5" rx="1" fill={C.white} opacity="0.5" />
+  </svg>
+);
+
 /** keyed by GameDefinition.id */
 export const gameIcons: Record<string, ReactNode> = {
   sudoku,
@@ -1332,5 +1368,7 @@ export const gameIcons: Record<string, ReactNode> = {
   klondike,
   'peg-solitaire': pegSolitaire,
   chess,
-  'arrow-crossword': arrowCrossword
+  'arrow-crossword': arrowCrossword,
+  snake,
+  'block-drop': blockDrop
 };

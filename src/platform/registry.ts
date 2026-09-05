@@ -68,6 +68,8 @@ import { klondikeDefinition } from '../games/klondike';
 import { pegSolitaireDefinition } from '../games/peg-solitaire';
 import { chessDefinition } from '../games/chess';
 import { arrowCrosswordDefinition } from '../games/arrow-crossword';
+import { snakeDefinition } from '../games/snake';
+import { blockDropDefinition } from '../games/block-drop';
 
 /**
  * Central game registry. To add a new game to the platform:
@@ -145,7 +147,9 @@ export const GAMES: GameDefinition[] = [
   klondikeDefinition,
   pegSolitaireDefinition,
   chessDefinition,
-  arrowCrosswordDefinition
+  arrowCrosswordDefinition,
+  snakeDefinition,
+  blockDropDefinition
 ];
 
 export function getGame(id: string): GameDefinition | undefined {

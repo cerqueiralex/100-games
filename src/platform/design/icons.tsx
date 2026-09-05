@@ -269,6 +269,36 @@ export function MoveIcon({ size = 16 }: IconProps) {
 
 /* Solid rounded triangle for directional pads (points up; rotate via CSS).
    Stroked in its own color so the corners come out soft. */
+/** rotate clockwise — Block Drop's spin buttons (a circular arrow with the head at the end) */
+export function RotateCwIcon({ size = 18 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M21 12a9 9 0 1 1-2.64-6.36L21 8" />
+      <path d="M21 3v5h-5" />
+    </Svg>
+  );
+}
+
+export function RotateCcwIcon({ size = 18 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M3 12a9 9 0 1 0 2.64-6.36L3 8" />
+      <path d="M3 3v5h5" />
+    </Svg>
+  );
+}
+
+/** hard drop — an arrow slamming onto a floor line */
+export function HardDropIcon({ size = 18 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M12 3v12" />
+      <path d="M7 10l5 5 5-5" />
+      <path d="M5 20h14" />
+    </Svg>
+  );
+}
+
 export function DpadArrowIcon({ size = 22 }: IconProps) {
   return (
     <Svg size={size} fill>

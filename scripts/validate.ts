@@ -4130,6 +4130,217 @@ console.log('— Peg Solitaire —');
 // ---------------------------------------------------------------------------
 // Game options (GameDefinition.options) + Memory Match's card themes
 // ---------------------------------------------------------------------------
+console.log('— Snake —');
+{
+  const { TIERS, initialState, step, placeApple, tickFor, isReverse, START_LENGTH } = await import(
+    '../src/games/snake/logic/engine'
+  );
+  const { snakeDefinition } = await import('../src/games/snake');
+  const bad = (msg: string) => {
+    failed = true;
+    console.error(`✗ snake: ${msg}`);
+  };
+  let before = failed;
+  let seed = 3;
+  const rng = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x80000000;
+  };
+  const order = ['easy', 'medium', 'hard', 'pro', 'extreme'] as const;
+  // the tiers change SPEED and BOARD SIZE, each strictly harder than the last
+  for (let i = 1; i < order.length; i++) {
+    const lo = TIERS[order[i - 1]];
+    const hi = TIERS[order[i]];
+    if (!(hi.size > lo.size)) bad(`${order[i]} board is not bigger than ${order[i - 1]}`);
+    if (!(hi.tickMs < lo.tickMs)) bad(`${order[i]} is not faster than ${order[i - 1]}`);
+    if (!(hi.target > lo.target)) bad(`${order[i]} does not ask for more apples than ${order[i - 1]}`);
+  }
+  for (const d of order) {
+    const t = TIERS[d];
+    if (t.target + START_LENGTH >= t.size * t.size) bad(`${d}: the target snake would not fit the board`);
+    if (!(tickFor(t, 10, false) < tickFor(t, 0, false))) bad(`${d}: the snake must speed up with apples`);
+    if (tickFor(t, 500, false) < t.tickMs * 0.72 - 1e-9) bad(`${d}: speed-up must floor at 72% of the start`);
+    if (Math.abs(tickFor(t, 0, true) - t.tickMs * 1.35) > 1e-9) bad(`${d}: Slow pace must be ×1.35`);
+  }
+  // the start: three cells, horizontal, head first, apple somewhere free
+  const s0 = initialState(12, rng);
+  if (s0.body.length !== START_LENGTH) bad('start length');
+  if (s0.body[0] - s0.body[1] !== 1 || s0.body[1] - s0.body[2] !== 1) bad('start body is not a horizontal line, head first');
+  if (s0.body.includes(s0.apple) || s0.apple < 0) bad('the first apple sits on the snake');
+  // a plain step: head forward, tail follows, nothing eaten
+  const s1 = step(s0, 1, false, rng);
+  if (s1.died || s1.ate) bad('a plain step died or ate');
+  if (s1.state.body[0] !== s0.body[0] + 1 || s1.state.body.length !== START_LENGTH) bad('a plain step must advance the head and drop the tail');
+  if (s1.state.body[1] !== s0.body[0]) bad('the neck must be where the head was');
+  // eating: the apple in front of the head grows the snake and moves the apple
+  const fed = { ...s0, apple: s0.body[0] + 1 };
+  const s2 = step(fed, 1, false, rng);
+  if (!s2.ate || s2.state.body.length !== START_LENGTH + 1 || s2.state.apples !== 1) bad('eating must grow the snake by one');
+  if (s2.state.body[s2.state.body.length - 1] !== s0.body[2]) bad('eating must keep the tail in place that tick');
+  if (s2.state.body.includes(s2.state.apple)) bad('the next apple landed on the snake');
+  // walls: the head on the right edge heading right dies — or wraps
+  const edge = { ...s0, body: [11, 10, 9] };
+  const s3 = step(edge, 1, false, rng);
+  if (s3.died !== 'wall' || s3.state.alive) bad('a wall must kill');
+  if (s3.state.body.join() !== edge.body.join()) bad('a dead snake must stay where it was');
+  const s4 = step(edge, 1, true, rng);
+  if (s4.died || s4.state.body[0] !== 0) bad('Wall wrap must carry the head to the opposite side');
+  // self: the cell the tail is leaving is free; any other body cell is death
+  const coil = { ...s0, size: 6, body: [14, 15, 21, 20], dir: 3 as const, apple: 0 };
+  const s5 = step(coil, 2, false, rng);
+  if (s5.died || s5.state.body[0] !== 20) bad('the vacating tail cell must be safe to enter');
+  const coil2 = { ...coil, body: [14, 15, 21, 20, 19] };
+  const s6 = step(coil2, 2, false, rng);
+  if (s6.died !== 'self') bad('running into the body must kill');
+  // reversals
+  if (!isReverse(0, 2) || !isReverse(1, 3) || isReverse(0, 1) || isReverse(2, 2)) bad('isReverse');
+  // apples never land on the snake; a full board has nowhere to put one
+  for (let i = 0; i < 300; i++) {
+    const body = [5, 6, 7, 8, 9, 10, 11, 12];
+    const a = placeApple(body, 4, rng);
+    if (a < 0 || body.includes(a) || a >= 16) bad('placeApple put the apple on the snake or off the board');
+  }
+  if (placeApple(Array.from({ length: 9 }, (_, i) => i), 3, rng) !== -1) bad('a full board must yield -1');
+  // the definition: a Reflex game, never a daily (apples land at random during play)
+  if (snakeDefinition.category !== 'reflex') bad('Snake belongs to the Reflex category');
+  if (snakeDefinition.dailyChallenge) bad('Snake must not join the Daily Challenge — its randomness continues during play');
+  if (snakeDefinition.assistFeatures.map((a) => a.id).join() !== 'slow,wrap') bad('assists must be slow + wrap');
+  const egg = snakeDefinition.easterEggs?.[0];
+  const res = (outcome: 'won' | 'lost', bestCombo: number) =>
+    ({ outcome, extra: { bestCombo } }) as unknown as import('../src/platform/types').GameResult;
+  if (!egg || !egg.when(res('won', 8)) || egg.when(res('won', 7)) || egg.when(res('lost', 12)))
+    bad('the Feeding frenzy egg must need a WIN with a combo of eight');
+  if (failed === before)
+    console.log('  ✓ tiers ordered (size, speed, target), speed-up + floor, start shape, step/eat/wall/wrap/self rules, apples never on the body, definition + egg');
+}
+
+console.log('— Block Drop —');
+{
+  type BPiece = import('../src/games/block-drop/logic/engine').Piece;
+  const { PIECES, SHAPES, KICKS, BOX, spawn, fits, move, rotate, dropDistance, lock, fullRows, clearRows, bag, emptyBoard, cells, isLockOut, colorOf, COLS, H, HIDDEN, TIERS, gravityFor, levelFor, LINE_SCORE } =
+    await import('../src/games/block-drop/logic/engine');
+  const { blockDropDefinition } = await import('../src/games/block-drop');
+  const bad = (msg: string) => {
+    failed = true;
+    console.error(`✗ block drop: ${msg}`);
+  };
+  let before = failed;
+  let seed = 11;
+  const rng = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x80000000;
+  };
+  // seven pieces, four states of four cells each, all inside the piece's box
+  if (PIECES.length !== 7 || new Set(PIECES).size !== 7) bad('seven distinct pieces');
+  for (const t of PIECES) {
+    if (SHAPES[t].length !== 4) bad(`${t}: four rotation states`);
+    for (const st of SHAPES[t]) {
+      if (st.length !== 4) bad(`${t}: a state must have four cells`);
+      if (st.some(([x, y]) => x < 0 || y < 0 || x >= BOX[t] || y >= BOX[t])) bad(`${t}: a cell left its rotation box`);
+      if (new Set(st.map(([x, y]) => `${x},${y}`)).size !== 4) bad(`${t}: overlapping cells`);
+    }
+    // the spawn: fits an empty well, lowest cell on the first visible row, centred
+    const p = spawn(t);
+    const empty = emptyBoard();
+    if (!fits(empty, p)) bad(`${t}: the spawn does not fit an empty well`);
+    const ys = cells(p).map(([, y]) => y);
+    if (Math.max(...ys) !== HIDDEN) bad(`${t}: the spawn's lowest cell must sit on the first visible row`);
+    const xs = cells(p).map(([x]) => x);
+    if (Math.min(...xs) < 3 || Math.max(...xs) > 6) bad(`${t}: the spawn is not centred`);
+    // four clockwise turns on an empty well come back to the spawn exactly
+    let q = p;
+    for (let i = 0; i < 4; i++) {
+      const r = rotate(empty, q, 1);
+      if (!r) {
+        bad(`${t}: a turn failed on an empty well`);
+        break;
+      }
+      q = r;
+    }
+    if (q.rot !== p.rot || q.x !== p.x || q.y !== p.y) bad(`${t}: four turns must return to the spawn`);
+    const back = rotate(empty, rotate(empty, p, 1) as BPiece, -1);
+    if (!back || back.rot !== p.rot) bad(`${t}: a counter-turn must undo a turn`);
+  }
+  // the kick tables: eight transitions, five offsets each, the first is (0,0)
+  for (const table of [KICKS.JLSTZ, KICKS.I]) {
+    for (const key of ['01', '10', '12', '21', '23', '32', '30', '03']) {
+      const k = table[key];
+      if (!k || k.length !== 5 || k[0][0] !== 0 || k[0][1] !== 0) bad(`kick table ${key} is malformed`);
+    }
+  }
+  // a wall kick: a T standing against the left wall turns by sliding one cell right
+  {
+    const t: BPiece = { type: 'T', rot: 1, x: -1, y: 10 };
+    const empty = emptyBoard();
+    if (!fits(empty, t)) bad('the vertical T at the wall should fit');
+    const r = rotate(empty, t, 1);
+    if (!r || r.rot !== 2 || r.x !== 0) bad(`the T must kick off the wall to x=0, got ${JSON.stringify(r)}`);
+    // boxed in: a horizontal I in a one-row slot cannot turn
+    const board = emptyBoard().map((_, i) => (Math.floor(i / COLS) >= 10 ? 1 : 0));
+    for (const [x, y] of cells({ type: 'I', rot: 0, x: 3, y: 9 })) board[y * COLS + x] = 0;
+    for (let x = 0; x < COLS; x++) board[9 * COLS + x] = board[9 * COLS + x] || (x < 3 || x > 6 ? 1 : 0);
+    for (let x = 0; x < COLS; x++) board[8 * COLS + x] = 1;
+    if (rotate(board, { type: 'I', rot: 0, x: 3, y: 9 }, 1) !== null) bad('a boxed-in I must not turn');
+    if (move(board, { type: 'I', rot: 0, x: 3, y: 9 }, 1, 0) !== null) bad('a boxed-in I must not slide');
+  }
+  // the bag: every seven pieces contain each tetromino once
+  for (let i = 0; i < 100; i++) {
+    const b = bag(rng);
+    if (b.length !== 7 || new Set(b).size !== 7) bad('a bag must hold each piece exactly once');
+  }
+  // lines: only full rows clear, the rest fall in order, nothing is lost
+  {
+    const board = emptyBoard();
+    for (let x = 0; x < COLS; x++) board[21 * COLS + x] = 1;
+    board[20 * COLS + 0] = 2;
+    for (let x = 0; x < COLS; x++) board[19 * COLS + x] = 3;
+    board[18 * COLS + 3] = 4;
+    const rows = fullRows(board);
+    if (rows.join() !== '19,21') bad(`fullRows found ${rows.join()} instead of 19,21`);
+    const after = clearRows(board, rows);
+    if (after.length !== COLS * H) bad('clearRows changed the board size');
+    if (after[21 * COLS + 0] !== 2 || after[20 * COLS + 3] !== 4) bad('rows above a clear must fall by the number of rows cleared below them');
+    if (after.filter((v) => v !== 0).length !== 2) bad('clearRows lost or invented cells');
+    if (fullRows(after).length !== 0) bad('nothing should be full after a clear');
+  }
+  // lock, drop distance, lock-out
+  {
+    const p = spawn('T');
+    const empty = emptyBoard();
+    if (dropDistance(empty, p) !== H - 1 - HIDDEN) bad(`a spawned T should fall ${H - 1 - HIDDEN} rows on an empty well`);
+    const landed = { ...p, y: p.y + dropDistance(empty, p) };
+    const locked = lock(empty, landed);
+    if (locked.filter((v) => v === colorOf('T')).length !== 4 || empty.some((v) => v !== 0)) bad('lock must write four cells into a NEW board');
+    if (isLockOut(p)) bad('a spawn on the first visible row is not a lock-out');
+    if (!isLockOut({ type: 'O', rot: 0, x: 4, y: 0 })) bad('a piece entirely in the hidden rows is a lock-out');
+    if (fits(locked, landed)) bad('a locked piece occupies its cells');
+  }
+  // tiers: faster and longer each step up; levels speed up with a floor
+  const order = ['easy', 'medium', 'hard', 'pro', 'extreme'] as const;
+  for (let i = 1; i < order.length; i++) {
+    if (!(TIERS[order[i]].gravityMs < TIERS[order[i - 1]].gravityMs)) bad(`${order[i]} is not faster than ${order[i - 1]}`);
+    if (!(TIERS[order[i]].target > TIERS[order[i - 1]].target)) bad(`${order[i]} does not ask for more lines than ${order[i - 1]}`);
+  }
+  if (levelFor(0) !== 1 || levelFor(9) !== 1 || levelFor(10) !== 2 || levelFor(50) !== 6) bad('levelFor');
+  for (const d of order) {
+    if (!(gravityFor(TIERS[d], 2, false) < gravityFor(TIERS[d], 1, false))) bad(`${d}: level 2 must be faster than level 1`);
+    if (gravityFor(TIERS[d], 40, false) < 70) bad(`${d}: gravity must floor at 70 ms`);
+    if (Math.abs(gravityFor(TIERS[d], 1, true) - TIERS[d].gravityMs * 1.5) > 1e-9) bad(`${d}: Slow gravity must be ×1.5`);
+  }
+  for (let i = 1; i < LINE_SCORE.length; i++) if (!(LINE_SCORE[i] > LINE_SCORE[i - 1])) bad('LINE_SCORE must rise with lines');
+  // the definition
+  if (blockDropDefinition.category !== 'reflex') bad('Block Drop belongs to the Reflex category');
+  if (blockDropDefinition.dailyChallenge) bad('Block Drop must not join the Daily Challenge — its bags are drawn during play');
+  if (blockDropDefinition.assistFeatures.map((a) => a.id).join() !== 'slow,undo') bad('assists must be slow + undo');
+  const egg = blockDropDefinition.easterEggs?.[0];
+  const res = (outcome: 'won' | 'lost', tetrises: number) =>
+    ({ outcome, extra: { tetrises } }) as unknown as import('../src/platform/types').GameResult;
+  if (!egg || !egg.when(res('won', 1)) || egg.when(res('won', 0)) || egg.when(res('lost', 3)))
+    bad('the Four at once egg must need a WIN with a four-line clear');
+  if (failed === before)
+    console.log('  ✓ 7 pieces × 4 states, spawn centred + visible, SRS turns round-trip, wall kick + boxed-in, 7-bag exact, clears keep order, lock/drop/lock-out, tiers + levels ordered, definition + egg');
+}
+
 console.log('— Game options & Memory Match themes —');
 {
   const { GAMES } = await import('../src/platform/registry');

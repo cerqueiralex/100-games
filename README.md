@@ -74,12 +74,14 @@ A minimalist platform of sixty-nine classic puzzle and brain games — flat surf
 | **Checkers** | Jump, chain captures, crown kings and clear the board vs a minimax robot or a friend |
 | **Dots & Boxes** | Draw lines to close the most boxes — mind the chains — versus the AI or a friend |
 | **Klondike Solitaire** | Build the four suits up from Ace; the easier draws use winnable-verified deals |
+| **Snake** | The classic on a canvas that glides: eat apples, grow, never bite your tail — five board sizes and speeds, a turn queue, combos, wall-wrap and slow-pace assists |
+| **Block Drop** | Falling tetrominoes in a ten-wide well: SRS turns with wall kicks, 7-bag, hold, three-piece preview, ghost, hard drop with a trail; clear the tier's lines before the speed wins |
 | **Chess** | The full royal game vs the Stockfish engine held to five real strengths — a ≈300-Elo beginner on easy up to club level on extreme — drag to move, checks flare red, captures fill the trays, every move logged; castling, en passant, promotion and all the draws called honestly; a full-strength Hint if you want it |
 
 ## Platform features (shared by every game)
 
 - **Five difficulty tiers** (easy / medium / hard / pro / extreme), pause, restart, quit — all via the standard game shell; after finishing you can close the results popup to review the solved board
-- **Two ways out of a game**: the back arrow steps back to that game's own start screen (to switch difficulty or re-read the rules), the home button leaves for the game list — so changing difficulty never means a round trip through all 69 games
+- **Two ways out of a game**: the back arrow steps back to that game's own start screen (to switch difficulty or re-read the rules), the home button leaves for the game list — so changing difficulty never means a round trip through all 71 games
 - **Player level & XP**: every 100 XP is a level. You earn 10 XP for a game played, 10 for extending your daily streak, 10 for beating your own record on a game+difficulty, 80 for beating a game on all five difficulties, and 80 for each landmark earned. A win shows exactly what it earned, and a new level gets its own card (with a sound) before the results appear. The level dial sits in the home header next to your streak and heads the profile. Its two corners carry your marks — the rank crown you're wearing on the right, and on the left a rosette medal counting every game you've beaten on all five difficulties (crowns belong to the rank ladder alone) — and every badge you've earned sits in a case at the foot of the card, unlocked ones only, tap any one to see what it took
 - **Rank crowns**: six crowns mark the climb — Wood at level 10, Iron 25, Silver 50, Gold 100, Platinum 150, Challenger 200 — each one looking like what it's made of: wood grain, brushed iron, polished silver, gold with a glint, mirror platinum, gem-cut challenger. The whole ladder is on the level card with the unearned crowns greyed out, so you can always see the next one and what it costs; the crown you're wearing rides in the card's corner, next to your name on the home page, and on every win card you share
 - **Win celebration**: every win plays the same ~3.5-second green celebration — confetti, a success ring and a "Complete!" badge — *over* the finished board (it never covers or tints it), and only then does the results popup appear, so you always see your puzzle finish before the statistics
@@ -307,7 +309,7 @@ banks — every deduction puzzle (Nonograms, Killer Sudoku, Kakuro,
 Skyscrapers, Futoshiki, Binary Grid, Aquarium, Tents & Trees, Bridges,
 Slitherlink, Nurikabe, Fleet Finder…) for a unique, guess-free solution,
 and the baked puzzle banks (Gridlock, Klondike, Peg Solitaire) for
-solvability, and the Chess robot: the five Stockfish tiers ordered on
+solvability, the two Reflex games' rules (Snake's step/eat/wall/wrap/self logic and tier ordering, Block Drop's SRS rotations, wall kicks, 7-bag and line clears), and the Chess robot: the five Stockfish tiers ordered on
 every strength axis, the error-injection lottery's math, FEN/UCI round
 trips, and a UCI smoke test that runs the shipped engine files under
 Node (`uci` → `uciok`, `isready` → `readyok`, a `go`) with their GPLv3

@@ -408,6 +408,19 @@ they gain enforcement, delete entries obsoleted by code removal.
 
 ## Watch items (re-check every QA — not yet machine-enforced)
 
+- **2026-09-05 · real-time games · a HUD that only syncs on discrete
+  events lags the loop.** Block Drop's score grew inside the animation
+  loop (soft-drop and hard-drop points per row) but the React HUD was
+  only updated when a piece locked, so the number on screen was stale for
+  most of a piece's life; the headless run caught it because a held Down
+  key changed nothing visible. Rule for a `requestAnimationFrame` game
+  (Snake, Block Drop): any value the HUD prints that the loop can change
+  gets a "last shown" ref compared at the end of every frame, and a sync
+  when it differs — never rely on the event that *usually* changes it.
+  Also worth remembering from the same run: a resumed save restores ITS
+  OWN assist toggles (`GameSave.assists`), so a test that flips a toggle
+  on the setup screen and then taps Continue is testing nothing.
+
 - **2026-09-04 · delivery · "commit everything" left the feature on the
   laptop.** The Stockfish chess robot was committed, gated and documented —
   and never pushed. The player tests on the installed PWA served from

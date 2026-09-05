@@ -24922,3 +24922,255 @@ button.bs-ship-row.dock.placed {
     max-height: 150px;
   }
 }
+
+/* =================== SNAKE =================== */
+
+.snake {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* the apple / line target meter under the info strip (both Reflex games) */
+.snk-progress,
+.bd-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.snk-progress i,
+.bd-progress i {
+  display: block;
+  height: 100%;
+  background: var(--good);
+  border-radius: 3px;
+  transition: width 0.25s ease;
+}
+
+/* the canvas is the whole board: 100% of the column, square, no page
+   gestures — every frame is drawn by the game (see SnakeGame.tsx) */
+.snk-stage {
+  position: relative;
+  width: 100%;
+}
+
+.snk-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  touch-action: none;
+  border-radius: 18px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.snk-tip,
+.snk-banner,
+.bd-toast,
+.bd-banner {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+
+.snk-tip {
+  bottom: 12px;
+}
+
+.snk-banner,
+.bd-banner {
+  top: 12px;
+}
+
+/* the crash / top-out: the whole stage shudders once */
+.snk-stage.shake,
+.bd-stage.shake {
+  animation: game-shake 0.45s ease;
+}
+
+@keyframes game-shake {
+  10%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  80% {
+    transform: translateX(3px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-5px);
+  }
+  40%,
+  60% {
+    transform: translateX(5px);
+  }
+}
+
+/* the D-pad: the Sokoban cross, one card with nothing else in it */
+.snk-dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 6px;
+  width: min(186px, 54vw);
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+
+.snk-dbtn.up {
+  grid-area: 1 / 2 / 2 / 3;
+}
+.snk-dbtn.left {
+  grid-area: 2 / 1 / 3 / 2;
+}
+.snk-dbtn.right {
+  grid-area: 2 / 3 / 3 / 4;
+}
+.snk-dbtn.down {
+  grid-area: 3 / 2 / 4 / 3;
+}
+
+.snk-dbtn.snk-dbtn {
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  padding: 0;
+  touch-action: manipulation;
+}
+
+.snk-dbtn.left svg {
+  rotate: -90deg;
+}
+.snk-dbtn.right svg {
+  rotate: 90deg;
+}
+.snk-dbtn.down svg {
+  rotate: 180deg;
+}
+
+.snk-dhub {
+  grid-area: 2 / 2 / 3 / 3;
+  display: grid;
+  place-items: center;
+}
+
+.snk-dhub::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  opacity: 0.4;
+}
+
+.board-hidden .snk-stage {
+  visibility: hidden;
+}
+
+@media (max-width: 700px) {
+  .snk-dpad {
+    width: min(150px, 44vw);
+    gap: 5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snk-stage.shake,
+  .bd-stage.shake {
+    animation: none;
+  }
+}
+
+/* =================== BLOCK DROP =================== */
+
+.bdrop {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* hold box + well + next queue on ONE canvas, 100% of the column
+   (20 cells across, 21 tall — see BlockDropGame.tsx) */
+.bd-stage {
+  position: relative;
+  width: 100%;
+}
+
+.bd-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 20 / 21;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.bd-toast {
+  top: 38%;
+  animation: bd-toast 1.5s ease forwards;
+}
+
+@keyframes bd-toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(0.9);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.06);
+  }
+  75% {
+    opacity: 1;
+    transform: translate(-50%, -4px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -16px) scale(1);
+  }
+}
+
+/* two equal-width tool rows; the move buttons repeat while held, so they
+   must own the touch (no scroll, no long-press menu) */
+.bd-pad {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.bd-pad + .bd-pad {
+  margin-top: 8px;
+}
+
+.bd-pad .pad-tool {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.bd-rot-l,
+.bd-rot-r,
+.bd-rot-d {
+  display: inline-flex;
+}
+.bd-rot-l svg {
+  rotate: -90deg;
+}
+.bd-rot-r svg {
+  rotate: 90deg;
+}
+.bd-rot-d svg {
+  rotate: 180deg;
+}
+
+.board-hidden .bd-stage {
+  visibility: hidden;
+}

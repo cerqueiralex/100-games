@@ -91,6 +91,23 @@ export const sfx = {
     sweep(760, 220, 170, 'sine', 0.8);
     tone(300, 90, 'sine', 0.45, 110);
   },
+  /** a crisp bite — Snake eating an apple */
+  crunch: () => {
+    sweep(520, 180, 70, 'square', 0.55);
+    tone(980, 45, 'triangle', 0.6, 30);
+  },
+  /** a soft click for a piece turning or stepping (quieter than tap) */
+  tick: () => tone(640, 28, 'triangle', 0.45),
+  /** a heavy landing — a hard-dropped piece hitting the stack */
+  thud: () => {
+    sweep(220, 70, 110, 'triangle', 1.1);
+    tone(90, 90, 'sine', 0.7, 10);
+  },
+  /** lines clearing — rising sparkle, one extra note per line (1–4) */
+  clear: (lines = 1) => {
+    sweep(300, 900, 140, 'sine', 0.9);
+    for (let i = 0; i < Math.min(4, Math.max(1, lines)); i++) tone(880 + i * 220, 90, 'triangle', 0.8, 60 + i * 70);
+  },
   win: () => {
     tone(523, 120, 'triangle');
     tone(659, 120, 'triangle', 1, 110);
