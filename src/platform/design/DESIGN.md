@@ -576,6 +576,18 @@ heavy white type with a dark rounded outline (`popText` in each game) —
 plain `--text` ink is invisible on the grass in one theme and on the
 coloured stack in the other.
 
+### Brand tiles (Settings → Share the app)
+
+The share row is the ONE surface that paints a third party's colour: the
+WhatsApp, Telegram and X tiles wear their official brand colours (green
+`#25d366`, blue `#229ed9`, black `#000000`) with white icons and labels,
+because a share button in a brand's own colour is what people scan for.
+Explicitly user-mandated, and scoped: the hexes live on `.share-tiles`
+only, the icons stay the set's own monochrome marks in `currentColor`
+(never the brands' logos), the tiles keep the extruded bottom edge, and
+the "More…" tile (the device's own share sheet) and the copy row stay in
+the app's surface. Nothing else may borrow a brand colour.
+
 ### Profile tabs (four sections, one sticky strip)
 
 The profile grew past what one scroll can hold — a landmark gallery of

@@ -2758,6 +2758,91 @@ a.settings-action {
   box-shadow: inset 0 -1px 0 var(--edge);
 }
 
+/* Settings → Share the app: one row of destinations (icon over label,
+   equal columns that squeeze — 3 or 4 depending on whether the device has
+   a share sheet), then the copy row with the link as its second line */
+.share-tiles {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.settings-action.share-tile {
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 6px 15px;
+  text-align: center;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.settings-action.share-tile svg {
+  color: var(--text);
+}
+
+/* Brand tiles: the ONE place a third party's colour is painted — WhatsApp
+   green, Telegram blue, X black, official values, with white ink inside
+   (user-mandated; see DESIGN.md "Brand tiles"). Solid fills take the
+   design system's rgba bottom edge; X, being black, gets a faint white
+   hairline and edge so the plate still reads on the black theme. */
+.share-tiles {
+  --brand-whatsapp: #25d366;
+  --brand-telegram: #229ed9;
+  --brand-x: #000000;
+}
+
+.settings-action.share-tile.brand,
+.settings-action.share-tile.brand svg {
+  color: #fff;
+}
+
+.settings-action.share-tile.brand {
+  border-color: transparent;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.25);
+}
+
+.settings-action.share-tile.whatsapp {
+  background: var(--brand-whatsapp);
+}
+
+.settings-action.share-tile.telegram {
+  background: var(--brand-telegram);
+}
+
+.settings-action.share-tile.x {
+  background: var(--brand-x);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 -4px 0 rgba(255, 255, 255, 0.1);
+}
+
+.settings-action.share-tile.brand:active {
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.share-copy-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.share-copy-text small {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-action.copied,
+.settings-action.copied svg,
+.settings-action.copied .share-copy-text b {
+  color: var(--good);
+}
+
 /* who/what is inside the picked backup file, shown before importing */
 .import-preview {
   display: flex;

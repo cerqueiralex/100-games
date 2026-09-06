@@ -415,12 +415,67 @@ export function HeartIcon({ size = 18, filled = false }: IconProps & { filled?: 
   );
 }
 
+/** share = a paper plane (the "send" mark every chat app uses), outline like
+    the rest of the set; used by Settings → Share the app and the win card */
 export function ShareIcon({ size = 16 }: IconProps) {
   return (
     <Svg size={size}>
-      <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
-      <path d="M16 6l-4-4-4 4" />
-      <path d="M12 2v13" />
+      <path d="M21.5 2.5L3 10.2l8.2 3.2 3.2 8.1z" />
+      <path d="M21.5 2.5L11.2 13.4" />
+    </Svg>
+  );
+}
+
+/** copy to clipboard: two stacked sheets */
+export function CopyIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <rect x="9" y="9" width="12" height="12" rx="2.5" />
+      <path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5" />
+    </Svg>
+  );
+}
+
+/** "more destinations": the three dots that open the device's own share sheet */
+export function MoreIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size} fill>
+      <circle cx="5" cy="12" r="2.1" />
+      <circle cx="12" cy="12" r="2.1" />
+      <circle cx="19" cy="12" r="2.1" />
+    </Svg>
+  );
+}
+
+/* ---------- share destinations: monochrome marks in currentColor, drawn
+   in the set's own stroke language rather than the brands' logos ---------- */
+
+/** WhatsApp: a chat bubble with a tail and a handset inside */
+export function WhatsAppIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.3z" />
+      <path d="M9.2 8.4c.3-.7.9-.7 1.2-.1l.8 1.6c.1.3 0 .6-.2.8l-.6.6c.6 1.3 1.6 2.3 2.9 2.9l.6-.6c.2-.2.5-.3.8-.2l1.6.8c.6.3.6.9-.1 1.2-.9.5-1.9.5-2.9 0a8.3 8.3 0 0 1-4.2-4.2c-.5-1-.4-2 .1-2.8z" />
+    </Svg>
+  );
+}
+
+/** Telegram: the plane in a circle */
+export function TelegramIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <circle cx="12" cy="12" r="9.5" />
+      <path d="M17 7.5l-2.2 9-3.3-2.4-1.9 1.8.3-2.9 5.3-4.6-6.7 4-2.8-1z" />
+    </Svg>
+  );
+}
+
+/** X: the crossed strokes */
+export function XIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M4.5 4h4.2l10.8 16h-4.2z" />
+      <path d="M19 4l-6.2 7.2M4.5 20l6.4-7.4" />
     </Svg>
   );
 }

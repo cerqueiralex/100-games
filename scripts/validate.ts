@@ -4962,6 +4962,18 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
       if (!settings.includes(`markFeat(FEATS.${feat})`))
         bad(`SettingsPage no longer stamps FEATS.${feat} — its trophy became un-earnable`);
     }
+    // the share block: a WhatsApp intent and a copy-to-clipboard row, at least
+    for (const [what, needle] of [
+      ['the WhatsApp button', 'https://wa.me/?text='],
+      ['the Telegram button', 'https://t.me/share/url?'],
+      ['the X button', 'https://x.com/intent/post?'],
+      ['the native share sheet', 'navigator.share('],
+      ['Copy to clipboard', 'clipboard.writeText(appUrl)']
+    ] as const) {
+      if (!settings.includes(needle)) bad(`Settings → Share the app lost ${what}`);
+    }
+    if (!/appUrl = new URL\(import\.meta\.env\.BASE_URL/.test(settings))
+      bad('the shared link must be derived from BASE_URL, never hardcoded');
     if (!read('src/platform/components/GameShell.tsx').includes('markFeat(FEATS.sharedWin)'))
       bad('GameShell no longer stamps FEATS.sharedWin — Show Off became un-earnable');
   }

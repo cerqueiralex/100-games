@@ -2,7 +2,19 @@ import { useRef, useState } from 'react';
 import { useAppState } from '../AppState';
 import { Modal, Toggle } from '../components/ui';
 import { applyBackup, exportBackup, parseBackup, type ParseResult } from '../backup';
-import { ExportIcon, ExternalLinkIcon, ImportIcon, ShareIcon, TrashIcon, WarnIcon } from '../design/icons';
+import {
+  CheckIcon,
+  CopyIcon,
+  ExportIcon,
+  ExternalLinkIcon,
+  ImportIcon,
+  MoreIcon,
+  TelegramIcon,
+  TrashIcon,
+  WarnIcon,
+  WhatsAppIcon,
+  XIcon
+} from '../design/icons';
 import { sfx } from '../audio';
 import { buildLine, VERSION_LABEL } from '../version';
 import { FEATS } from '../progress/progress';
@@ -50,32 +62,46 @@ export function SettingsPage() {
      card always hands out the app the player is actually running. */
   const appUrl = new URL(import.meta.env.BASE_URL, window.location.href).toString();
 
-  /* Tapping the card always copies the link; devices with a native share
-     sheet (the installed PWA on a phone) get it opened on top, with the
-     copy as the safety net underneath. Either outcome is a share, so the
-     Spread the Word feat stamps on the first success — recordFeat pays
-     only once, like every out-of-game feat. Dismissing the sheet after a
-     successful copy still copied, so the stamp stands. */
-  const shareApp = async () => {
+  /* Share destinations. Chat apps get a direct intent link (WhatsApp,
+     Telegram, X open with the message pre-filled — in the installed PWA
+     the wa.me / t.me links hand off to the apps themselves), "More…" opens
+     the device's own share sheet where there is one (Instagram, Messages,
+     Mail… whatever the phone has), and Copy to clipboard is the catch-all
+     for everywhere else. Choosing any destination is a share, so the
+     Spread the Word feat stamps on the first one — recordFeat pays only
+     once, like every out-of-game feat. A dismissed share sheet or a
+     blocked clipboard is not a share. */
+  const shareText = 'I’m playing 100 Games — free puzzle games, no install, works offline:';
+  const shareLinks = {
+    whatsapp: `https://wa.me/?text=${encodeURIComponent(`${shareText} ${appUrl}`)}`,
+    telegram: `https://t.me/share/url?url=${encodeURIComponent(appUrl)}&text=${encodeURIComponent(shareText)}`,
+    x: `https://x.com/intent/post?text=${encodeURIComponent(`${shareText} ${appUrl}`)}`
+  };
+  const canShareSheet = typeof navigator.share === 'function';
+  const shareTo = (net: keyof typeof shareLinks) => {
     sfx.tap();
-    let done = false;
+    window.open(shareLinks[net], '_blank', 'noopener,noreferrer');
+    markFeat(FEATS.sharedApp);
+  };
+  const shareMore = async () => {
+    sfx.tap();
+    try {
+      await navigator.share({ title: '100 Games', text: shareText, url: appUrl });
+      markFeat(FEATS.sharedApp);
+    } catch {
+      // sheet dismissed — not a share
+    }
+  };
+  const copyLink = async () => {
+    sfx.tap();
     try {
       await navigator.clipboard.writeText(appUrl);
-      done = true;
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2200);
+      markFeat(FEATS.sharedApp);
     } catch {
-      // clipboard blocked — the share sheet below may still succeed
+      // clipboard blocked (an insecure context) — the buttons above still work
     }
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: '100 Games', url: appUrl });
-        done = true;
-      } catch {
-        // sheet dismissed — not a share unless the copy above landed
-      }
-    }
-    if (done) markFeat(FEATS.sharedApp);
   };
 
   return (
@@ -156,13 +182,40 @@ export function SettingsPage() {
         <h3 className="section-title">Share the app</h3>
         <p className="section-note">
           100 Games is free and needs no store, no account and no install — anyone who opens the
-          link gets the whole library. Tap the card to copy it (your phone&rsquo;s share sheet opens
-          too, where it has one).
+          link gets the whole library. Send it straight to a chat, or copy the link for anywhere
+          else.
         </p>
         <div className="card-list">
-          <button className="settings-action" onClick={() => void shareApp()}>
-            <ShareIcon />
-            <span>{copied ? 'Link copied!' : appUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
+          {/* one row of destinations (icon over label) — the chat apps in
+              their own brand colours with white ink, a deliberate opt-out
+              from the monochrome palette (DESIGN.md "Brand tiles"), the
+              share sheet in the app's own surface — then the copy row */}
+          <div className="share-tiles">
+            <button className="settings-action share-tile brand whatsapp" onClick={() => shareTo('whatsapp')}>
+              <WhatsAppIcon size={22} />
+              <span>WhatsApp</span>
+            </button>
+            <button className="settings-action share-tile brand telegram" onClick={() => shareTo('telegram')}>
+              <TelegramIcon size={22} />
+              <span>Telegram</span>
+            </button>
+            <button className="settings-action share-tile brand x" onClick={() => shareTo('x')}>
+              <XIcon size={22} />
+              <span>X</span>
+            </button>
+            {canShareSheet && (
+              <button className="settings-action share-tile" onClick={() => void shareMore()}>
+                <MoreIcon size={22} />
+                <span>More…</span>
+              </button>
+            )}
+          </div>
+          <button className={`settings-action share-copy ${copied ? 'copied' : ''}`} onClick={() => void copyLink()}>
+            {copied ? <CheckIcon size={18} /> : <CopyIcon size={18} />}
+            <span className="share-copy-text">
+              <b>{copied ? 'Copied!' : 'Copy to clipboard'}</b>
+              <small>{appUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}</small>
+            </span>
           </button>
           <div className="settings-info-row">
             <span className="toggle-label">Add to your iPhone home screen</span>
