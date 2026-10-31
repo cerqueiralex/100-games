@@ -8,6 +8,8 @@ import { buildPuzzle, validatePuzzle } from '../src/games/crossword/logic/engine
 import { generatePuzzle } from '../src/games/sudoku/logic/generator';
 import { LEVELS, validateWheelLevel } from '../src/games/word-wheel/logic/levels';
 import { generateFlowLevel, FLOW_CONFIG } from '../src/games/color-connect/logic/generator';
+// file URLs percent-encode spaces: a checkout under "Claude Code/…" must still resolve
+import { fileURLToPath } from 'node:url';
 
 /**
  * DETERMINISTIC BY DEFAULT.
@@ -3635,7 +3637,7 @@ console.log('— Chess robot ladder (Stockfish) —');
     failed = true;
     console.error(`✗ chess ladder: ${msg}`);
   };
-  const pathOf = (rel: string) => new URL(`../${rel}`, import.meta.url).pathname;
+  const pathOf = (rel: string) => fileURLToPath(new URL(`../${rel}`, import.meta.url));
   const code = (rel: string) =>
     readFileSync(pathOf(rel), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   let before = failed;
@@ -4635,7 +4637,7 @@ console.log('— Game options & Memory Match themes —');
     if (poke.faces.length !== 151)
       bad(`the Pokémon theme lists ${poke.faces.length} faces, expected the 151 of gen 1`);
     const missing = poke.faces.filter(
-      (id) => !existsSync(new URL(`../public/pokemon/${id}.png`, import.meta.url).pathname)
+      (id) => !existsSync(fileURLToPath(new URL(`../public/pokemon/${id}.png`, import.meta.url)))
     );
     if (missing.length > 0)
       bad(`${missing.length} Pokémon sprite(s) missing from public/pokemon: ${missing.slice(0, 6)}`);
@@ -4655,7 +4657,7 @@ console.log('— Game options & Memory Match themes —');
       if (avatarLabel(value) !== a.name) bad(`avatar ${a.id} has no name for screen readers`);
       const url = avatarSpriteUrl(value);
       if (!url) bad(`avatar ${a.name} resolves to no sprite url`);
-      if (!existsSync(new URL(`../public/pokemon/${a.id}.png`, import.meta.url).pathname))
+      if (!existsSync(fileURLToPath(new URL(`../public/pokemon/${a.id}.png`, import.meta.url))))
         bad(`avatar ${a.name} (#${a.id}) has no sprite in public/pokemon`);
       if (!poke.faces.includes(String(a.id)))
         bad(`avatar ${a.name} is not one of the 151 the sprite folder holds`);
@@ -4680,7 +4682,7 @@ console.log('— Assists start off, per session —');
     readdirSync: (path: string) => string[];
     existsSync: (path: string) => boolean;
   };
-  const src = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8');
+  const src = (p: string) => readFileSync(fileURLToPath(new URL(`../${p}`, import.meta.url)), 'utf8');
   // look at CODE, not prose: a comment explaining why a default no longer
   // exists must not trip a check for the default (see the ledger watch item)
   const code = (p: string) => src(p).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
@@ -4711,7 +4713,7 @@ console.log('— Assists start off, per session —');
     }
   }
   // every game folder (folder names do not always match ids: n-back lives in nback)
-  const gamesDir = new URL('../src/games/', import.meta.url).pathname;
+  const gamesDir = fileURLToPath(new URL('../src/games/', import.meta.url));
   let scanned = 0;
   for (const dir of readdirSync(gamesDir)) {
     if (!existsSync(`${gamesDir}${dir}/index.ts`)) continue;
@@ -4956,7 +4958,7 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
       readFileSync: (path: string, encoding: string) => string;
     };
     const read = (p: string) =>
-      readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8');
+      readFileSync(fileURLToPath(new URL(`../${p}`, import.meta.url)), 'utf8');
     const settings = read('src/platform/pages/SettingsPage.tsx');
     for (const feat of ['sharedApp', 'backupOut', 'backupIn'] as const) {
       if (!settings.includes(`markFeat(FEATS.${feat})`))
@@ -5089,7 +5091,7 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
       readFileSync: (path: string, encoding: string) => string;
     };
     const tokens = readFileSync(
-      new URL('../src/platform/design/tokens.css', import.meta.url).pathname,
+      fileURLToPath(new URL('../src/platform/design/tokens.css', import.meta.url)),
       'utf8'
     );
     for (const t of RANK_TIERS) {
@@ -5140,7 +5142,7 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
     }
     const readsTable = (p: string) =>
       /from '(\.\.\/)+design\/rankMaterials'|from '\.\.\/design\/rankMaterials'/.test(
-        readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8')
+        readFileSync(fileURLToPath(new URL(`../${p}`, import.meta.url)), 'utf8')
       );
     for (const p of [
       'src/platform/components/Level.tsx',
@@ -5204,7 +5206,7 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
       readFileSync: (path: string, encoding: string) => string;
     };
     const read = (p: string) =>
-      readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8');
+      readFileSync(fileURLToPath(new URL(`../${p}`, import.meta.url)), 'utf8');
     const css = read('src/styles/global.css');
 
     const gameId = GAMES[0].id;
@@ -6339,7 +6341,7 @@ console.log('— Monochrome palette —');
   const { readFileSync } = (await import('node:fs')) as {
     readFileSync: (path: string, encoding: string) => string;
   };
-  const read = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8');
+  const read = (p: string) => readFileSync(fileURLToPath(new URL(`../${p}`, import.meta.url)), 'utf8');
 
   let ok = true;
   const bad = (msg: string) => {
@@ -6396,7 +6398,7 @@ console.log('— Profile color —');
   const { readFileSync } = (await import('node:fs')) as {
     readFileSync: (path: string, encoding: string) => string;
   };
-  const read = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8');
+  const read = (p: string) => readFileSync(fileURLToPath(new URL(`../${p}`, import.meta.url)), 'utf8');
 
   let ok = true;
   const bad = (msg: string) => {
@@ -6712,7 +6714,7 @@ console.log('— Version stamp —');
 
   const read = (p: string) => {
     try {
-      return readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8');
+      return readFileSync(fileURLToPath(new URL(`../${p}`, import.meta.url)), 'utf8');
     } catch {
       bad(`could not read ${p}`);
       return '';
