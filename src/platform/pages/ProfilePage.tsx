@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useAppState } from '../AppState';
 import { sfx } from '../audio';
 import { GAMES, getGame } from '../registry';
@@ -16,11 +16,12 @@ import { PROFILE_COLORS, profileHex } from '../design/profileColors';
 import { CalendarPicker, Chip, Dropdown, Modal, StatCard } from '../components/ui';
 import { ActivityChart, CategoryBarChart, GamesPieChart, TrendChart } from '../components/charts';
 import type { CategoryId, GameResult } from '../types';
+import { BRAIN_DASH_INITIAL, BrainDashboard, type BrainDashState } from '../brain/ui/BrainDashboard';
 
 const EMOJIS = ['🎮', '🦊', '🐼', '🦉', '🐯', '🚀', '🌙', '⚡', '🎯', '🧩', '👾', '🏆'];
 
 /**
- * The profile is FOUR TABS, not one scroll: the landmark gallery alone is
+ * The profile is FIVE TABS, not one scroll: the landmark gallery alone is
  * dozens of plates, and with three charts, the level card, two streak
  * cards and the game log the page had become a wall. What lives where:
  *
@@ -28,23 +29,52 @@ const EMOJIS = ['🎮', '🦊', '🐼', '🦉', '🐯', '🚀', '🌙', '⚡', '
  *                 the Daily Challenge card — the player's identity.
  * - Statistics:   a scope dropdown (all / category / game), the charts,
  *                 the KPI grid.
+ * - Brain:        the Brain Lab dashboard (brain/ui/BrainDashboard.tsx) —
+ *                 the Mean, the areas' radar and small multiples, sleep and
+ *                 state context, the check-in calendar, the run log. Its
+ *                 numbers come from the permanent Brain Lab store, never
+ *                 from the capped game history.
  * - Achievements: the landmark gallery, the high scores by difficulty
  *                 (with their own scope dropdown — 71 cards unscoped is
  *                 the wall again).
  * - History:      a scope dropdown, the calendar and the game log.
  *
- * Each tab keeps its OWN scope filter so switching tabs never silently
- * re-scopes another; the strip is sticky under the header so a long
- * gallery or log can be left from anywhere, and a switch scrolls to the
- * top. Validate pins the four tabs and their order.
+ * Each tab keeps its OWN state (a scope filter; the Brain tab's open area
+ * and chart ranges) so switching tabs never silently re-scopes another;
+ * the strip is sticky under the header so a long gallery or log can be
+ * left from anywhere, and a switch scrolls to the top. The strip's
+ * columns are content-sized (validate pins it), so "Achievements" keeps
+ * its full width on a 360 px phone while five tabs share the row.
+ * Validate pins the five tabs and their order.
  */
-export type ProfileTab = 'general' | 'stats' | 'achievements' | 'history';
+export type ProfileTab = 'general' | 'stats' | 'brain' | 'achievements' | 'history';
 export const PROFILE_TABS: { id: ProfileTab; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'stats', label: 'Statistics' },
+  { id: 'brain', label: 'Brain' },
   { id: 'achievements', label: 'Achievements' },
   { id: 'history', label: 'History' }
 ];
+
+export interface ProfilePageProps {
+  /**
+   * Open a tab from outside (the Brain Lab tab's "Open dashboard"): switches
+   * to `id` and scrolls to the top whenever `nonce` changes.
+   */
+  requestTab?: { id: string; nonce: number };
+  /** the Brain dashboard's empty-state call to action */
+  onOpenBrainLab?: () => void;
+  /** open a game (the Brain coach's training suggestions) */
+  onOpenGame?: (gameId: string) => void;
+}
+
+/* The last external tab request already applied. Module-level because the
+   page unmounts whenever the player leaves the Profile tab while the shell
+   keeps its last request: a stale request must not reopen the Brain tab on
+   every later visit — only a NEW nonce switches. */
+let appliedTabRequest: number | null = null;
+const isRequestable = (r?: { id: string; nonce: number }): r is { id: ProfileTab; nonce: number } =>
+  !!r && r.nonce !== appliedTabRequest && PROFILE_TABS.some((t) => t.id === r.id);
 
 /** the scope a dropdown picks: everything, one category ('cat:<id>'), or one game */
 function scopeOf(history: GameResult[], filter: string) {
@@ -135,13 +165,15 @@ function HistoryRow({ result }: { result: GameResult }) {
   );
 }
 
-export function ProfilePage() {
+export function ProfilePage({ requestTab, onOpenBrainLab, onOpenGame }: ProfilePageProps = {}) {
   const { profile, updateProfile, history, progress, settings } = useAppState();
-  const [tab, setTab] = useState<ProfileTab>('general');
+  const [tab, setTab] = useState<ProfileTab>(() => (isRequestable(requestTab) ? requestTab.id : 'general'));
   // one scope per tab, so switching tabs never silently re-scopes another
   const [statsFilter, setStatsFilter] = useState<string>('all');
   const [scoresFilter, setScoresFilter] = useState<string>('all');
   const [historyFilter, setHistoryFilter] = useState<string>('all');
+  // the Brain tab's own state (open area, chart ranges) survives tab switches
+  const [brainView, setBrainView] = useState<BrainDashState>(BRAIN_DASH_INITIAL);
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(profile.name);
   const streak = useMemo(() => computeStreak(progress.days), [progress]);
@@ -155,6 +187,16 @@ export function ProfilePage() {
     setTab(next);
     window.scrollTo({ top: 0 });
   };
+
+  // a tab requested from outside (e.g. Brain Lab → "Open dashboard")
+  useEffect(() => {
+    if (!isRequestable(requestTab)) return;
+    appliedTabRequest = requestTab.nonce;
+    setTab(requestTab.id);
+    if (requestTab.id === 'brain') setBrainView((v) => ({ ...v, area: null }));
+    window.scrollTo({ top: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestTab?.nonce]);
 
   const statsScope = useMemo(() => scopeOf(history, statsFilter), [history, statsFilter]);
   const scoresScope = useMemo(() => scopeOf(history, scoresFilter), [history, scoresFilter]);
@@ -369,6 +411,10 @@ export function ProfilePage() {
             </div>
           </section>
         </>
+      )}
+
+      {tab === 'brain' && (
+        <BrainDashboard state={brainView} onState={setBrainView} onOpenBrainLab={onOpenBrainLab} onOpenGame={onOpenGame} />
       )}
 
       {tab === 'achievements' && (

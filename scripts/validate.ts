@@ -4270,10 +4270,11 @@ console.log('— Untangle ropes —');
 
 console.log('— Profile tabs —');
 {
-  /* The profile is four tabs (General / Statistics / Achievements / History)
-     under one sticky strip — see ProfilePage.tsx. Pinned so a section cannot
-     quietly drift back into one endless scroll, and so each tab keeps its
-     own scope filter. */
+  /* The profile is five tabs (General / Statistics / Brain / Achievements /
+     History) under one sticky strip — see ProfilePage.tsx. Pinned so a
+     section cannot quietly drift back into one endless scroll, so each tab
+     keeps its own state, and so the strip's content-sized columns keep
+     "Achievements" whole on a 360px phone. */
   const bad = (msg: string) => {
     failed = true;
     console.error(`✗ profile tabs: ${msg}`);
@@ -4281,9 +4282,9 @@ console.log('— Profile tabs —');
   const before = failed;
   const { PROFILE_TABS } = await import('../src/platform/pages/ProfilePage');
   const { readFileSync } = await import('node:fs');
-  if (PROFILE_TABS.map((t) => t.label).join() !== 'General,Statistics,Achievements,History')
-    bad(`tabs must be General, Statistics, Achievements, History in that order — got ${PROFILE_TABS.map((t) => t.label).join(', ')}`);
-  if (PROFILE_TABS.map((t) => t.id).join() !== 'general,stats,achievements,history') bad('tab ids changed');
+  if (PROFILE_TABS.map((t) => t.label).join() !== 'General,Statistics,Brain,Achievements,History')
+    bad(`tabs must be General, Statistics, Brain, Achievements, History in that order — got ${PROFILE_TABS.map((t) => t.label).join(', ')}`);
+  if (PROFILE_TABS.map((t) => t.id).join() !== 'general,stats,brain,achievements,history') bad('tab ids changed');
   const page = readFileSync('src/platform/pages/ProfilePage.tsx', 'utf8');
   const branch = (id: string) => {
     const at = page.indexOf(`{tab === '${id}' && (`);
@@ -4294,6 +4295,7 @@ console.log('— Profile tabs —');
   const expect: [string, string[]][] = [
     ['general', ['<LevelHero', '<StreakHero', '<DailyHistorySection']],
     ['stats', ['<CategoryBarChart', '<GamesPieChart', '<ActivityChart', 'className="stat-grid"', 'statsFilter']],
+    ['brain', ['<BrainDashboard', 'brainView']],
     ['achievements', ['<LandmarksSection', 'High scores by difficulty', 'scoresFilter']],
     ['history', ['<CalendarPicker', '<HistoryRow', 'historyFilter']]
   ];
@@ -4309,14 +4311,20 @@ console.log('— Profile tabs —');
       for (const n of needles) if (n.startsWith('<') && b.includes(n)) bad(`${n} renders in the ${other} tab as well as ${id}`);
     }
   }
-  if (!/const \[statsFilter, setStatsFilter\]|const \[historyFilter, setHistoryFilter\]|const \[scoresFilter, setScoresFilter\]/.test(page))
-    bad('each tab must keep its own scope filter');
+  for (const v of ['statsFilter, setStatsFilter', 'scoresFilter, setScoresFilter', 'historyFilter, setHistoryFilter', 'brainView, setBrainView'])
+    if (!page.includes(`const [${v}]`)) bad(`each tab must keep its own state in the page (missing ${v.split(',')[0]})`);
+  // the Brain Lab tab opens the dashboard from outside: a requested tab switches and scrolls to the top
+  if (!/requestTab\?: \{ id: string; nonce: number \}/.test(page) || !page.includes('requestTab?.nonce'))
+    bad('ProfilePage must accept requestTab { id, nonce } and react to its nonce');
+  if (!/onOpenBrainLab\?: \(\) => void/.test(page)) bad('ProfilePage must accept onOpenBrainLab for the Brain empty state');
   if (!page.includes("window.scrollTo({ top: 0 })")) bad('switching tabs must scroll to the top');
   const css = readFileSync('src/styles/global.css', 'utf8');
   const strip = css.match(/\.profile-tabs\s*\{[^}]*\}/)?.[0] ?? '';
   if (!/position:\s*sticky/.test(strip)) bad('.profile-tabs must be sticky');
-  if (!/repeat\(4, minmax\(0, 1fr\)\)/.test(strip)) bad('.profile-tabs must be four fixed columns that squeeze rather than wrap');
-  if (failed === before) console.log('  ✓ four tabs in order, each section in exactly one tab, one scope filter per tab, sticky four-column strip');
+  if (!/repeat\(5, minmax\(0, auto\)\)/.test(strip))
+    bad('.profile-tabs must be five content-sized columns (repeat(5, minmax(0, auto))) — equal fifths cut "Achievements" on a 360px phone');
+  if (/flex-wrap:\s*wrap/.test(strip)) bad('.profile-tabs must never wrap');
+  if (failed === before) console.log('  ✓ five tabs in order, each section in exactly one tab, own state per tab, requestTab/onOpenBrainLab props, sticky content-sized strip');
 }
 
 console.log('— Reflex pause veil —');
@@ -6750,6 +6758,120 @@ console.log('— Version stamp —');
     console.log(
       `  ✓ package version ${pkgVersion} well-formed, settings renders the build stamp (no hardcoded literal), CI clones full history`
     );
+}
+
+// ---------------------------------------------------------------------------
+// Brain Lab — src/platform/brain/ (the module) + src/brain/<id>/ (the
+// benchmarks); src/platform/brain/SCIENCE.md is the spec. The CORE checks
+// (scripts/brain-checks/core.ts) keep the module honest whatever any one
+// benchmark does: the registry contract against the §2.12 table, the 50 + 10z
+// index scale, seeded generation, the claims policy, the motion tokens, the
+// store through its real write path and the analytics on synthetic series.
+// Then every benchmark proves its own paradigm (Appendix B) in
+// scripts/brain-checks/<test-id>.ts, through a map coverage-checked both ways
+// against BRAIN_TESTS — a benchmark without its check, or a check without its
+// benchmark, fails the gate. On their own:
+//   npx tsx scripts/brain-checks/run.ts core [<test-id> …]
+// ---------------------------------------------------------------------------
+console.log('— Brain Lab —');
+{
+  type BrainCheck = import('./brain-checks/types').BrainCheck;
+  const started = performance.now();
+  let ok = true;
+  const fail = (msg: string) => {
+    failed = true;
+    ok = false;
+    console.error(`✗ brain/${msg}`);
+  };
+  const { rng } = await import('../src/platform/brain/timing');
+  // the registry pulls in every benchmark's component: one that touches
+  // import.meta.env, window or a CSS import at module scope fails HERE under
+  // Node, as a clear failure rather than a crash that ends the whole gate
+  let BRAIN_TESTS: { id: string }[] = [];
+  try {
+    ({ BRAIN_TESTS } = await import('../src/platform/brain/registry'));
+  } catch (e) {
+    fail(`registry: src/platform/brain/registry.ts does not load under Node — no benchmark may read import.meta.env, window or CSS at import time (${e instanceof Error ? e.message : String(e)})`);
+  }
+  const runCheck = async (label: string, check: BrainCheck) => {
+    let clean = true;
+    const bad = (msg: string) => {
+      clean = false;
+      fail(`${label}: ${msg}`);
+    };
+    try {
+      const summary = await check({ bad, rng });
+      if (clean) console.log(`  ✓ ${label}: ${summary}`);
+    } catch (e) {
+      bad(`threw — ${e instanceof Error ? (e.stack ?? e.message) : String(e)}`);
+    }
+  };
+
+  // 1. the module
+  try {
+    const { CORE_CHECKS } = await import('./brain-checks/core');
+    for (const c of CORE_CHECKS) await runCheck(`core/${c.name}`, c.run);
+  } catch (e) {
+    fail(`core: scripts/brain-checks/core.ts failed to load — ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  // 2. one fidelity check per benchmark, in the canonical C12 order. The
+  //    specifier is built at run time, so a check file that has not landed
+  //    fails HERE with a clear message instead of breaking `tsc` repo-wide.
+  const loadCheck = (id: string) => import(`./brain-checks/${id}.ts`) as Promise<{ check?: BrainCheck }>;
+  const BRAIN_CHECKS: Record<string, () => Promise<{ check?: BrainCheck }>> = {
+    'alertness-check': () => loadCheck('alertness-check'), // Reaction — PVT-B (§1.10)
+    'symbol-coding': () => loadCheck('symbol-coding'), // Processing Speed — symbol–digit coding (§1.11)
+    'arrow-squared': () => loadCheck('arrow-squared'), // Attention — Flanker Squared (§1.5)
+    'shape-color-switch': () => loadCheck('shape-color-switch'), // Flexibility — Shape–Color Switch (§1.12)
+    'block-span': () => loadCheck('block-span'), // Memory — adaptive spatial span (§1.6)
+    'arithmetic-sprint': () => loadCheck('arithmetic-sprint'), // Calculation — arithmetic fluency sprint (§1.7)
+    'mirror-twins': () => loadCheck('mirror-twins'), // Spatial — 3D mental rotation (§1.13)
+    'target-ring': () => loadCheck('target-ring'), // Precision — ISO 9241-411 tapping (§1.9)
+    'matrix-reasoning': () => loadCheck('matrix-reasoning') // Analysis — generated matrix reasoning (§1.8)
+  };
+  const fsx = (await import('node:fs')) as unknown as {
+    existsSync: (path: string) => boolean;
+    readdirSync: (path: string) => string[];
+  };
+  const checkDir = fileURLToPath(new URL('./brain-checks/', import.meta.url));
+  const mapped = Object.keys(BRAIN_CHECKS);
+  const registered = BRAIN_TESTS.map((t) => t.id);
+  const unchecked = registered.filter((id) => !mapped.includes(id));
+  if (unchecked.length) {
+    fail(`coverage: registered benchmarks without a fidelity check in BRAIN_CHECKS: ${unchecked.join(', ')} — add scripts/brain-checks/<id>.ts and list it`);
+  }
+  const unregistered = mapped.filter((id) => !registered.includes(id));
+  if (unregistered.length) {
+    fail(`coverage: ${unregistered.length} fidelity check(s) name a benchmark src/platform/brain/registry.ts does not register: ${unregistered.join(', ')}`);
+  }
+  const stray = fsx
+    .readdirSync(checkDir)
+    .filter((f) => f.endsWith('.ts') && !['types.ts', 'run.ts', 'core.ts'].includes(f))
+    .map((f) => f.slice(0, -3))
+    .filter((id) => !mapped.includes(id));
+  if (stray.length) fail(`coverage: check files missing from the BRAIN_CHECKS map: ${stray.join(', ')}`);
+  for (const [id, load] of Object.entries(BRAIN_CHECKS)) {
+    if (!fsx.existsSync(`${checkDir}${id}.ts`)) {
+      fail(`${id}: missing check file scripts/brain-checks/${id}.ts`);
+      continue;
+    }
+    let mod: { check?: BrainCheck };
+    try {
+      mod = await load();
+    } catch (e) {
+      fail(`${id}: scripts/brain-checks/${id}.ts failed to load — ${e instanceof Error ? e.message : String(e)}`);
+      continue;
+    }
+    if (typeof mod.check !== 'function') {
+      fail(`${id}: scripts/brain-checks/${id}.ts exports no \`check\``);
+      continue;
+    }
+    await runCheck(id, mod.check);
+  }
+  const secs = ((performance.now() - started) / 1000).toFixed(1);
+  if (ok) console.log(`  ✓ Brain Lab: core + ${mapped.length} benchmark fidelity checks, coverage matched both ways (${secs}s)`);
+  else console.error(`  (Brain Lab block: ${secs}s)`);
 }
 
 if (failed) {

@@ -20,6 +20,7 @@ import {
   type PlayerProgress
 } from './progress/progress';
 import type { XpAward } from './progress/xp';
+import { notifyBrainChanged } from './brain/ui/useBrainStore';
 
 interface AppState {
   settings: PlatformSettings;
@@ -123,12 +124,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setProfile(loadProfile());
         setHistory([]);
         setProgress(loadProgress());
+        // the Brain Lab store went with the prefix sweep — its views re-read it
+        notifyBrainChanged();
       },
       reloadFromStorage: () => {
         setSettings(loadSettings());
         setProfile(loadProfile());
         setHistory(loadHistory());
         setProgress(loadProgress());
+        // an import may have replaced the Brain Lab store too
+        notifyBrainChanged();
       }
     }),
     [settings, profile, history, progress]

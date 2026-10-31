@@ -128,5 +128,30 @@ export const sfx = {
     tone(784, 90, 'triangle', 1, 160);
     tone(1047, 110, 'triangle', 1, 240);
     tone(1319, 340, 'triangle', 1, 350);
+  },
+  /* ----- feedback family (design/GAME-QUALITY.md "Feedback"): short, soft,
+     and pitched so correct always rises and wrong always falls ----- */
+  /** a correct answer — a soft rising two-note chime; `step` lifts a streak a semitone at a time (cap 8) */
+  correct: (step = 0) => {
+    const k = Math.pow(2, Math.min(8, Math.max(0, step)) / 12);
+    tone(880 * k, 70, 'sine', 0.55);
+    tone(1175 * k, 110, 'sine', 0.5, 55);
+  },
+  /** a wrong answer — a short, low, falling buzz that never reads as alarm */
+  wrong: () => sweep(320, 190, 150, 'triangle', 0.55),
+  /** a response that came too early (anticipation, false start) */
+  early: () => sweep(600, 420, 90, 'square', 0.25),
+  /** one countdown beat; `n` = the number shown (3, 2, 1) */
+  countdown: (n = 3) => tone(n > 1 ? 560 : 640, 70, 'triangle', 0.5),
+  /** the "go" after a countdown */
+  go: () => {
+    tone(880, 60, 'triangle', 0.55);
+    tone(1320, 140, 'triangle', 0.5, 50);
+  },
+  /** a block or measurement finished — calm, distinct from win() */
+  complete: () => {
+    tone(660, 110, 'sine', 0.6);
+    tone(880, 110, 'sine', 0.6, 100);
+    tone(990, 260, 'sine', 0.55, 200);
   }
 };

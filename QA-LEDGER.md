@@ -10,6 +10,78 @@ they gain enforcement, delete entries obsoleted by code removal.
 
 ## Promoted to standards (enforced — the rule exists because of the bug)
 
+- **2026-10-31 · Brain Lab · a Vite-only global read at module load crashes
+  every Node script that imports the registry.** Twice in one build: Mirror
+  Twins read `import.meta.env.DEV` at module scope, and Symbol Coding
+  imported `platform/version.ts`, whose `BUILD = __APP_BUILD__` exists only
+  under Vite's `define` — `npx tsx scripts/brain-checks/run.ts core` died
+  with `ReferenceError: __APP_BUILD__ is not defined` the moment the nine
+  benchmarks were registered, because validate imports
+  `src/platform/brain/registry.ts` (and with it every benchmark module)
+  under plain Node. Fix: `version.ts` probes with
+  `typeof __APP_BUILD__ !== 'undefined'` (the one safe test of an undeclared
+  global) and falls back to a 0.0.0 stamp; `import.meta.env` is read as
+  `(import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV`. Rule:
+  nothing reachable from the Brain Lab registry may touch the DOM, `window`,
+  `import.meta.env` or a `define` global at module scope. Enforced: validate
+  imports the registry, so a violation is a red gate, not a silent bug.
+
+- **2026-10-31 · Brain Lab · two chimes for one result.** Five benchmarks
+  played `sfx.complete()` when their block ended, and the runner plays it
+  again as the results card opens, a second later — the same success sound
+  twice, on a screen that must never celebrate. The results chime is the
+  RUNNER's (GAME-QUALITY Q33, now explicit); a block end plays the neutral
+  lock `sfx.place()`. Enforced: core check `results chime` scans every
+  non-demo file under `src/brain/` (proven on a planted line).
+
+- **2026-10-31 · Brain Lab · the coach recommended the same game twice.** A
+  focus area's card carried a "Train with Stroop Match" button and the next
+  card said "Try Stroop Match for Attention" with "Play Stroop Match" — the
+  old check only compared `training` cards with each other. One card per
+  game now (the focus card also carries `TRAINING_NOTE`), and the coach check
+  compares every card's play action (proven: the old code fails it with
+  `block-drop` twice). The same review removed the panel's headline (it
+  repeated the first card's title) and the `--xp` edge on "Work on this"
+  cards (progression colour on a weak area reads as an alarm).
+
+- **2026-10-31 · Brain Lab · the results card repeated itself and hid a
+  grade.** A test's `highlights` ("1–3 EXTRA lines") repeated metric rows
+  the runner already lists (Alertness "Performance score", Mirror Twins
+  "Median time (correct)", Block Span "Trials correct", Arithmetic Sprint's
+  "Typical time per correct answer"), and a calibration run's session index
+  showed with no grade badge although §4 requires one on every reference
+  index. Platform fix in `BrainRunner`: one row per label — a highlight named
+  like a metric fills that metric's row — and the badge shows on every
+  index, run-in included. Same pass: "≈ N min" labels use non-breaking
+  spaces (one wrapped as "≈ 2 / min" on a card).
+
+- **2026-10-31 · Brain Lab · the rulebook drifted from what shipped.** The
+  implementers made protocol choices SCIENCE.md never made (Block Span's
+  `too-few`/`at-chance` floors, an invalid "items exhausted" run in two
+  tests, literal readings of ambiguous rules) and recorded them only in
+  each definition's `science.deviations`. SCIENCE.md Appendix E now mirrors
+  all 138 lines, generated from the definitions, and core check
+  `appendix E` fails when a list differs (proven on a planted copy).
+
+- **2026-10-30 · scripts · `new URL(…).pathname` is not a filesystem path —
+  it keeps spaces percent-encoded.** `npm run validate` crashed locally with
+  `ENOENT … /Documents/Claude%20Code/Personal%20Projects/…` at the first
+  block that read a source file: every scan built its path as
+  `new URL('../x', import.meta.url).pathname`, a URL's pathname is
+  percent-encoded, so the space in "Claude Code" arrived as `%20` and no file
+  matched. CI checks out under a path with no spaces, which is why the gate
+  stayed green there and the crash only ever appeared on the laptop. Fix:
+  `fileURLToPath(new URL('../x', import.meta.url))` everywhere validate
+  reads a file, with `scripts/node-url.d.ts` typing that one `node:url`
+  import (the repo deliberately has no `@types/node`, same as
+  `node-fs.d.ts`). Rule: never use `URL.pathname` as a filesystem path —
+  convert with `fileURLToPath`, and test tooling from a path with a space
+  in it. Enforced: CLAUDE.md "Commands" rule; not machine-checked yet (next
+  rung: a validate scan of `scripts/` for `.pathname` on a `new URL(`
+  result). One instance remains in `scripts/chess-ladder.ts` (the engine
+  path of the offline ladder tool, outside the gate) — fix it the same way
+  when next touched.
+
 - **2026-09-04 · search · alpha-beta at the ROOT returns bounds, and a
   "pick among the near-best" filter over bounds is a lottery.** The chess
   built-in robot searched every root move with a window `(-∞, -alpha)`; a
@@ -408,6 +480,27 @@ they gain enforcement, delete entries obsoleted by code removal.
 
 ## Watch items (re-check every QA — not yet machine-enforced)
 
+- **2026-10-30 · scoring · OPEN DEFECT, for the owner — N-Back and Dual
+  N-Back can be won by never pressing.** Their "accuracy" is (hits +
+  correct rejections) / trials; correct rejections are about 70% of the
+  trials, and the win thresholds are 70% (N-Back) and 65% (Dual N-Back)
+  (`src/games/nback/NBackGame.tsx:20,101`,
+  `src/games/dual-nback/DualNBackGame.tsx:21,110`). A replica of
+  `generateSequence` and the win rule, 100k runs per tier, found a
+  never-press accuracy of 71.6–74.2% and never-press WIN rates of
+  66.8–68.8% for N-Back and 86.3–96.9% for Dual N-Back, rising with the
+  tier. Those are CLEAN wins — green seals, trophies, clean-win ladder
+  credit and XP for touching nothing. Recorded, not fixed: existing games
+  are out of scope for the Brain Lab build. The fix belongs in the win
+  rule — score hit rate minus false-alarm rate, or d′ with a log-linear
+  correction, never an accuracy that counts silence — and its validate
+  check should drive a never-press AND an always-press responder through
+  the real scorer on every tier and require both to lose. Related: the
+  stored accuracy is a string (`"NN%"`) and Dual N-Back sums its two
+  channels, so neither can be rescored per channel later. General rule for
+  any yes/no detection task, game or Brain Lab test: doing nothing and
+  pressing everything must both fail.
+
 - **2026-09-05 · canvas games · three things the first Snake got wrong.**
   (1) A gliding body drawn as a polyline through cell centres cuts every
   corner DIAGONALLY mid-slide — the snake looked like a bent hose. A
@@ -587,3 +680,21 @@ they gain enforcement, delete entries obsoleted by code removal.
   with a tick, and the rank crowns gained extrusion plus per-material
   texture from a new shared table both renderers read. Every new check was
   proved to bite by breaking the code under it first.
+- 2026-10-30 — Brain Lab build, standards pass: `design/GAME-QUALITY.md`
+  (the premium floor, rules Q1–Q44, a ship checklist and the primitives
+  table) written from a UI/UX audit of eight speed and memory games plus
+  library-wide counts (motion, feedback, accessibility, contrast); DESIGN.md
+  gained real "Motion & feedback", "FX primitives" and "Brain Lab" sections
+  and lost its stale press (`scale(0.98)` / `scale(0.96)` against the CSS's
+  `translateY(2px)`), bare-`1fr` toolbar tracks and "69 games"; the
+  validate path bug promoted to a CLAUDE.md rule; the N-Back never-press
+  win recorded as an open watch item for the owner.
+- 2026-10-31 — Brain Lab integration: the nine benchmarks registered in the
+  C12 order (core: one per area, §2.12 parameters exact); staged CSS inlined
+  into `global.css` at its original cascade position (built CSS
+  byte-identical to the `@import` build) and `src/styles/brain/` deleted;
+  the dev fixture records under the real ids; an `ownTimerBar` flag hides
+  the runner's filling bar over a test's own draining countdown; five
+  promoted entries above. A full scored Arithmetic Sprint run was driven
+  end to end through the real runner (recorded, results card, dashboard).
+

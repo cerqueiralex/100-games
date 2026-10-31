@@ -103,6 +103,47 @@ export function UserIcon() {
   );
 }
 
+/** the Brain Lab tab: two hemispheres with a centre fissure and sulci */
+export function BrainIcon({ size = 22 }: IconProps = {}) {
+  return (
+    <Svg size={size}>
+      <path d="M12 5.5a3 3 0 0 0-5.6-1.3A3 3 0 0 0 3.5 8a3.2 3.2 0 0 0 .4 5.6A3.3 3.3 0 0 0 7.5 19a3 3 0 0 0 4.5.8" />
+      <path d="M12 5.5a3 3 0 0 1 5.6-1.3A3 3 0 0 1 20.5 8a3.2 3.2 0 0 1-.4 5.6 3.3 3.3 0 0 1-3.6 5.4 3 3 0 0 1-4.5.8" />
+      <path d="M12 5.5v14.3" />
+      <path d="M7.6 9.2c1 0 1.9.6 2.2 1.5M16.4 9.2c-1 0-1.9.6-2.2 1.5M8 15c.9-.1 1.7-.6 2-1.4M16 15c-.9-.1-1.7-.6-2-1.4" />
+    </Svg>
+  );
+}
+
+/** delete the last typed character (number pads) */
+export function BackspaceIcon({ size = 22 }: IconProps = {}) {
+  return (
+    <Svg size={size}>
+      <path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1Z" />
+      <path d="m17 9-6 6M11 9l6 6" />
+    </Svg>
+  );
+}
+
+/** "same shape" answer (Brain Lab · Mirror Twins): two identical L shapes facing the same way */
+export function SameShapeIcon({ size = 22 }: IconProps = {}) {
+  return (
+    <Svg size={size}>
+      <path d="M3 5h3v10.5h4.5V19H3ZM13.5 5h3v10.5H21V19h-7.5Z" />
+    </Svg>
+  );
+}
+
+/** "mirror image" answer (Brain Lab · Mirror Twins): an L and its reflection across a dashed axis */
+export function MirrorIcon({ size = 22 }: IconProps = {}) {
+  return (
+    <Svg size={size}>
+      <path d="M10 5H7v10.5H2.5V19H10ZM14 5h3v10.5h4.5V19H14Z" />
+      <path d="M12 2.5v19" strokeDasharray="1.5 2.5" strokeWidth="1.6" />
+    </Svg>
+  );
+}
+
 export function GridIcon() {
   return (
     <Svg size={22}>
@@ -552,6 +593,75 @@ export function LockIcon({ size = 14 }: IconProps) {
     <Svg size={size}>
       <rect x="5" y="11" width="14" height="9" rx="2.5" />
       <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </Svg>
+  );
+}
+
+/* ---------- Brain Lab (sheets, check-in context) ---------- */
+
+/** close a sheet or a full-screen layer */
+export function CloseIcon({ size = 20 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
+    </Svg>
+  );
+}
+
+/** "Sleepy" check-in context (Stanford Sleepiness Scale ≥ 5) */
+export function MoonIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M19.5 14.6A7.6 7.6 0 0 1 9.4 4.5a7.6 7.6 0 1 0 10.1 10.1Z" />
+    </Svg>
+  );
+}
+
+/** "Short sleep" check-in context; sleep times */
+export function BedIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M3 18.5V6.5M3 14h18v4.5M21 14v-2.2A2.8 2.8 0 0 0 18.2 9H11v5" />
+      <circle cx="7" cy="11" r="1.9" />
+    </Svg>
+  );
+}
+
+/** "High stress" check-in context */
+export function BoltIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M13 3 5.5 13.2h5.6L10.5 21 18.5 10.6h-5.7L13 3Z" />
+    </Svg>
+  );
+}
+
+/** caffeine since waking */
+export function CupIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M5 9h11v5.5a4.5 4.5 0 0 1-4.5 4.5h-2A4.5 4.5 0 0 1 5 14.5V9Z" />
+      <path d="M16 10.5h1.6a2.4 2.4 0 0 1 0 4.8H16M8.5 3.5c-.6.9.6 1.6 0 2.5M12 3.5c-.6.9.6 1.6 0 2.5" />
+    </Svg>
+  );
+}
+
+/** an open book — the Brain Lab area wiki (science, sources, evidence) */
+export function BookIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path d="M12 6.5C10.3 5.3 7.9 4.8 4 5v13c3.9-.2 6.3.3 8 1.5 1.7-1.2 4.1-1.7 8-1.5V5c-3.9-.2-6.3.3-8 1.5z" />
+      <path d="M12 6.5v13" />
+    </Svg>
+  );
+}
+
+/** an "i" in a circle — science notes, reference-grade explanations */
+export function InfoIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg size={size}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5.2M12 7.8v.1" />
     </Svg>
   );
 }

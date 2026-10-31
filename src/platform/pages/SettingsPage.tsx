@@ -335,8 +335,8 @@ export function SettingsPage() {
       >
         <p className="modal-text">
           {confirm === 'history'
-            ? 'All scores and statistics will be deleted. This cannot be undone.'
-            : 'History, settings and profile will be wiped. This cannot be undone.'}
+            ? 'All game scores and statistics will be deleted. Brain Lab results are kept. This cannot be undone.'
+            : 'History, settings, profile and Brain Lab results will be wiped. This cannot be undone.'}
         </p>
         <div className="modal-actions">
           <button className="ghost-btn" onClick={() => setConfirm(null)}>
@@ -378,6 +378,12 @@ export function SettingsPage() {
                   {pending.summary.landmarks}{' '}
                   {pending.summary.landmarks === 1 ? 'landmark' : 'landmarks'}
                 </span>
+                {pending.summary.brainRuns > 0 && (
+                  <span className="toggle-desc">
+                    Brain Lab: {pending.summary.brainRuns} {pending.summary.brainRuns === 1 ? 'run' : 'runs'} ·{' '}
+                    {pending.summary.brainCheckins} {pending.summary.brainCheckins === 1 ? 'check-in' : 'check-ins'}
+                  </span>
+                )}
                 {pending.summary.exportedAt && (
                   <span className="toggle-desc">Exported {pending.summary.exportedAt}</span>
                 )}
@@ -387,6 +393,12 @@ export function SettingsPage() {
               This replaces the {pending.summary.sections.join(', ')} on this device. Export your own
               data first if you want to keep it.
             </p>
+            {pending.summary.skipped.length > 0 && (
+              <p className="modal-text">
+                The {pending.summary.skipped.join(', ')} section of this file couldn’t be read, so it will be
+                skipped — that data on this device stays as it is.
+              </p>
+            )}
           </>
         )}
         <div className="modal-actions">

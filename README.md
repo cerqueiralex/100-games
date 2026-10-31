@@ -1,6 +1,6 @@
 # 100 Games
 
-A minimalist platform of sixty-nine classic puzzle and brain games — flat surfaces with an extruded "candy button" depth style. Built as a **PWA** (Progressive Web App): one codebase that runs in any browser on your machine and installs on your iPhone home screen like a native app, with offline support. All data (history, statistics, profile, settings) is stored on-device — no account, no server.
+A minimalist platform of seventy-one classic puzzle and brain games, plus **Brain Lab** — a science-based tab for tracking your own thinking over time — flat surfaces with an extruded "candy button" depth style. Built as a **PWA** (Progressive Web App): one codebase that runs in any browser on your machine and installs on your iPhone home screen like a native app, with offline support. All data (history, statistics, profile, settings) is stored on-device — no account, no server.
 
 ## Games
 
@@ -93,7 +93,7 @@ A minimalist platform of sixty-nine classic puzzle and brain games — flat surf
 - **Statistics & history**: win rate, best/avg time, best/avg score, game crowns, streaks, errors, hints, time played, high scores per difficulty, filterable per game, with a calendar to browse any day's games (Profile → Statistics, Achievements and History tabs; General keeps the level, streak and daily cards)
 - **Play streak**: playing on consecutive days builds a Duolingo-style day streak — a flame card on the profile with a Mo–Su week row (plus best-ever and total days played) and a compact flame counter next to your name on the home page; miss a full day and it resets. The flame greys out until you've played that day
 - **Completion markers**: every difficulty you've beaten gets a thick green ring and a gold-star seal on its top-left corner — on that game's difficulty picker and on the profile's high-score tiles alike; beat a game on all five tiers and it earns a green badge with a flat gold check-marked trophy, shown on its menu card and beside its name in the profile's high scores
-- **Landmarks**: a trophy collection on the profile — play your first game, streak milestones (1–3 weeks, 1 month, bimester, trimester, quadrimester, semester, a full year), finish 50/100/200/500/1000 games, win 50/100/200/500/1000 of them with no help at all, win 10/25/50/75/100 in a row with no help, reach each rank crown, complete your first Daily Challenge, keep a daily streak (7 days, a month, 100 days, a year) and solve one of every game in the daily rotation, play every game, take a Grand Slam (every game in the library beaten unaided on one difficulty — one for each tier), master each category, win one clean in every category (Renaissance) and sweep a whole category on all five tiers (Full House). Alongside them a set of one-off feats: win with no mistakes at all, win in under a minute (and under thirty seconds), win straight after a loss, win a board you'd already failed twice, play in the small hours or before six, play every category in a single day, dig out a game from the bottom of your own play counts, make your first win card, share the app's link with a friend, and export or import a backup. Locked trophies show in black & white behind a padlock with live progress ("41/69"); unlocked ones color in with their date and can be shared as a designed 1080×1350 card. Trophies are permanent — once earned they're never taken back, and they survive a history wipe
+- **Landmarks**: a trophy collection on the profile — play your first game, streak milestones (1–3 weeks, 1 month, bimester, trimester, quadrimester, semester, a full year), finish 50/100/200/500/1000 games, win 50/100/200/500/1000 of them with no help at all, win 10/25/50/75/100 in a row with no help, reach each rank crown, complete your first Daily Challenge, keep a daily streak (7 days, a month, 100 days, a year) and solve one of every game in the daily rotation, play every game, take a Grand Slam (every game in the library beaten unaided on one difficulty — one for each tier), master each category, win one clean in every category (Renaissance) and sweep a whole category on all five tiers (Full House). Alongside them a set of one-off feats: win with no mistakes at all, win in under a minute (and under thirty seconds), win straight after a loss, win a board you'd already failed twice, play in the small hours or before six, play every category in a single day, dig out a game from the bottom of your own play counts, make your first win card, share the app's link with a friend, and export or import a backup. Locked trophies show in black & white behind a padlock with live progress ("41/71"); unlocked ones color in with their date and can be shared as a designed 1080×1350 card. Trophies are permanent — once earned they're never taken back, and they survive a history wipe
 - **Easter eggs**: a separate, hidden section under the landmarks. You can see how many there are and how many you've found — nothing else. Locked ones show a dashed `?` egg with no title and no hint; find one and it colors in with its real name and story, and shares like any other trophy
 - **Profile**: name + avatar — an emoji or one of six Pokémon (Pikachu, Bulbasaur, Charmander, Squirtle, Snorlax, Mewtwo), which follows you onto the home header and every card you share — plus totals across games
 - **Profile color**: pick yellow, green, orange, blue or purple in Profile → Edit and it becomes yours across the app — a 4px frame around your avatar and the home header card, the color of your level, XP bar, streak flame and counter, and the palette your profile charts are drawn from. Every color is nudged just enough on each surface theme to stay readable (yellow darkens on warm paper so a level number never disappears into it), and **Standard** is always there to put the shipped orange back
@@ -109,6 +109,21 @@ A minimalist platform of sixty-nine classic puzzle and brain games — flat surf
 - Sound effects synthesized with WebAudio (no assets), volume control, data reset
 - **A real chess engine, on the device**: Chess plays against [Stockfish](https://stockfishchess.org) (the Stockfish.js WASM build, GPLv3), loaded as a separate Web Worker the first time a medium-or-harder game starts — a one-time 7 MB download with a progress meter, cached for offline play afterwards, never part of the app's own bundle. The five tiers are genuinely different opponents, calibrated by matches against the engine's own Elo limiter (`npx tsx scripts/chess-ladder.ts ladder`): easy is an engine-free weighted lottery over the legal moves (≈300 Elo), medium lets a shallow search choose loosely among its best lines and answers one move in seven like a beginner (≈750), hard searches deeper and picks loosely but never blunders on purpose (≈1200), pro uses the engine's own Elo limiter (≈1600) and extreme plays full strength (beats a 2000-limited engine 4–0). The engine's license and credit are under Settings → About
 
+## Brain Lab
+
+A tab between Games and Profile for tracking your own thinking over time — measured carefully and reported honestly.
+
+- **Nine areas, one benchmark each**: Attention (attention control), Memory (spatial working memory), Calculation (arithmetic fluency), Analysis (pattern reasoning), Precision (touch-aiming precision), Reaction (alertness), Processing Speed, Flexibility (rule switching) and Spatial (mental rotation). Each test takes one to four minutes and implements a published, peer-reviewed paradigm — its page names the paradigm, the sources and every way our version differs. Items are generated fresh from a stored seed on every run, so there is nothing to memorise.
+- **Learn it first**: every test opens with an animated demonstration and an unscored practice round the first time, then runs the same way every time: a short warm-up, a 3-2-1 countdown, the scored block, and a results card with the same layout every day.
+- **A daily check-in**: a few questions about your state (sleepiness, stress, last night's sleep) and a short battery picked by each test's schedule, so a dip can be read next to how you slept.
+- **Your baseline, not a leaderboard**: your first runs of each test are calibration (scores rise while you learn the test); after that Brain Lab freezes your personal baseline and learns your normal day-to-day spread. A single day is shown as "today vs your typical range"; a change is called reliable only when it holds two weeks in a row, and an improvement on a test that rewards practice says so. Changing phone or input method starts a new series instead of mixing devices.
+- **Honest numbers**: each area has an index on a 0–100 scale centred on 50, with a badge saying how good its reference is ("Approximate" for most). No IQ, no brain age, no percentiles, no diagnosis — it is a self-tracking tool, not a medical device, and it says so the first time you open it.
+- **Train with the games**: every area links to the games that exercise it, with the evidence stated plainly — practice improves the practised game and similar tasks; there is little evidence of wider effects.
+- **Profile → Brain**: a dashboard of per-area trends, weekly verdicts, a radar of all nine areas against your baseline, and every session, invalid ones included with the reason.
+- Brain Lab keeps its results in their own permanent store on the device: "Clear history" does not touch them, and they travel in the backup file.
+
+The rulebook for everything it measures and says is [`src/platform/brain/SCIENCE.md`](src/platform/brain/SCIENCE.md); its screens follow the premium floor in [`src/platform/design/GAME-QUALITY.md`](src/platform/design/GAME-QUALITY.md).
+
 ## Running it
 
 Node 22 is installed at `~/.local/opt/node-v22.17.0-linux-x64` (added to `~/.bashrc` PATH).
@@ -119,7 +134,10 @@ npm run build      # typecheck + production build to dist/
 npm run preview    # serve the production build
 npm run check      # typecheck only
 npm run validate   # verify all hand-authored/generated game content (see below)
+npx tsx scripts/brain-checks/run.ts <test-id>   # one Brain Lab benchmark's fidelity check
 ```
+
+Brain Lab has two dev-only tools on the dev server (never in a build): `http://localhost:5173/?harness=<test-id>` mounts one benchmark on its own (add `&mode=practice`, `&first=1`, `&seed=N`, `&autostart=1`), and `?brainFixture=1` fills an empty Brain Lab with ~60 days of synthetic sessions and check-ins (`=fresh` shows the first-open experience, `=reseed` starts the data over).
 
 ## Versioning
 
@@ -199,7 +217,10 @@ src/
       rankMaterials.ts   ← what each rank crown is made of (grain, brush,
                             sheen, facets) — read by the SVG badge AND the
                             share card's canvas port, so they can't drift
-      DESIGN.md          ← the rulebook (read before any UI work)
+      DESIGN.md          ← the rulebook for the LOOK (read before any UI work)
+      GAME-QUALITY.md    ← the premium floor: how every game and Brain Lab
+                            test must respond, animate, sound, read and
+                            recover — numbered rules + a ship checklist
     types.ts             ← GameDefinition contract, GameProps, GameResult
     registry.ts          ← the list of games (add new games here)
     storage.ts           ← on-device persistence (history, settings, profile)
@@ -214,7 +235,17 @@ src/
     version.ts           ← the build stamp shown in Settings (MAJOR from
                             package.json, MINOR = `feat:` commits, PATCH =
                             commit count — see Versioning above)
-    audio.ts             ← WebAudio sound effects and tones (no assets)
+    audio.ts             ← WebAudio sound effects and tones (no assets),
+                            incl. the feedback family (correct/wrong/early,
+                            countdown/go, complete)
+    motion.ts            ← the motion tokens' JS twins, reduced motion,
+                            haptics
+    brain/               ← Brain Lab: SCIENCE.md (the rulebook), types,
+                            timing (seeded items, onset/response clock),
+                            device, store (permanent), analytics (run-in,
+                            baseline, verdicts), domains (areas + copy),
+                            registry, and the shared screens (tab, runner,
+                            check-in, dashboard)
     AppState.tsx         ← app-wide state provider (settings/profile/history)
     components/
       GameShell.tsx      ← standard structure around every game: difficulty
@@ -228,10 +259,15 @@ src/
       Landmarks.tsx      ← trophy gallery, detail modal, shareable trophy card
       Tutorial.tsx       ← illustrated how-to-play viewer (every game ships one)
       charts.tsx         ← dependency-free SVG charts (donut, stacked bars, trend)
+      fx.tsx             ← premium-floor primitives: ResponseButton,
+                            NumberPad, useFeedback, Countdown, TimerBar,
+                            PhaseCard, animated demos
     design/              ← the design system: tokens.css, effects.css, icons,
                             avatars, and profileColors.ts (the five profile
                             colors + the chart ramps derived from them)
     pages/               ← Home (+ search), Profile (stats + history), Settings
+  brain/                 ← one isolated folder per Brain Lab benchmark
+                            (measurements, never registered as games)
   games/                 ← one isolated folder per game, all its logic inside
     sudoku/  crossword/  word-wheel/  memory-match/  simon/  nback/
     dual-nback/  number-merge/  color-connect/  tic-tac-toe/  image-puzzle/
@@ -245,7 +281,7 @@ src/
     schulte-table/  stroop-match/  odd-one-out/  count-compare/  sokoban/
     pipes/  gridlock/  tower-of-hanoi/  tangram/  untangle/  laser-mirrors/
     jigsaw/  peg-solitaire/  connect-four/  reversi/  checkers/  dots-boxes/
-    klondike/  chess/  arrow-crossword/
+    klondike/  chess/  arrow-crossword/  snake/  block-drop/
 ```
 
 ### Adding a new game
@@ -262,7 +298,17 @@ assist tracking, share cards, themes and settings all come for free from
 the platform. Three per-game requirements: an illustrated `tutorial.tsx`,
 a `mastery.ts` strategy guide, and save/resume support (hydrate from
 `savedState`, register a snapshot provider). Follow
-`src/platform/design/DESIGN.md` for all UI.
+`src/platform/design/DESIGN.md` for all UI, and clear the premium floor in
+`src/platform/design/GAME-QUALITY.md` — timed answers on pointerdown, the
+shared feedback/countdown/demo primitives, motion tokens, reduced motion,
+type and touch-target floors — running its checklist before the game ships.
+
+A **Brain Lab benchmark** is not a game: it lives in `src/brain/<id>/`,
+exports a `BrainTestDefinition` (a published paradigm, its deviations and
+references, a looping demo, metrics and versions), is listed in
+`src/platform/brain/registry.ts` — whose order is the session order — and
+ships a fidelity check in `scripts/brain-checks/<id>.ts`. Read the
+test's section of `src/platform/brain/SCIENCE.md` first.
 
 Streaks and landmarks need **no per-game work**: the achievement
 catalogue (`src/platform/progress/`) is derived from the registry and the

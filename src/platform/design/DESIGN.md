@@ -5,12 +5,25 @@ This folder is the single source of truth for the platform's look and feel.
 
 | File | Purpose |
 | --- | --- |
-| `tokens.css` | All colors, themes, radii, touch-target sizes |
+| `tokens.css` | All colors, themes, radii, touch-target sizes, motion durations and curves |
 | `effects.css` | Depth: the flat frosted-glass surface standard |
 | `icons.tsx` | Every UI-control icon in the platform (monochrome SVG) |
 | `gameIcons.tsx` | Game identity icons — colorful sticker SVGs for home cards |
-| `DESIGN.md` | The rules (this file) |
+| `profileColors.ts` | The profile colors, the contrast helpers (`contrast`, `legibleOn`) and the chart ramps |
+| `rankMaterials.ts` | The rank crowns' textures — one table, two renderers |
+| `avatars.tsx` | Emoji and sprite avatars behind one `<Avatar>` |
+| `DESIGN.md` | The rules for the LOOK (this file) |
+| `GAME-QUALITY.md` | **The premium floor** — the rules for the FEEL: input, feedback, motion, legibility, flow, accessibility, performance |
 | `/public/icons/icon.svg` | App logo — source for all PWA/app icons |
+
+**Read GAME-QUALITY.md with this file.** DESIGN.md says what a surface
+looks like; GAME-QUALITY.md says how every game and Brain Lab test must
+respond, animate, sound, read and recover — numbered rules (Q1…), each with
+its reason and how it is checked, a premium checklist to run before
+shipping, and the table of shared primitives (`components/fx.tsx`,
+`motion.ts`, `sfx`, the tokens) to build with. Both are mandatory. Brain Lab
+also answers to `src/platform/brain/SCIENCE.md` for everything it measures
+and says.
 
 ## Philosophy
 
@@ -22,11 +35,11 @@ borders) stays neutral, so both colors always mean something.
 
 The accent used to be a six-way user setting. It was removed: six pickable
 hues multiplied every surface that had to be checked, for one bit of taste,
-and the monochrome option was the one that kept the whole 69-game library
-legible on all three surface themes. **Do NOT reintroduce an accent
-picker** — no setting may repaint `--accent`, because that is the token
-every game's tools read, and 69 games × 6 hues × 3 themes is the surface
-that made it unmaintainable.
+and the monochrome option was the one that kept the whole library legible
+on all three surface themes. **Do NOT reintroduce an accent picker** — no
+setting may repaint `--accent`, because that is the token every game's
+tools read, and every game × 6 hues × 3 themes is the surface that made it
+unmaintainable.
 
 The **profile color** (below) is the deliberate exception, and it is drawn
 exactly there: it retunes `--xp` and the player's own frames and charts —
@@ -73,6 +86,10 @@ surface/text/edge tokens plus `--accent`, and one entry in `THEMES` in
   allowed only as user avatars and celebratory content (win screen, share
   card artwork).
 - Default sizes: chrome icons 18–22px, in-button tool icons 16px.
+  One sanctioned exception (owner request, 2026-10-31): the Brain Lab
+  check-in's rating scales (Stanford Sleepiness 1–7, sleep quality and stress
+  1–5) show a mood face beside each number — decorative and `aria-hidden`; the
+  number and the verbatim wording remain the answer. Don't extend it elsewhere.
 
 ### Game icons (home cards)
 
@@ -181,9 +198,12 @@ which players read as "something broke", not "I won". The rules:
   wrong), confetti is thin, and the banner lifts away before the modal
   opens. Whatever the game is still drawing underneath plays in full view.
 - **The shell owns the timing, games cooperate in no way.** A game that
-  fires `onFinish` mid-transition still gets its moment, so all 69 games
-  (and every future one) inherit this for free — never re-implement a
+  fires `onFinish` mid-transition still gets its moment, so every game
+  (and every future one) inherits this for free — never re-implement a
   per-game win animation or delay `onFinish` to fake one.
+- **Games only.** A Brain Lab measurement is neither won nor lost, so it
+  never gets the celebration or a loss screen: its results card is calm and
+  identical every run (see "Brain Lab").
 - **Purely decorative**: the result is already recorded when it mounts, so
   unmounting it early (quit, restart) can never lose data.
 - Green is `--good` and the pill reuses the completion-marker family
@@ -266,7 +286,8 @@ What it repaints, and nothing else:
   padding gives back exactly the 3px the thicker border took so nothing
   shifts.
 - The profile page's **charts** (categories, most played, activity), via
-  `chartRamp`.
+  `chartRamp`. Not the Profile → Brain dashboard: its series are Brain Lab
+  areas, each with a fixed identity colour (see "Brain Lab").
 
 Rules that hold it together:
 
@@ -503,7 +524,9 @@ never recomputed from capped history:
 
 ## Components
 
-- **Touch targets**: minimum `44px` (`--touch`) in at least one dimension.
+- **Touch targets**: minimum `44px` (`--touch`) in at least one dimension;
+  on every NEW surface, every in-game input and close button is 44 × 44 in
+  both, and a two-choice response pad is ≥ 96px tall (GAME-QUALITY Q27).
 - **Radius scale**: 12 (`--radius-s`) small buttons/cells · 16 (`--radius-m`)
   cards/inputs · 20 (`--radius-l`) game cards · 24 (`--radius-xl`) modals.
 - **Buttons**: `primary-btn` (filled, one per screen max), `ghost-btn`
@@ -513,10 +536,15 @@ never recomputed from capped history:
   row would outgrow the viewport), `pad-tool` (in-game toolbar).
 - **Toolbars**: rows of `pad-tool` buttons must use the equal-width grid
   (`.sudoku-controls` / `.cw-tools` pattern: `grid-auto-flow: column;
-  grid-auto-columns: 1fr`) so buttons align in width and height. Fixed
-  height 46px, icon + short single-word label.
+  grid-auto-columns: minmax(0, 1fr)`) so buttons align in width and height
+  and long label rows can still shrink inside a phone viewport (a bare
+  `1fr` track keeps `min-width: auto` and overflows — see "Tile grids").
+  Fixed height 46px, icon + short single-word label.
 - **Modals**: backdrop blur, `--radius-xl`, actions right-aligned; anything
-  destructive or irreversible requires an explicit confirm step.
+  destructive or irreversible requires an explicit confirm step. A modal or
+  sheet closes on Escape, moves focus in and returns it, is labelled by its
+  title and arrives over `--dur-base` (GAME-QUALITY Q35) — the shared
+  `Modal` does not do the first three yet, so a new sheet must.
 
 ### Leaving a game (back ≠ home)
 
@@ -525,7 +553,7 @@ The in-game header owns TWO exits, and they are not interchangeable:
 - **Back** (`BackIcon`) goes one step out — to this game's own setup screen
   (difficulty, assists, tutorial, Continue card). Wanting a different
   difficulty is the common case; it must not cost a trip through the
-  69-game list.
+  whole game list.
 - **Home** (`HomeIcon`) leaves the game entirely for the game list.
 
 Both run the same `leave(to, recordAbandon)` path in `GameShell`, so the
@@ -569,7 +597,11 @@ to the header while the snake keeps moving is asking them to crash. And
 they run a **3-2-1 countdown** before the board moves, at the start and
 after every resume, drawn on the canvas as a card in the app's own
 material (surface face, extruded edge, a draining ring) with the shell's
-clock held through it (`holdClock`), so the recorded time is play time.
+clock held through it (`holdClock`), so the recorded time is play time. A
+game whose stage is DOM rather than canvas — and every Brain Lab test —
+uses the shared `Countdown` (`components/fx.tsx`, see "FX primitives")
+instead of drawing its own: one card, one beat, one sound, everywhere
+(GAME-QUALITY Q31).
 
 Canvas text over saturated content colours (floating points, the GO!) is
 heavy white type with a dark rounded outline (`popText` in each game) —
@@ -588,23 +620,37 @@ only, the icons stay the set's own monochrome marks in `currentColor`
 the "More…" tile (the device's own share sheet) and the copy row stay in
 the app's surface. Nothing else may borrow a brand colour.
 
-### Profile tabs (four sections, one sticky strip)
+### Profile tabs (five sections, one sticky strip)
 
 The profile grew past what one scroll can hold — a landmark gallery of
 dozens of plates, the eggs, three charts, the level card, two streak cards
-and the game log — so it is four tabs under one segmented strip
+and the game log — so it is tabs under one segmented strip
 (`.profile-tabs`, right under the profile header): **General** (level card
 with its badge case, play streak, Daily Challenge card — the player's
-identity), **Statistics** (scope dropdown, charts, KPI grid),
-**Achievements** (landmark gallery, high scores by difficulty with their
-own scope dropdown) and **History** (scope dropdown, calendar, game log).
+identity), **Statistics** (scope dropdown, charts, KPI grid), **Brain**
+(the Brain Lab dashboard — see "Brain Lab"), **Achievements** (landmark
+gallery, high scores by difficulty with their own scope dropdown) and
+**History** (scope dropdown, calendar, game log).
 Rules: the strip is `position: sticky` under the safe-area inset, painted
 on the page ground (`box-shadow: 0 0 0 6px var(--bg)`) so content scrolls
-under it; it is a fixed four-column grid that squeezes rather than wraps,
-with the active tab as the raised extruded segment; every tab keeps its
-OWN scope filter so a pick on one never silently re-scopes another; and a
-switch scrolls to the top. Validate pins the tab order and that each
-section renders in exactly one tab.
+under it; it is one grid row that never wraps, with the active tab as the
+raised extruded segment; every tab keeps its OWN scope filter so a pick on
+one never silently re-scopes another; and a switch scrolls to the top
+(also when another screen asks for a tab — the Brain Lab tab opens Profile
+→ Brain directly). Validate pins the tab order and that each section
+renders in exactly one tab.
+
+**Every label must FIT at 360px — never ellipsized.** With four tabs the
+grid was equal columns; equal FIFTHS leave about 57px of text box per
+label, and "Achievements" needs 66–72px, so it shipped cut off. The strip
+is therefore five CONTENT-SIZED columns, `repeat(5, minmax(0, auto))`
+(validate-pinned), with the type at `clamp(11px, 2.9vw, 13px)` — the
+labels take the room they need and the five still fit a 360px screen with
+room to spare. The `text-overflow: ellipsis` on a tab is a last-resort
+guard, never the layout. A scrolling strip is not the escape hatch either:
+it would need the full horizontal-scroller pattern and would hide a tab
+off-screen. Measure the labels at 360px whenever a tab is added or
+renamed.
 
 ## Horizontal scrollers (the category row pattern)
 
@@ -656,6 +702,16 @@ clipping, and the page scrolls sideways.
 System font stack (SF Pro on Apple devices). Weights: 800 page titles,
 700 headings/buttons, 600 labels, 400–500 body. Numbers that update live
 (timers, scores, stats) use `font-variant-numeric: tabular-nums`.
+
+Size floors, rendered on a 360px phone, for every new surface
+(GAME-QUALITY Q25): a stimulus 28px, an answer label 16px, live numbers
+15px, reading text (instructions, status, results insight, verdicts) 14px,
+captions 13px, all-caps micro labels 11px at weight ≥ 600. SVG text counts
+at its rendered size, not its viewBox units. Scale type with `clamp()` or
+container units, never the row. Contrast is part of type: text ≥ 4.5:1 on
+every background of every theme, and semantic or area colours are never
+text ink (GAME-QUALITY Q26 has the measured numbers, including the light
+theme's `--text-dim` gap).
 
 ## Depth & motion (the surface standard)
 
@@ -710,9 +766,125 @@ transforms anywhere, in any theme:
 
 ## Motion & feedback
 
-Transitions 0.12–0.2s ease. Press feedback: `scale(0.98)`. Every meaningful
-action can play a `sfx` sound (respecting sound settings). Board state
-changes (correct placement) may flash `--good-soft` briefly.
+Motion and feedback have ONE system: the tokens at the end of `tokens.css`,
+their JS/canvas twins in `platform/motion.ts`, the shared pieces in
+`components/fx.tsx` and the feedback sounds in `audio.ts`. The full floor is
+GAME-QUALITY.md §B–D; this is what every UI change needs to know. It
+replaces a four-line section that said "transitions 0.12–0.2s ease" and
+"press: `scale(0.98)`" while Tool buttons said `scale(0.96)` and the CSS
+actually did `translateY(2px)` — a rulebook that contradicted itself three
+ways, over a library that had grown 35 easing curves, 271 one-off keyframes
+and 28 separate shakes.
+
+- **Durations and curves are tokens, never literals.** `--dur-press` 80ms
+  (the press), `--dur-fast` 140ms (hover, colour and state swaps),
+  `--dur-base` 220ms (a card, sheet, modal or phase arriving or leaving),
+  `--dur-feedback` 360ms (correct/wrong bursts, a flash, a shake),
+  `--dur-emphasis` 600ms (one-off emphasis: a countdown digit, a results
+  headline). `--ease-out` is the default (anything arriving or
+  responding), `--ease-in` is for leaving, `--ease-in-out` for a move from
+  A to B, `--ease-spring` for the small overshoot of a decorative pop —
+  never on a timed stimulus or a response target. Write
+  `transition: transform var(--dur-fast) var(--ease-out)`; canvas and JS use
+  `DUR`, `easeOut()` and `spring()` from `motion.ts`, kept in step with the
+  tokens.
+- **The press is the pushable press** (see "Depth & motion"): extruded
+  controls sink `translateY(2px)` with the edge shrinking to 1px over
+  `--dur-press`; a flat tile may `scale()` instead. Both are transforms;
+  neither ever touches size, padding or border width.
+- **Only paint and transform animate** — `transform`, `opacity`, colours,
+  `box-shadow`, `filter` — never layout properties on anything in the flow.
+  **Stimulus onsets never animate**: a measured stimulus appears in one
+  frame (`revealOnFrame`), and decoration never delays it, covers it or
+  moves a response target (SCIENCE.md C2, C3). One emphasis per element per
+  event; `infinite` only for a state that needs attention, and never inside
+  a scored measurement block.
+- **Reduced motion is built in.** Under `prefers-reduced-motion` every
+  `--dur-*` token collapses to 1ms and `--motion` becomes 0, so CSS on the
+  tokens is compliant for free; JS and canvas read `useReducedMotion()`.
+  Movement becomes a fade, information never depends on movement, and flow
+  timing does not change — the win celebration keeps its 3.5s with the
+  confetti gone. Never `animation: none` where code waits for
+  `animationend`: the 1ms collapse exists so that event still fires.
+- **One feedback family**: `useFeedback()` — a correct answer RISES
+  (`sfx.correct(step)`, a ✓ burst, `haptic('good')`), a wrong one FALLS
+  (`sfx.wrong()`, a ✕ burst, `haptic('bad')`), and `neutral` acknowledges a
+  press without judging it — the default inside measurement blocks, where
+  only the paradigm decides what feedback exists (SCIENCE.md C3). Feedback
+  never rides on colour alone (a glyph, a shape or words go with it), never
+  on sound or vibration alone (the iPhone's silent switch mutes Web Audio
+  and iOS has no Vibration API), and never lands on the NEXT stimulus.
+  "Too early" and "too slow" are their own states, not a wrong answer.
+- **Sound is paired and singular.** One catalogue (`sfx`), one meaning per
+  sound (GAME-QUALITY Q21 has the table), one sound per event (`PadTool`
+  is `silent` when its handler sounds the result; `ResponseButton`,
+  `NumberPad` and `Keyboard` play nothing), and every sound has a visual
+  twin. Board state changes (a correct placement) may still flash
+  `--good-soft` briefly.
+
+## FX primitives (`components/fx.tsx`)
+
+The shared pieces every NEW game and every Brain Lab test builds on: timed
+input, feedback, the shape of a timed block, and animated demonstrations.
+Their CSS is the global.css section "FX primitives" — tokens only, paint and
+transform only. Never re-implement one in a game folder; if one does not
+fit, extend it here, backward-compatibly — that is how the keyboards stayed
+one keyboard.
+
+**`ResponseButton` is `PadTool`'s pointerdown sibling.** Same look (it wears
+`.pad-tool`), a different contract:
+
+| | `PadTool` | `ResponseButton` |
+| --- | --- | --- |
+| Fires on | `click` (finger lifted) | `pointerdown` (primary pointer), its hardware `keys`, and a keyboard-activated click |
+| Hands the handler | the click | `t`, the press time on the `performance.now()` clock (`eventTime`) |
+| Sound | `sfx.tap()` unless `silent` | none — the test decides what the press means |
+| Use it for | untimed tools: hint, undo, flag, assist toggles, an untimed submit | anything timed or felt: Brain Lab answers, reflex controls, speed-round answers |
+
+A click fires on release, ~80–120ms after the finger lands on touch — fine
+for "undo", fatal for a reaction time. Variants: `tool` (toolbar size), `big`
+(two-choice response pads, `clamp(96px, 15vh, 136px)` tall) and `key` (a
+54px number-pad key). Its press paints through a `data-down` attribute set
+in the handler itself, so the sink shows on touch even where `:active`
+arrives late, and it never moves or resizes. A held, auto-repeating control
+(Block Drop's DAS) keeps its own pointer-capture handler instead.
+
+- **`NumberPad`** — the `Keyboard`'s numeric twin, built from
+  ResponseButtons: `phone` (1-2-3 on top, then ⌫ 0 ✓ — the layout an iPhone
+  dials) or `digits9` (1–9 in a 3×3). `onDigit(d, t)`, `onBackspace(t)`,
+  `onEnter(t)`; `enterReady` lights the ✓; hardware digits, Backspace and
+  Enter are on by default. The calculator layout (7-8-9 on top) of the older
+  hand-built pads is deliberately not offered: eight pads in two layouts is
+  the drift the shared keyboard already ended once.
+- **`useFeedback()`** → `{ good(at?, { step, sound }), bad(at?, { sound }),
+  neutral(at?, { sound }), layer }`. Render `layer` ONCE, inside the
+  `position: relative` element that covers the stage; `at` is in percent of
+  it (default: the centre). `good`/`bad` play their sound, call `haptic()`
+  and burst; `neutral` is silent unless asked. The bursts are `aria-hidden`,
+  so the outcome must also reach a text status line. `FeedbackBurst` is the
+  burst on its own, for a one-off.
+- **`Countdown`** — 3-2-1-Go over the stage (`.countdown-veil` fills its
+  positioned parent): a `.fx-card` whose digit pops on `--ease-spring`,
+  `sfx.countdown(n)` per beat, `sfx.go()`, then `onDone` exactly once.
+  While `paused` it holds and restarts from the top. Inside `GameShell`,
+  hold the clock (`holdClock(true)`) while it shows.
+- **`TimerBar`** — a 4px drain for a fixed-time block. Decorative: a CSS
+  animation of `totalMs`, restarted by `runKey`, paused by `running`; the
+  block's real end is its own `performance.now()` clock. It keeps draining
+  under reduced motion — a slow, linear progress bar is information, not
+  decoration.
+- **`PhaseCard`** — the between-phases card: a kicker ("Warm-up · not
+  scored"), a title, a body and one primary action. Every test uses it for
+  the same moments, so every protocol reads the same (SCIENCE.md C1).
+- **`DemoStage` · `useDemoClock` · `demoStep` · `DemoFinger`** — looping
+  animated demonstrations. `DemoStage` is an aspect-locked stage (4:3 by
+  default) for the test's own miniature art in percent coordinates, plus a
+  caption; the art is `aria-hidden`, so the caption carries the meaning.
+  `useDemoClock(periodMs, stillAt)` ticks at ~30fps and parks at `stillAt`
+  under reduced motion — choose a frame that explains itself.
+  `demoStep(script, t)` picks the active step of a timed script; `DemoFinger`
+  is a fingertip with a tap ripple. Brain Lab's required `Demo` and the
+  first "How to play" step of a new game are built from these.
 
 ## Avatars
 
@@ -772,8 +944,9 @@ other tile. Concretely:
   border-*color*, opacity, transform, box-shadow. Never border-width,
   padding, font-size, or display between states — keep the border always
   present and swap its color (use `transparent` to hide it).
-- **Press feedback is `transform: scale(...)`** (per Motion & feedback),
-  never a size/padding change — transforms don't reflow neighbors.
+- **Press feedback is a transform** — the pushable sink on extruded tiles,
+  `scale(...)` on flat ones (see "Motion & feedback") — never a size or
+  padding change: transforms don't reflow neighbors.
 - **Print inside a cell scales with the cell, not the viewport.** A board
   that carries text smaller than its letters (Arrow Crossword's clue cells)
   sizes it from the board's own width through container units
@@ -802,7 +975,11 @@ standard for free:
   (`--accent-soft` fill, accent text/border) so they read as interactive
   in every theme — never gray/`--text-dim`.
 - **Hover** strengthens the tint (hover-capable devices only), **press**
-  scales down (`scale(0.96)`). The toggled state (`active` prop) is a
+  sinks — the pushable press, `translateY(2px)` with the edge shrinking to
+  1px (this line said `scale(0.96)` for a long time; the CSS never did). It
+  fires on `click`, i.e. on release, which is right for a tool and wrong
+  for a timed answer — timed answers use `ResponseButton` (see "FX
+  primitives"). The toggled state (`active` prop) is a
   **solid accent fill with `--on-accent` ink** and `aria-pressed` — an
   ON tool must be unmistakable next to an OFF one, never just a slightly
   stronger tint.
@@ -811,7 +988,7 @@ standard for free:
   submit-style actions play their own success/error sounds) so nothing
   double-fires.
 - Toolbars remain rows of equal-width tools
-  (`grid-auto-flow: column; grid-auto-columns: 1fr`).
+  (`grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr)`).
 - **The bottom menu is ONE card**: every game puts ALL of its bottom
   controls — tool rows and any input surface (keyboard, digit pad,
   d-pad) — inside a single `.game-tools fx-card`, never sibling panels.
@@ -869,6 +1046,13 @@ Convention: a `tutorial.tsx` file in the game's folder exporting
   `tut-row/col`, `tut-arrow`, `tut-label`, `tut-big`, plus the standard
   `chip` tones) — never static images or screenshots, so every tutorial
   follows the active theme automatically.
+- **A new game's first step is ANIMATED**: its art is a `DemoStage` with a
+  `DemoFinger` performing the core move on a miniature of the board (see
+  "FX primitives"), so the player watches the interaction instead of
+  decoding a description (GAME-QUALITY Q30). Static `.tut-*` art stays fine
+  for the steps after it, and the existing games' static tutorials are
+  grandfathered. Under reduced motion the demo parks on a frame that
+  explains itself.
 - Step order tells a story: the goal → how to interact → scoring/special
   mechanics → assists (and that they count as help).
 - The platform shows tutorials in two places automatically: a "How to play"
@@ -960,9 +1144,119 @@ would put the player on a board the screen does not claim they are
 playing. There is still one slot per game, so the modes overwrite each
 other; only the *offer* is mode-aware.
 
+## Brain Lab (the measurement tab)
+
+Brain Lab is a measurement instrument inside a games app. It must look like
+THIS app — the same tokens, `.fx-card` surfaces, candy edge and icons, the
+premium floor of GAME-QUALITY.md — with the restraint its honesty needs.
+`src/platform/brain/SCIENCE.md` decides what it measures and says (its §4
+claims policy above all); this section decides how that looks. Its tab sits
+between Games and Profile behind the monochrome `BrainIcon`.
+
+- **No pseudo-science decoration.** No brain-scan imagery, neural glow,
+  pulse or EEG lines, gauges dressed as medical equipment, bell curves with
+  "you are here", or one big "brain score" dial. The disclaimer says this is
+  not a medical device and the screen must not look like one (SCIENCE.md
+  §4.1: no borrowed authority, no Brain score). Premium here means calm,
+  precise and fast, not clinical.
+- **Area colours are fixed `--play-*` slots** (`slot` in `brain/domains.ts`,
+  read through `domainColor()`): Attention 4 blue, Memory 5 purple,
+  Calculation 3 yellow, Analysis 10 indigo, Precision 11 teal, Reaction 15
+  magenta, Processing Speed 6 cyan, Flexibility 13 lime, Spatial 1 green.
+  Where an area has a game-category twin it shares that category's slot —
+  Memory, Spatial, Reaction with Reflex, Processing Speed with Focus — so a
+  training shortcut and its area agree. Avoided on purpose:
+  - **9, white** — the accent ink: an area in white reads as a selected tool
+    on the dark themes and vanishes on paper;
+  - **14, grey** — the charts' "Other" and the grey that means "not yet"
+    (locked plates, unearned crowns);
+  - **7, orange** — `--xp`'s default: an area in orange beside the level
+    ring and the streak reads as progression, which is why Calculation
+    leaves the Numbers category's orange for yellow;
+  - **2 and 8, the reds** — `--bad` IS `--play-2`, and the claims policy
+    bans alarm colours.
+  Green (1) is `--good`'s hex; Spatial keeps it because the games' Spatial
+  category already does — one more reason a verdict is never coloured
+  (below).
+- **Colour is identity, never meaning.** An area colour always sits beside
+  the area's name. It is never text ink (five of the nine slots are under
+  2:1 on warm paper) and never a background for text (`--ink` on Analysis'
+  indigo is 3.4:1, white on Calculation's yellow 1.4:1 — no single ink works
+  on all nine). Its marks — vertex dots, card stripes, chart lines — wear a
+  darker rim (the colour mixed toward black, as every extruded token does)
+  so the pale slots still read on paper.
+- **Brain charts are coloured by area, not by the profile ramp.** The
+  profile colour's `chartRamp` encodes RANK among games; an area is an
+  identity, not a rank. The `MAX_SERIES` cap of 5 still holds: nine areas
+  are small multiples or the radar (one series over nine axes), never nine
+  lines on one plot.
+- **The radar** (`brain/ui/BrainRadar.tsx`, shared by the tab and Profile →
+  Brain) is dependency-free SVG like `charts.tsx`. Axes run in
+  `BRAIN_DOMAINS` order clockwise from the top and are NEVER re-sorted by
+  score — a shape that reshuffles cannot be compared week to week. The
+  `current` polygon is filled in accent ink, `baseline` is dashed, `ghost`
+  is faint; vertex dots wear the area colours. **No fake zero**: a missing
+  value leaves a gap and dims its label instead of spiking to the centre.
+  Labels are real buttons ≥ 44px, the SVG is `role="img"` with every value
+  in its label, and it grows in and morphs except under reduced motion.
+- **Index numbers** sit on the 0–100 scale centred on 50 (`indexFromZ`:
+  50 + 10z). Never a 100/15 scale, never a percentile, never "IQ", never one
+  combined "brain score" — the composite is "Mean — average of N areas",
+  shown only when every included area has recent data (SCIENCE.md §2.1, §4).
+- **Grade badges.** Every reference index carries its badge from
+  `gradeCopy()` — **Reference** (grades A/B), **Approximate** (C),
+  **Personal** (P) — with a tooltip or sheet naming the anchor sample. One
+  neutral outlined chip in `--text` for every grade: never a colour scale,
+  never a medal, because a grade describes the anchor's quality, not the
+  player. In the MVP every area is C except Flexibility (P).
+- **Verdicts are words plus an arrow glyph, in ink.** Every sentence comes
+  from `brain/ui/copy.ts`. Neither direction is painted: below-baseline is
+  never `--bad`, `--warn`, red, orange or a warning icon (§4.1 "No alarm"),
+  and above-baseline is not `--good` either — a green "up" beside an
+  uncoloured "down" would make the colour itself the verdict, and Spatial
+  already wears green. A calibrating test reads "Calibrating · 2 of 3",
+  neutral, with no verdict at all; "reliably" appears only when the §2.6
+  two-week rule says so, and an improvement in a practice-prone area always
+  carries the practice qualifier. Associations, never causes: "below your
+  typical range today", never "you are tired".
+- **Inside a scored block, nothing but the task.** No streak counter,
+  points, "+N", combo, pulsing timer or cheering (GAME-QUALITY Q12); the
+  runner's thin progress bar is the only chrome. Reaction's stimulus panel
+  keeps fixed colours in every theme (SCIENCE.md C9) — a documented content
+  opt-out, like `--nur-*`.
+- **The results card has one layout, every run** (C1): the run's own metric
+  with its unit, today against your typical range, the area index with its
+  grade badge, the test's `highlights`, the insight sentence. It sounds
+  `sfx.complete()`. No celebration, no loss screen, no confetti — a
+  measurement is neither won nor lost, and one day is state, not progress.
+  An invalid run shows its reason and an immediate Restart (C5, C11).
+- **The check-in streak has its own emblem.** Three streaks, three
+  silhouettes: the flame is the play streak, the calendar page is the Daily
+  Challenge, and the check-in streak gets a third shape that cannot be
+  mistaken for either at 26px — not a tick (the completion mark), not a
+  crown, rosette or trophy (reserved), and no medical imagery. It is
+  progression, so it is drawn in `--xp` (following the profile colour) and
+  greys out with the same cold treatment until today's check-in is done. It
+  counts completed check-ins, one per day (C6): extra runs earn nothing.
+- **Two surfaces, two jobs.** The Brain Lab tab is where you DO: today's
+  check-in, a test, the area cards, training shortcuts. **Profile → Brain**,
+  the profile tab between Statistics and Achievements, is where you LOOK
+  BACK: per-area trends, weekly verdicts, the radar against your baseline,
+  sessions with their validity, check-in history. Same strip and sticky
+  behaviour as the other tabs, with its own scope; with no data yet it
+  shows a designed empty state whose one action opens the Brain Lab tab.
+- **Training shortcuts** open existing games by id (`training` in
+  `domains.ts`) and carry `TRAINING_NOTE` verbatim — "Improves this game and
+  similar tasks; little evidence of wider effects." — never a benefit claim.
+- **First open** shows the verbatim disclaimer (`BRAIN_DISCLAIMER`) and the
+  onboarding (`BRAIN_ONBOARDING`) before anything else, and a designed empty
+  state rather than nine empty cards (GAME-QUALITY Q34).
+
 ## Games
 
 Games must consume `GameProps` and express all their UI with these tokens
 and icons, so a new surface theme restyles every game with zero
 game-side changes. Game-specific CSS belongs in `global.css` under a clearly
-marked section, still token-only.
+marked section, still token-only. A new game (and every Brain Lab test)
+also clears the premium floor — run GAME-QUALITY.md's checklist before it
+ships.

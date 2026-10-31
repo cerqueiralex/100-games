@@ -28,7 +28,14 @@ export interface BuildInfo {
   date: string;
 }
 
-export const BUILD: BuildInfo = __APP_BUILD__;
+/**
+ * Vite's `define` exists only in the app; validate imports the Brain Lab
+ * registry under plain Node, where a bare `__APP_BUILD__` would throw at
+ * module load (Symbol Coding stamps the build on its run log). `typeof` is
+ * the one safe probe of an undeclared global.
+ */
+export const BUILD: BuildInfo =
+  typeof __APP_BUILD__ !== 'undefined' ? __APP_BUILD__ : { version: '0.0.0', commits: 0, features: 0, sha: 'unknown', date: '' };
 
 /**
  * `v1.1.44-prod` — the channel the build came from, so a hand-built local
@@ -36,7 +43,7 @@ export const BUILD: BuildInfo = __APP_BUILD__;
  * suffix as a pre-release identifier; this is a display label, not a
  * published package version, so that never comes up.)
  */
-export const VERSION_LABEL = `v${BUILD.version}-${import.meta.env.DEV ? 'dev' : 'prod'}`;
+export const VERSION_LABEL = `v${BUILD.version}-${(import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV ? 'dev' : 'prod'}`;
 
 /**
  * `build 5f2a1c9 · 23 Aug 2026` — the identity line under the version.

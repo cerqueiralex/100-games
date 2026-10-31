@@ -164,3 +164,35 @@
   --play-15: #e64ad0;
   --play-16: #b5a642;
 }
+
+/* ---------- motion (design/GAME-QUALITY.md "Motion") ----------
+   ONE set of durations and curves for every animation in the app, so a
+   press, a feedback flash and a celebration feel like one product. Use the
+   token, never a literal: `transition: transform var(--dur-fast) var(--ease-out)`.
+   Canvas and JS twins live in platform/motion.ts (DUR, easeOut, spring).
+   Under prefers-reduced-motion every duration collapses to near-instant and
+   --motion becomes 0 — decorative motion keys off it; information never
+   depends on movement alone. */
+:root {
+  --dur-press: 80ms;
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-feedback: 360ms;
+  --dur-emphasis: 600ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* a small overshoot for pops and lands — never on a timed stimulus */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-press: 1ms;
+    --dur-fast: 1ms;
+    --dur-base: 1ms;
+    --dur-feedback: 1ms;
+    --dur-emphasis: 1ms;
+    --motion: 0;
+  }
+}

@@ -15,6 +15,8 @@ import {
 import { isProfileColor } from './design/profileColors';
 import { normalizeProgress, type PlayerProgress } from './progress/progress';
 import { normalizeDailyStore, type DailyChallengeStore } from './daily/store';
+import { exportBrainData, normalizeBrainStore, saveBrain } from './brain/store';
+import type { BrainStore } from './brain/types';
 
 /**
  * Backup export / import — moving a player between devices, or handing a
@@ -40,6 +42,8 @@ export interface BackupPayload {
   history?: GameResult[];
   progress?: PlayerProgress;
   daily?: DailyChallengeStore;
+  /** Brain Lab runs, check-ins and baselines (platform/brain/store.ts) */
+  brain?: BrainStore;
 }
 
 export interface BackupSummary {
@@ -52,6 +56,11 @@ export interface BackupSummary {
   exportedAt: string | null;
   /** sections the file actually contains, for the preview line */
   sections: string[];
+  /** Brain Lab runs and check-ins in the file (0 when it has none) */
+  brainRuns: number;
+  brainCheckins: number;
+  /** sections that were present but unreadable and will be left alone */
+  skipped: string[];
 }
 
 export type ParseResult =
@@ -71,7 +80,9 @@ export function exportBackup(): string {
       // streak + landmark store (see platform/progress/progress.ts)
       progress: readGameData(PROGRESS_KEY),
       // Daily Challenge records + streak (see platform/daily/store.ts)
-      daily: readGameData(DAILY_KEY)
+      daily: readGameData(DAILY_KEY),
+      // Brain Lab measurements — permanent, like progress (platform/brain/store.ts)
+      brain: exportBrainData()
     },
     null,
     2
@@ -190,8 +201,22 @@ export function parseBackup(text: string): ParseResult {
      (unknown status, a game this build no longer has, a bad date) rather
      than throwing, and clamps the streak counters. */
   const daily = normalizeDailyStore(raw.daily);
+  /* Brain Lab: the same normaliser that reads localStorage cleans the file's
+     section field by field. Absent → the device's own Brain Lab data is left
+     alone; present but unusable → dropped with a note, and it never poisons
+     the other sections (a throw here must not lose the rest of the file). */
+  const skipped: string[] = [];
+  let brain: BrainStore | null = null;
+  if (raw.brain !== undefined && raw.brain !== null) {
+    try {
+      brain = normalizeBrainStore(raw.brain);
+    } catch {
+      brain = null;
+    }
+    if (!brain) skipped.push('Brain Lab');
+  }
 
-  if (!settings && !profile && !history && !progress && !daily) {
+  if (!settings && !profile && !history && !progress && !daily && !brain) {
     return {
       ok: false,
       error: 'No 100 Games data found in that file — it may be from another app.'
@@ -203,6 +228,7 @@ export function parseBackup(text: string): ParseResult {
     history && `${history.length} games`,
     progress && 'streak & landmarks',
     daily && `${Object.keys(daily.records).length} daily challenges`,
+    brain && `${brain.sessions.length} Brain Lab ${brain.sessions.length === 1 ? 'run' : 'runs'}`,
     settings && 'settings'
   ].filter(Boolean) as string[];
 
@@ -213,7 +239,8 @@ export function parseBackup(text: string): ParseResult {
       ...(profile ? { profile } : {}),
       ...(history ? { history } : {}),
       ...(progress ? { progress } : {}),
-      ...(daily ? { daily } : {})
+      ...(daily ? { daily } : {}),
+      ...(brain ? { brain } : {})
     },
     summary: {
       playerName: profile?.name ?? 'Unknown player',
@@ -229,7 +256,10 @@ export function parseBackup(text: string): ParseResult {
               year: 'numeric'
             })
           : null,
-      sections
+      sections,
+      brainRuns: brain?.sessions.length ?? 0,
+      brainCheckins: brain?.checkins.length ?? 0,
+      skipped
     }
   };
 }
@@ -242,4 +272,5 @@ export function applyBackup(payload: BackupPayload): void {
   if (payload.history) replaceHistory(payload.history);
   if (payload.progress) writeGameData(PROGRESS_KEY, payload.progress);
   if (payload.daily) writeGameData(DAILY_KEY, payload.daily);
+  if (payload.brain) saveBrain(payload.brain);
 }
