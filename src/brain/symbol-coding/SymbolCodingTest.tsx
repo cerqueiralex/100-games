@@ -6,7 +6,7 @@ import { sfx } from '../../platform/audio';
 import { DUR, haptic } from '../../platform/motion';
 import { GLYPH_PATHS } from './logic/glyphs';
 import { PROTOCOL, generateSession } from './logic/protocol';
-import { PHASE, STATUS, frameRow, scoreRun, trialRow } from './logic/scoring';
+import { PHASE, STATUS, frameRow, outcomeOf, trialRow } from './logic/scoring';
 import { GlyphSvg } from './GlyphArt';
 import { BUILD } from '../../platform/version';
 
@@ -442,23 +442,7 @@ export function SymbolCodingTest({ mode, firstRun, seed, onProgress: progressPro
   const finishTest = () => {
     if (finished.current) return;
     finished.current = true;
-    const rows = [...log.current, frameRow(frames.current, APP_VERSION)];
-    const s = scoreRun(rows);
-    const m = s.metrics;
-    const highlights: { label: string; value: string }[] = [
-      { label: 'Accuracy', value: `${Math.round(m.accuracy)}%` },
-      { label: 'Number match', value: `${m.dm90} per 90 s` }
-    ];
-    if (Number.isFinite(m.medianGapMs)) highlights.push({ label: 'Median time per correct symbol', value: `${(m.medianGapMs / 1000).toFixed(2)} s` });
-    const outcome: BrainRunOutcome = {
-      metrics: m,
-      trials: s.responses,
-      valid: s.valid,
-      ...(s.flags.length ? { flags: s.flags } : {}),
-      highlights,
-      trialLog: rows
-    };
-    onFinish(outcome);
+    onFinish(outcomeOf([...log.current, frameRow(frames.current, APP_VERSION)]));
   };
 
   const finishPractice = () => {

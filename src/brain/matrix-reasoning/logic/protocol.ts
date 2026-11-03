@@ -1,4 +1,4 @@
-import type { BrainRunOutcome } from '../../../platform/brain/types';
+import type { BrainRescoreInput, BrainRunOutcome } from '../../../platform/brain/types';
 import { median } from '../../../platform/brain/timing';
 import { popcount } from './model';
 import { CLASSES, bOf, eap, type IrtResponse } from './irt';
@@ -19,8 +19,15 @@ export const PROTOCOL = {
   scoredItems: 12,
   /** session cap on ACTIVE time (paused time excluded [DC]); the current item finishes */
   capMs: 240_000,
-  /** the session is scored only with at least 9 valid items [DC] */
-  minValidItems: 9,
+  /**
+   * Scoring v2 (SCIENCE.md C13 — a slow run is a low score, never an invalid
+   * one): a run the 240-s cap cuts short is scored from the items it
+   * answered; θ's SE (shown as ± index points) carries the lower precision.
+   * v1 required 9 valid items, but at the slowest pace the 30-s window allows
+   * the cap completes only 8, so it discarded every slow, careful reasoner.
+   * Only a run with no valid item has nothing to score ('too-few-items') [DC].
+   */
+  minValidItems: 1,
   /** a response under 1.5 s is a rapid guess: excluded from θ [DC] */
   rapidMs: 1_500,
   /** 3 or more rapid guesses → invalid, "careless" [DC] */
@@ -152,4 +159,15 @@ export function scoreRun(log: readonly number[][], end: RunEnd): BrainRunOutcome
 export function thetaSoFar(log: readonly number[][]): number | null {
   const resp = irtResponses(log);
   return resp.length ? eap(resp).theta : null;
+}
+
+/**
+ * Rescore a stored run under the current rules (scoring v1 → v2) from its
+ * trial log. How the block ended is not in the log: the stored flags carry it
+ * ('interrupted' — a 4th void, which keeps the run invalid — and 'time-cap').
+ */
+export function rescoreRun(stored: BrainRescoreInput): BrainRunOutcome | null {
+  const rows = stored.trialLog.filter((r) => r.length >= 12);
+  if (!rows.length || rows.length !== stored.trialLog.length) return null;
+  return scoreRun(rows, { interrupted: stored.flags.includes('interrupted'), capped: stored.flags.includes('time-cap') });
 }

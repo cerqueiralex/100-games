@@ -64,7 +64,7 @@ import {
   type Item,
   type TrialSpec
 } from '../../src/brain/mirror-twins/logic/protocol';
-import { REF_MEAN, REF_SD, STATUS, referenceZ, rotationFit, scoreRun, type TrialRow } from '../../src/brain/mirror-twins/logic/scoring';
+import { REF_MEAN, REF_SD, STATUS, referenceZ, rescoreRun, rotationFit, scoreRun, type TrialRow } from '../../src/brain/mirror-twins/logic/scoring';
 import { DEMO_FIGURE, DEMO_MIRROR_THETA, DEMO_PHI, DEMO_SAME_THETA } from '../../src/brain/mirror-twins/logic/demo';
 import { indexFromZ } from '../../src/platform/brain/timing';
 import { DUR } from '../../src/platform/motion';
@@ -461,8 +461,27 @@ export const check: BrainCheck = async ({ bad }) => {
   if (v62.valid || !v62.flags?.includes('at-chance')) bad('accuracy under 65% must be invalid (at-chance)');
   const to8 = scoreRun({ rows: build(40, (i) => (i < 8 ? { status: STATUS.timeout, rt: 7000, correct: 0, response: -1 } : {})), interruptions: 0, pausedMs: 0 });
   if (!to8.valid) bad('8 timeouts (20%) must still be valid');
+  // C13: slow is a score, never a reason to discard a run — v1 discarded this one as "too-few" (9 timeouts > 8)
   const to9 = scoreRun({ rows: build(40, (i) => (i < 9 ? { status: STATUS.timeout, rt: 7000, correct: 0, response: -1 } : {})), interruptions: 0, pausedMs: 0 });
-  if (to9.valid || !to9.flags?.includes('too-few')) bad('9 timeouts must be invalid (too-few)');
+  if (!to9.valid) bad(`9 timeouts (a slow rotator, every answered pair right) were discarded (${to9.flags?.join()})`);
+  const timeoutAt = (n: number) => (i: number): Partial<TrialRow> => (i % 2 === 1 && i < 2 * n ? { status: STATUS.timeout, rt: 7000, correct: 0, response: -1 } : { rt: 5200 });
+  const slow = scoreRun({ rows: build(40, timeoutAt(16)), interruptions: 0, pausedMs: 0 });
+  if (!slow.valid || !(slow.metrics.rcs < to9.metrics.rcs)) bad(`a very slow run (16 timeouts, 24/24 answered): ${slow.valid} ${slow.flags?.join()} RCS ${slow.metrics.rcs}`);
+  if (Math.abs(slow.metrics.accuracy - 60) > 1e-9) bad('timeouts must still count as errors in the accuracy metric');
+  // … while guessing among the answers is caught beside the timeouts: 13 right of 24 answered
+  const guess = scoreRun({ rows: build(40, (i) => (i % 2 === 1 && i < 32 ? { status: STATUS.timeout, rt: 7000, correct: 0, response: -1 } : { correct: i % 5 < 3 ? 1 : 0 })), interruptions: 0, pausedMs: 0 });
+  if (guess.valid || !guess.flags?.includes('at-chance')) bad(`guessing beside timeouts was scored (${guess.flags?.join()})`);
+  const allTimeout = scoreRun({ rows: build(40, () => ({ status: STATUS.timeout, rt: 7000, correct: 0, response: -1 })), interruptions: 0, pausedMs: 0 });
+  if (allTimeout.valid || allTimeout.flags?.join() !== 'too-few') bad(`an all-timeout run is flagged ${allTimeout.flags?.join()}, expected too-few`);
+  // rescoring (scoring version 2): the 9-timeout run as v1 stored it comes back valid with the same metrics
+  {
+    const live = scoreRun({ rows: build(40, (i) => (i < 9 ? { status: STATUS.timeout, rt: 7000, correct: 0, response: -1 } : {})), interruptions: 1, pausedMs: 2000 });
+    const out = rescoreRun({ trialLog: live.trialLog ?? [], metrics: live.metrics, flags: ['too-few'], valid: false, scoringVersion: 1 });
+    if (!out || !out.valid || JSON.stringify(out.metrics) !== JSON.stringify(live.metrics)) bad(`a v1 slow run was not rescored to valid: ${JSON.stringify(out?.flags)}`);
+    const over = rescoreRun({ trialLog: live.trialLog ?? [], metrics: live.metrics, flags: ['too-many-interruptions'], valid: false, scoringVersion: 1 });
+    if (!over || over.valid || !over.flags?.includes('too-many-interruptions')) bad('rescoring revived a run beyond the pause limits');
+    if (rescoreRun({ trialLog: [[1, 2, 3]], metrics: {}, flags: [], valid: false, scoringVersion: 1 }) !== null) bad('a malformed log was rescored');
+  }
   const an9 = scoreRun({
     rows: [...build(40, () => ({})), ...Array.from({ length: 9 }, (_, i) => row({ trial: i, rt: 120, status: i < 5 ? STATUS.anticipation : STATUS.anticipationLost }))],
     interruptions: 0,

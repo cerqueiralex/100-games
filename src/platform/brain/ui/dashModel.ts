@@ -101,7 +101,7 @@ export interface AreaView {
   status: AreaStatus;
   /** the number on the card, and what it is */
   level: number | null;
-  levelKind: 'reference' | 'personal' | 'calibrating' | 'stale' | null;
+  levelKind: 'reference' | 'personal' | 'calibrating' | 'forming' | 'stale' | null;
   /** the frozen baseline on the area's index scale (radar's baseline polygon) */
   baselineIndex: number | null;
   dots: RunDot[];
@@ -171,6 +171,10 @@ export function buildAreaView(a: AreaSummary, store: BrainStore): AreaView {
   } else if (grade === 'P' && status !== 'reset' && sum.level.personal !== null) {
     level = sum.level.personal;
     levelKind = 'personal';
+  } else if (grade === 'P' && (status === 'forming' || status === 'reset')) {
+    // a personal index is measured FROM the frozen baseline, so while it forms there is none
+    // by definition (SCIENCE.md §2.9) — that is progress to show, never a lapsed level
+    levelKind = 'forming';
   } else if (sum.runs.some(isScored)) {
     levelKind = 'stale';
   }

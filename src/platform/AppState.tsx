@@ -21,6 +21,7 @@ import {
 } from './progress/progress';
 import type { XpAward } from './progress/xp';
 import { notifyBrainChanged } from './brain/ui/useBrainStore';
+import { ensureScoringCurrent } from './brain/rescore';
 
 interface AppState {
   settings: PlatformSettings;
@@ -132,7 +133,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setProfile(loadProfile());
         setHistory(loadHistory());
         setProgress(loadProgress());
-        // an import may have replaced the Brain Lab store too
+        // an import may have replaced the Brain Lab store too — and a file from
+        // an older build holds runs scored under older rules (rescore.ts)
+        ensureScoringCurrent();
         notifyBrainChanged();
       }
     }),

@@ -3,6 +3,7 @@ import { METRICS, PARAMS, PRIMARY_METRIC, REFERENCE } from './logic/meta';
 import { SymbolCodingTest } from './SymbolCodingTest';
 import { SymbolCodingDemo } from './SymbolCodingDemo';
 import { symbolCodingIcon } from './icon';
+import { rescoreRun } from './logic/scoring';
 
 /**
  * Processing Speed benchmark — symbol–digit coding (SCIENCE.md §1.11).
@@ -32,8 +33,10 @@ export const symbolCodingTest: BrainTestDefinition = {
   reference: REFERENCE,
   ...PARAMS,
   protocolVersion: 1,
-  scoringVersion: 1,
+  /** v2 (2026-11-03): C13 validity — no minimum score, a pace-relative stop rule; v1 runs are rescored from their logs */
+  scoringVersion: 2,
   referenceVersion: 1,
+  rescore: rescoreRun,
   science: {
     summary:
       'Processing speed is how fast simple, well-practised operations run under time pressure, and symbol–digit substitution is its standard marker: valued for sensitivity (it moves with sleep restriction, depression, alcohol, sedating drugs and age) rather than specificity, because it also draws on motor speed, visual scanning and incidental learning. The smartphone version is the best-validated self-administered phone test of cognition (ICC .86–.90), and a new random key every session gives unlimited alternate forms of matched difficulty.',
@@ -53,7 +56,7 @@ export const symbolCodingTest: BrainTestDefinition = {
       'On a computer the number keys 1–9 answer as well as the on-screen pad; both register on key-down or pointer-down with the event\'s own timestamp [DC].',
       'Sizes follow the phone rather than fixed pixels: the target glyph is about 108–136 px tall (the dossier says about 96 px) and the key glyphs about 32 px (about 28 px), in 9 key cells at least 36 px wide, with keypad keys 56–68 px tall [DC].',
       'Taps less than 120 ms after the previous registered response are ignored and logged, as are taps that arrive before an item\'s frame ran; more than 5 ignored taps across both timed parts flags the run (double-taps) without invalidating it [DC].',
-      'Validity: invalid with fewer than 20 correct (the MS sherpa outlier rule), accuracy below 80% [DC], any gap over 5 s without a response, counted from the first item\'s onset to the first answer and from the last answer to the 90-s lock as well [DC], or all 200 items used before 90 s [DC]. Hiding the page, losing focus for over 1 s or rotating invalidates the run (class A, enforced by the runner).',
+      'Validity (scoring v2 — SCIENCE.md C13, a slow run is a low score, never an invalid one): there is no minimum score. The MS sherpa rule of 20 correct is a cohort outlier rule and is not applied, because for one person tracking themselves it discards every run of a slow, careful player [DC]. A run is invalid with no answer at all, accuracy below 80% (a single wrong answer alone never invalidates a run) [DC], a stop — a stretch without a response longer than 4 × the run\'s own median interval between responses, held between 10 and 20 s, counted from the first item\'s onset and up to the 90-s lock as well [DC] — or all 200 items used before 90 s [DC]. Hiding the page, losing focus for over 1 s or rotating invalidates the run (class A, enforced by the runner).',
       'The learning slope counts correct answers per minute (last 30 s minus first 30 s) [DC]; the coding ratio is reported as 0, with the flag no-digit-matches, when the motor baseline had no correct match. Both are diagnostics only.',
       'The frame-interval distribution of the coding block is stored as one summary row (frames, median, 95th percentile, maximum, frames over 50 ms) rather than every interval, and the same row carries the app version that ran the session [DC].',
       'The index uses a grade C literature anchor without age bands: Kiely et al. 2014 and Strober et al. 2020 age norms, minus the 8–12% phone offset, are a future calibration task.'

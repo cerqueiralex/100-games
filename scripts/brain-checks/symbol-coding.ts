@@ -12,6 +12,9 @@
  *  - determinism: same seed → identical session, different seed → different;
  *  - scoring of a scripted run equals hand-computed values, DM90 = 6 × DM15,
  *    and the validity rules fire on broken runs;
+ *  - C13 (scoring v2): a slow, careful player is scored, never discarded —
+ *    no minimum score, a stop judged against the run's own pace, a single
+ *    slip never invalidating — and a v1 run is rescored from its log;
  *  - the reference anchor (54 ± 9 on the 50 + 10z scale);
  *  - the checks themselves catch deliberately broken inputs.
  */
@@ -35,7 +38,7 @@ import {
   type Glyph
 } from '../../src/brain/symbol-coding/logic/glyphs';
 import { PROTOCOL, generateSession, setSequence } from '../../src/brain/symbol-coding/logic/protocol';
-import { COL, PHASE, STATUS, frameRow, scoreRun, trialRow } from '../../src/brain/symbol-coding/logic/scoring';
+import { COL, PHASE, STATUS, frameRow, outcomeOf, rescoreRun, scoreRun, trialRow } from '../../src/brain/symbol-coding/logic/scoring';
 import { METRICS, PARAMS, PRIMARY_METRIC, REFERENCE } from '../../src/brain/symbol-coding/logic/meta';
 import { DEMO_KEY, DEMO_TARGETS, ICON_GLYPHS } from '../../src/brain/symbol-coding/logic/demo';
 
@@ -228,6 +231,8 @@ export const check: BrainCheck = async ({ bad, rng }) => {
   if (!s.valid) bad(`scripted run invalid: ${s.flags.join(', ')}`);
   if (s.flags.join() !== 'double-taps') bad(`scripted flags ${s.flags.join()} (expected double-taps)`);
   if (s.responses !== 89 || s.longestGapMs !== 1000) bad(`scripted responses ${s.responses} / longest gap ${s.longestGapMs}`);
+  // its pace is one answer a second: 4 × 1 s is under the 10-s floor of the stop rule
+  if (s.stopMs !== 10_000) bad(`scripted stop threshold ${s.stopMs} (expected the 10-s floor)`);
   for (const [k, v] of Object.entries(m)) if (!Number.isFinite(v)) bad(`metric ${k} not finite`);
 
   // a speed-up gives a positive slope: first 30 s every 1.5 s, then every 0.75 s
@@ -260,17 +265,31 @@ export const check: BrainCheck = async ({ bad, rng }) => {
 
   /* ---------- validity rules on broken runs ---------- */
   const flagsOf = (rows: number[][]) => scoreRun(rows);
-  // a 6-s pause mid-block
+  /** coding answers at the given times (ms from onset), all right unless listed in `wrong` */
+  const run = (times: number[], wrong: Set<number> = new Set()) =>
+    scoreRun(times.map((t, k) => trialRow(PHASE.coding, k, 2, 1, wrong.has(k) ? 2 : 1, t, 900, k % 9, STATUS.registered)));
+  const steady = (everyMs: number, from = everyMs) => {
+    const out: number[] = [];
+    for (let t = from; t < PROTOCOL.blockMs; t += everyMs) out.push(t);
+    return out;
+  };
+  // a fast player (one answer a second) who stops for 11 s mid-block: a stop (> the 10-s floor)
+  {
+    const rows = log.filter((r) => !(r[COL.phase] === PHASE.coding && r[COL.t] > 40_000 && r[COL.t] < 51_500));
+    const r = flagsOf(rows);
+    if (r.valid || !r.flags.includes('long-gap')) bad(`an 11.5-s stop was not invalid (${r.flags.join()})`);
+  }
+  // … but a 6.5-s hesitation is not a stop any more (v1's 5-s rule discarded it)
   {
     const rows = log.filter((r) => !(r[COL.phase] === PHASE.coding && r[COL.t] > 40_000 && r[COL.t] < 46_500));
     const r = flagsOf(rows);
-    if (r.valid || !r.flags.includes('long-gap')) bad(`a 6.5-s pause was not invalid (${r.flags.join()})`);
+    if (!r.valid) bad(`a 6.5-s hesitation invalidated the run (${r.flags.join()})`);
   }
-  // stopping 6 s before the lock is a gap too
+  // stopping 11 s before the lock is a stop too
   {
-    const rows = log.filter((r) => !(r[COL.phase] === PHASE.coding && r[COL.t] > 83_500));
+    const rows = log.filter((r) => !(r[COL.phase] === PHASE.coding && r[COL.t] > 78_500));
     const r = flagsOf(rows);
-    if (r.valid || !r.flags.includes('long-gap')) bad('a silent last 6.5 s was not invalid');
+    if (r.valid || !r.flags.includes('long-gap')) bad('a silent last 11.5 s was not invalid');
   }
   // random tapping: ~11 % accuracy
   {
@@ -280,12 +299,11 @@ export const check: BrainCheck = async ({ bad, rng }) => {
     const r = flagsOf(rows);
     if (r.valid || !r.flags.includes('low-accuracy')) bad(`random tapping was not invalid (${r.flags.join()})`);
   }
-  // accurate but too few: 19 correct
+  // no answer at all is nothing to score
   {
-    const rows: number[][] = [];
-    for (let k = 0; k < 19; k++) rows.push(trialRow(PHASE.coding, k, 2, 1, 1, 4500 * (k + 1), 4400, k % 9, STATUS.registered));
-    const r = flagsOf(rows);
-    if (r.valid || !r.flags.includes('too-few-correct')) bad(`19 correct was not invalid (${r.flags.join()})`);
+    const r = flagsOf([]);
+    if (r.valid || !r.flags.includes('too-few') || r.flags.includes('long-gap') || r.flags.includes('low-accuracy'))
+      bad(`an empty block: ${r.valid} ${r.flags.join()}`);
   }
   // 79 % accuracy is invalid, 80 % is not
   {
@@ -296,6 +314,52 @@ export const check: BrainCheck = async ({ bad, rng }) => {
     };
     if (mk(21).valid || !mk(21).flags.includes('low-accuracy')) bad('79% accuracy was valid');
     if (!mk(20).valid) bad(`80% accuracy was invalid (${mk(20).flags.join()})`);
+  }
+
+  /* ---------- C13: slow is a score, never a reason to discard a run ---------- */
+  // v1 discarded this run twice over (19 correct < 20, every gap 4.5 s): it is a measurement
+  const slow = run(steady(4500));
+  if (!slow.valid || slow.metrics.sds90 !== 19) bad(`a slow, careful run (19 correct, one every 4.5 s) was not scored: ${slow.flags.join()}`);
+  if (slow.stopMs !== 18_000) bad(`slow run's stop threshold ${slow.stopMs} (expected 4 × 4.5 s)`);
+  // slower still, steady: one answer every 8 s → 11 correct, scored lower than the slow run
+  const slower = run(steady(8000));
+  if (!slower.valid || !(slower.metrics.sds90 < slow.metrics.sds90)) bad(`a very slow steady run: ${slower.valid} ${slower.metrics.sds90} ${slower.flags.join()}`);
+  // the slowest pace that is still answering (one every 18 s) is scored; a 21-s stretch is a stop at any pace
+  if (!run(steady(18_000)).valid) bad('one answer every 18 s was discarded');
+  {
+    const t = steady(4500).filter((x) => x < 30_000 || x > 51_000);
+    if (run(t).valid || !run(t).flags.includes('long-gap')) bad('a 22.5-s stretch was not a stop for a slow player');
+  }
+  // the stop rule follows the player's OWN pace: 16 s is a hesitation at 4.5 s a symbol, a stop at 1 s a symbol
+  {
+    const slowT = steady(4500).filter((x) => x <= 31_500 || x >= 47_500); // a 16-s stretch
+    if (!run(slowT).valid) bad(`a 16-s stretch invalidated a 4.5-s-a-symbol run (${run(slowT).flags.join()})`);
+    const fastT = steady(1000).filter((x) => x <= 31_000 || x >= 43_000); // a 12-s stretch
+    if (run(fastT).valid) bad('a 12-s stretch did not stop a 1-s-a-symbol run');
+  }
+  // the first symbol of a brand-new key may take a slow player up to 4 × their pace
+  if (!run([16_000, ...steady(4500, 20_500)]).valid) bad('a 16-s first symbol invalidated a slow run');
+  // a single slip never invalidates a short run (1 wrong of 6 is 83%); two of six do
+  {
+    const six = [13_000, 26_000, 39_000, 52_000, 65_000, 78_000];
+    if (!run(six, new Set([2])).valid) bad(`one slip in six answers invalidated the run (${run(six, new Set([2])).flags.join()})`);
+    if (run(six, new Set([1, 4])).valid) bad('two wrong of six (67%) was valid');
+  }
+  // the old ability floors are gone for good
+  if ('minCorrect' in PROTOCOL || 'maxGapMs' in PROTOCOL) bad('a v1 speed floor is back in the protocol');
+
+  /* ---------- rescoring a v1 run (scoring version 2) ---------- */
+  {
+    // the slow run as v1 stored it: invalid, flagged too-few-correct, with its whole log
+    const rows = [...steady(4500).map((t, k) => trialRow(PHASE.coding, k, 2, 1, 1, t, 900, k % 9, STATUS.registered)), [PHASE.frames, 5400, 16.7, 17.1, 33.4, 0, 0, 0, 0]];
+    const out = rescoreRun({ trialLog: rows, metrics: { sds90: 19 }, flags: ['too-few-correct'], valid: false, scoringVersion: 1 });
+    if (!out || !out.valid || out.metrics.sds90 !== 19 || out.flags?.includes('too-few-correct')) bad(`a v1 slow run was not rescored to valid: ${JSON.stringify(out?.flags)}`);
+    if (JSON.stringify(out) !== JSON.stringify(outcomeOf(rows))) bad('rescoring differs from the live outcome of the same log');
+    if (rescoreRun({ trialLog: [[PHASE.frames, 1, 16, 16, 16, 0, 0, 0, 0]], metrics: {}, flags: [], valid: false, scoringVersion: 1 }) !== null)
+      bad('a log without coding rows was rescored');
+    // the live scripted run scores identically through the outcome builder
+    const live = outcomeOf(log);
+    if (live.metrics.sds90 !== 81 || !live.valid || live.trials !== 89) bad('outcomeOf differs from scoreRun on the scripted run');
   }
   // ignored taps never count as answers
   {
@@ -322,9 +386,10 @@ export const check: BrainCheck = async ({ bad, rng }) => {
     P.practiceFeedbackMs !== 250 ||
     P.doubleTapMs !== 120 ||
     P.doubleTapFlagOver !== 5 ||
-    P.minCorrect !== 20 ||
     P.minAccuracy !== 0.8 ||
-    P.maxGapMs !== 5_000 ||
+    P.stopFactor !== 4 ||
+    P.stopMinMs !== 10_000 ||
+    P.stopMaxMs !== 20_000 ||
     P.keySize !== 9
   )
     bad('a protocol constant differs from SCIENCE.md §1.11');
@@ -359,5 +424,5 @@ export const check: BrainCheck = async ({ bad, rng }) => {
     if (fs.statSync(p).isFile() && /Math\.random/.test(fs.readFileSync(p, 'utf8'))) bad(`Math.random in src/brain/symbol-coding/${f}`);
   }
 
-  return `${GLYPHS.length} glyphs symmetry-free (closest pair ${worstPair.toFixed(2)}, ${nearPairs} kept out of keys), ${keysChecked} keys / 400 sessions in sets of 9, scripted run = 81 correct, DM90 66, validity rules fire`;
+  return `${GLYPHS.length} glyphs symmetry-free (closest pair ${worstPair.toFixed(2)}, ${nearPairs} kept out of keys), ${keysChecked} keys / 400 sessions in sets of 9, scripted run = 81 correct, DM90 66, validity rules fire; C13: slow runs scored (19 @ 4.5 s, 11 @ 8 s), stops pace-relative, v1 runs rescore`;
 };

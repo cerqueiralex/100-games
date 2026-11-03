@@ -1,7 +1,7 @@
-import { median } from '../../../platform/brain/timing';
-import type { BrainRunOutcome } from '../../../platform/brain/types';
-import { classCode, OPS, type Op, type Problem } from './items';
-import { BLOCK_MINUTES, FAST_MS, MIN_ACCURACY_PCT, MIN_SUBMISSIONS } from './protocol';
+import { median, meetsAccuracyFloor, stopThreshold } from '../../../platform/brain/timing';
+import type { BrainRescoreInput, BrainRunOutcome } from '../../../platform/brain/types';
+import { classCode, classOf, OPS, type Op, type Problem } from './items';
+import { BLOCK_MINUTES, BLOCK_MS, FAST_MS, MIN_ACCURACY_PCT, STOP_FACTOR, STOP_MAX_MS, STOP_MIN_MS } from './protocol';
 
 /**
  * Arithmetic Sprint scoring (SCIENCE.md §1.7 "Metrics", "Validity"). Pure —
@@ -79,17 +79,42 @@ export function trialRow(s: Submission): number[] {
   ];
 }
 
+/** the longest stretch without a submission (block onset → first, between, last → the 120-s lock) and the stop threshold at this run's own pace */
+export function stretches(subs: readonly Pick<Submission, 'onsetMs' | 'rtMs'>[], exhausted = false): { longestMs: number; stopMs: number } {
+  const times = subs.map((s) => s.onsetMs + s.rtMs).sort((a, b) => a - b);
+  const end = exhausted && times.length ? times[times.length - 1] : BLOCK_MS;
+  let longestMs = 0;
+  let prev = 0;
+  for (const t of [...times, end]) {
+    longestMs = Math.max(longestMs, t - prev);
+    prev = t;
+  }
+  const intervals = times.map((t, i) => t - (i ? times[i - 1] : 0));
+  return { longestMs, stopMs: stopThreshold(intervals, STOP_MIN_MS, STOP_MAX_MS, STOP_FACTOR) };
+}
+
 /**
- * Validity reasons (flag ids shared with ui/copy.ts flagCopy) — empty = valid.
- * `exhausted`: the run got through all 120 pre-generated items before the
- * 120 s were up — at least one answer a second, faster than this task can be
- * done honestly — so the block ended early and is not a 2-minute measurement.
+ * Validity reasons, scoring v2 (flag ids shared with ui/copy.ts flagCopy) —
+ * empty = valid. SCIENCE.md C13: a slow run is a low CPM, never an invalid
+ * one, so there is no minimum number of answers.
+ *  - 'too-few': no answer at all — nothing to score;
+ *  - 'rushed': accuracy below 85%, a single wrong answer alone excepted;
+ *  - 'long-gap': a stop — no submission for longer than 4 × the run's own
+ *    median interval, held between 30 and 60 s;
+ *  - 'too-fast' (`exhausted`): the run got through all 120 pre-generated
+ *    items before the 120 s were up — at least one answer a second, faster
+ *    than this task can be done honestly — so the block ended early and is
+ *    not a 2-minute measurement.
  */
-export function validityFlags(submitted: number, correct: number, exhausted = false): string[] {
+export function validityFlags(subs: readonly Submission[], exhausted = false): string[] {
   const flags: string[] = [];
-  if (submitted < MIN_SUBMISSIONS) flags.push('too-few');
-  // integer comparison: exactly 85% (e.g. 17 of 20) is valid
-  if (submitted > 0 && correct * 100 < MIN_ACCURACY_PCT * submitted) flags.push('rushed');
+  const n = subs.length;
+  if (!n) flags.push('too-few');
+  else {
+    if (!meetsAccuracyFloor(subs.filter(isCorrect).length, n, MIN_ACCURACY_PCT / 100)) flags.push('rushed');
+    const { longestMs, stopMs } = stretches(subs, exhausted);
+    if (longestMs > stopMs) flags.push('long-gap');
+  }
   if (exhausted) flags.push('too-fast');
   return flags;
 }
@@ -123,7 +148,7 @@ export function scoreRun(subs: readonly Submission[], opts: { exhausted?: boolea
     if (mine.length && minutes > 0) metrics[RATE_METRIC[op]] = mine.filter(isCorrect).length / minutes;
   }
 
-  const flags = validityFlags(n, c, opts.exhausted);
+  const flags = validityFlags(subs, opts.exhausted);
   // the results card already lists every metric (time per correct answer included) — highlights are extra lines
   const highlights: { label: string; value: string }[] = [{ label: 'Answers', value: `${c} correct of ${n}` }];
 
@@ -135,4 +160,48 @@ export function scoreRun(subs: readonly Submission[], opts: { exhausted?: boolea
     highlights,
     trialLog: subs.map(trialRow)
   };
+}
+
+/** the answer of a logged item, from its class and its operands in display order */
+function answerOf(op: Op, a: number, b: number): number {
+  return op === 'add' ? a + b : op === 'sub' ? a - b : op === 'mul' ? a * b : a / b;
+}
+
+/**
+ * Rebuild the submissions from a stored trial log (TRIAL_COLUMNS). Null when
+ * a row is malformed or its recomputed answer disagrees with the logged
+ * `correct` column — a log that cannot reproduce itself is never rescored.
+ */
+export function submissionsFromLog(log: readonly (readonly number[])[]): Submission[] | null {
+  const out: Submission[] = [];
+  for (const row of log) {
+    if (row.length < TRIAL_COLUMNS.length || !row.every(Number.isFinite)) return null;
+    const [order, cls, a, b, typed, correct, firstDigit, rt, edits, high, onset] = row;
+    if (!Number.isInteger(cls) || cls < 0 || cls > 7) return null;
+    const { op, complex } = classOf(cls);
+    const answer = answerOf(op, a, b);
+    if ((typed === answer) !== (correct === 1)) return null;
+    out.push({
+      order,
+      item: { op, complex, a, b, answer, high: high === 1, key: '' },
+      typed,
+      firstDigitMs: firstDigit,
+      rtMs: rt,
+      edits,
+      onsetMs: onset
+    });
+  }
+  return out;
+}
+
+/**
+ * Rescore a stored run under the current rules (scoring v1 → v2), from its
+ * trial log. Whether the item pool ran out is not in the log — the stored
+ * 'too-fast' flag carries it. The runner's own 'interrupted' runs carry no
+ * log and are never rescored.
+ */
+export function rescoreRun(stored: BrainRescoreInput): BrainRunOutcome | null {
+  const subs = submissionsFromLog(stored.trialLog);
+  if (!subs) return null;
+  return scoreRun(subs, { exhausted: stored.flags.includes('too-fast') });
 }

@@ -21,7 +21,19 @@ import { AboutSheet, Onboarding } from './ui/About';
 import { AreaPage } from './ui/AreaPage';
 import { areaView, baselineValue, batteryMinutes, isDue, radarValue, remainingTests, shortDate, sparkPoints } from './ui/model';
 import { areaStyle, CheckinEmblem, fmtIndex, GradeBadge, ProgressRing, Sparkline, StateFlagChips, TestPlate } from './ui/parts';
-import { calibratingShort, meanLabel, NOT_MEASURED, roleCopy, stateCopy, TODAY_COMPOSITE_LABEL, trendLine, verdictCopy, flagCopy } from './ui/copy';
+import {
+  baselineFormingShort,
+  calibratingShort,
+  meanLabel,
+  NOT_MEASURED,
+  personalIndexAfter,
+  roleCopy,
+  stateCopy,
+  TODAY_COMPOSITE_LABEL,
+  trendLine,
+  verdictCopy,
+  flagCopy
+} from './ui/copy';
 import { sfx } from '../audio';
 import { BrainIcon, CheckIcon, ChevronIcon, InfoIcon } from '../design/icons';
 
@@ -477,15 +489,17 @@ function AreaCard({ area, index, now, onOpen }: { area: AreaSummary; index: numb
         : 'Coming soon'
       : v.state === 'calibrating'
         ? 'Calibration runs teach you the test'
-        : v.state === 'stale'
-          ? 'No scored run in 14 days'
-          : verdict && s?.verdict.verdict !== 'pending'
-            ? verdict.title
-            : s?.baseline
-              ? s.trend
-                ? trendLine(s.trend, area.test?.practiceProne ?? false, true)
-                : 'Baseline set — first weekly verdict soon'
-              : `Baseline forming ${v.baselineProgress}/5`;
+        : v.state === 'forming'
+          ? personalIndexAfter(v.baselineProgress)
+          : v.state === 'stale'
+            ? 'No scored run in 14 days'
+            : verdict && s?.verdict.verdict !== 'pending'
+              ? verdict.title
+              : s?.baseline
+                ? s.trend
+                  ? trendLine(s.trend, area.test?.practiceProne ?? false, true)
+                  : 'Baseline set — first weekly verdict soon'
+                : `Baseline forming ${v.baselineProgress}/5`;
   return (
     <button
       type="button"
@@ -496,7 +510,15 @@ function AreaCard({ area, index, now, onOpen }: { area: AreaSummary; index: numb
         onOpen();
       }}
       aria-label={`${area.domain.name}, ${area.domain.subtitle}. ${
-        v.state === 'level' ? `${v.personal ? 'Personal index' : 'Level'} ${fmtIndex(v.value)}` : v.state === 'calibrating' ? calibratingShort(v.runInDone, v.runIn) : NOT_MEASURED
+        v.state === 'level'
+          ? `${v.personal ? 'Personal index' : 'Level'} ${fmtIndex(v.value)}`
+          : v.state === 'calibrating'
+            ? calibratingShort(v.runInDone, v.runIn)
+            : v.state === 'forming'
+              ? `${baselineFormingShort(v.baselineProgress)}. ${personalIndexAfter(v.baselineProgress)}`
+              : v.state === 'stale'
+                ? 'No scored run in 14 days'
+                : NOT_MEASURED
       }${due ? '. Due' : ''}`}
     >
       <span className="bl-area-card-bar" aria-hidden />
@@ -514,6 +536,8 @@ function AreaCard({ area, index, now, onOpen }: { area: AreaSummary; index: numb
           </>
         ) : v.state === 'calibrating' ? (
           <span className="bl-area-card-state">{calibratingShort(v.runInDone, v.runIn)}</span>
+        ) : v.state === 'forming' ? (
+          <span className="bl-area-card-state">{baselineFormingShort(v.baselineProgress)}</span>
         ) : v.state === 'stale' ? (
           <span className="bl-area-card-state">{v.value !== null ? `Last ${fmtIndex(v.value)}` : 'Lapsed'}</span>
         ) : (

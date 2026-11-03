@@ -137,6 +137,36 @@ export function robustSd(xs: readonly number[]): number {
   return 1.4826 * median(xs.map((x) => Math.abs(x - m)));
 }
 
+/* ---------- validity helpers (SCIENCE.md C13: slow is a score, never a reason to discard a run) ---------- */
+
+/**
+ * C13's accuracy floor for tasks whose accuracy the player controls by
+ * taking more time (looking a symbol up in a visible key, checking a sum):
+ * met when accuracy reaches `floor` — or when at most ONE answer is wrong.
+ * (Forced-choice tests judge their chance floor on the answers given
+ * instead — a timeout is a slow trial, not a guess — see SCIENCE.md C13.) A
+ * single slip never invalidates a run on its own: a percentage floor on a
+ * handful of answers is a hair trigger (one slip in 6 answers is 17 points),
+ * which would discard exactly the slow runs C13 protects, while a long run's
+ * floor is exactly what it was. No answers never meets a floor.
+ */
+export function meetsAccuracyFloor(correct: number, answered: number, floor: number): boolean {
+  if (!(answered > 0)) return false;
+  return answered - correct <= 1 || correct >= floor * answered - 1e-9;
+}
+
+/**
+ * C13's stop rule for fixed-time blocks: how long a stretch without a
+ * response may last before it counts as having stopped. It scales with the
+ * player's OWN pace in the run — `factor` × the median interval between
+ * responses — clamped to [lo, hi] ms, so a slow, steady pace is never read
+ * as a stop while a long halt still is. No intervals → `lo`.
+ */
+export function stopThreshold(intervals: readonly number[], lo: number, hi: number, factor = 4): number {
+  const m = median(intervals.filter((x) => Number.isFinite(x) && x >= 0));
+  return Number.isFinite(m) ? clamp(factor * m, lo, hi) : lo;
+}
+
 /**
  * z of a raw value against a literature anchor (μ, σ), oriented so that
  * higher is better. Non-finite input or a non-positive σ yields NaN, which

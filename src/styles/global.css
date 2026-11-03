@@ -1604,6 +1604,11 @@ button.brain-radar-label:focus-visible {
 .bl-area-level-text strong {
   font-size: 18px;
 }
+/* a personal-only area's forming baseline: the step dots sit under the centred title, not at the grid's left edge */
+.bl-area-level-text .bl-steps {
+  justify-self: center;
+  margin: 2px 0 4px;
+}
 .bl-verdict {
   display: grid;
   gap: 4px;

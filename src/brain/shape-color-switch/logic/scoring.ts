@@ -1,4 +1,5 @@
 import { median } from '../../../platform/brain/timing';
+import type { BrainRescoreInput, BrainRunOutcome } from '../../../platform/brain/types';
 import { PROTOCOL, SHAPE, type Cue, type Pic, type Side } from './protocol';
 
 /**
@@ -92,8 +93,11 @@ export function switchCosts(trials: readonly TrialRecord[]): { rt: number; err: 
  *    second, the MTB / NIH Toolbox v3 rate score (Novack 2024); a timeout
  *    contributes 2.5 s, an anticipation (< 200 ms) its own RT and counts as
  *    an error. Tracked as ln(RCS), the primary metric.
- *  - Invalid when there are more than 3 anticipations ('too-fast') or the
- *    accuracy is below 70 % ('rushed'), or the block is incomplete.
+ *  - Validity, scoring v2 (SCIENCE.md C13 — a slow run is a low score, never
+ *    an invalid one): invalid when the block is incomplete or has no answer
+ *    ('too-few'), with more than 3 anticipations ('too-fast'), or with
+ *    accuracy below 70 % on the answers GIVEN ('at-chance'). Timeouts lower
+ *    the score and never invalidate it.
  */
 export function scoreRun(trials: readonly TrialRecord[]): Score {
   const codes = trials.map(classify);
@@ -125,9 +129,10 @@ export function scoreRun(trials: readonly TrialRecord[]): Score {
   for (const [k, v] of Object.entries(raw)) if (Number.isFinite(v)) metrics[k] = v;
 
   const flags: string[] = [];
-  if (n < PROTOCOL.testTrials) flags.push('too-few');
+  const answered = n - timeouts;
+  if (n < PROTOCOL.testTrials || !answered) flags.push('too-few');
   if (anticipations > PROTOCOL.maxAnticipations) flags.push('too-fast');
-  if (n > 0 && nCorrect / n < PROTOCOL.minAccuracy) flags.push('rushed');
+  if (answered && nCorrect < PROTOCOL.minAccuracy * answered - 1e-9) flags.push('at-chance');
   const valid = flags.length === 0 && Number.isFinite(metrics.lnRcs);
 
   const med = median(allCorrectRt);
@@ -169,4 +174,32 @@ export function fromLogRow(row: readonly number[]): TrialRecord {
     lead: row[7],
     early: row[8]
   };
+}
+
+/**
+ * The run's outcome from its scored trials — the ONE builder the live run
+ * and `rescore` share, so a rescored run is exactly what the same log would
+ * score today.
+ */
+export function outcomeOf(recs: readonly TrialRecord[]): BrainRunOutcome {
+  const score = scoreRun(recs);
+  return {
+    metrics: score.metrics,
+    trials: recs.length,
+    valid: score.valid,
+    ...(score.flags.length ? { flags: score.flags } : {}),
+    highlights: score.highlights,
+    trialLog: recs.map(toLogRow)
+  };
+}
+
+/**
+ * Rescore a stored run under the current rules (scoring v1 → v2) from its
+ * trial log, which holds every scored trial. The runner's own 'interrupted'
+ * runs carry no log and are never rescored.
+ */
+export function rescoreRun(stored: BrainRescoreInput): BrainRunOutcome | null {
+  const rows = stored.trialLog.filter((r) => r.length >= LOG_COLUMNS.length);
+  if (!rows.length || rows.length !== stored.trialLog.length) return null;
+  return outcomeOf(rows.map(fromLogRow));
 }

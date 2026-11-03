@@ -10,6 +10,45 @@ they gain enforcement, delete entries obsoleted by code removal.
 
 ## Promoted to standards (enforced — the rule exists because of the bug)
 
+- **2026-11-03 · Brain Lab · validity floors that measured speed, not
+  engagement, discarded every run of a slow player.** The owner, slow but
+  careful at Symbol Coding, could never finish calibrating: every run came
+  back "Too few correct answers" (under 20, the MS sherpa outlier rule) and
+  "more than 5 seconds without an answer". An audit found the same class in
+  four more benchmarks — Arithmetic Sprint's 8-answer floor (about 1.5 SD
+  below the reference mean), Shape–Color Switch's 70% floor counting every
+  timeout as a wrong answer (and naming it "rushed"), Mirror Twins counting
+  timeouts both as errors and as exclusions, and Matrix Reasoning's 9-item
+  minimum that the slowest pace its 30 s window allows (8 items before the
+  240 s cap) can never reach. Root cause: population data-cleaning rules
+  and absolute speed thresholds used as validity — they censor exactly the
+  slow people and slow days the measurement exists for, and bias a
+  near-floor player's baseline upward. Rule: SCIENCE.md C13 (slow is a
+  score) — invalidate only for interruptions, anticipations / exhausted
+  pools, guessing judged on the answers GIVEN, no answers, or a stop judged
+  against the run's OWN pace; a single slip never invalidates. A scoring
+  change re-judges stored runs from their logs ONCE and PERSISTS the result
+  (`rescore.ts` at startup and after an import) — logs are trimmed after a
+  test's 12 newest runs, so a verdict recomputed on read would flip back.
+  Enforced: each benchmark's check runs a scripted slow-but-careful player
+  at the slowest pace its protocol allows (must be valid, must score lower);
+  core 'C13: rescoring & forming' proves the migration (revive, retire,
+  leave log-less runs alone, idempotent, baselines frozen) and that a test
+  above scoring v1 ships `rescore`.
+
+- **2026-11-03 · Brain Lab · a personal-only area read "Lapsed" the day it
+  scored.** After six Flexibility runs the tab card said "Lapsed · No
+  scored run in 14 days", the area hero "No level right now … Last scored
+  today" and the dashboard tile "No run in 14 days", with no sign of the
+  baseline's progress. Root cause: the view models knew calibrating / level
+  / stale only, and a grade-P area has no index until its baseline freezes
+  (a personal index is measured FROM it), so the five days between
+  calibration and baseline fell through to 'stale'. Rule: that phase is its
+  own state, 'forming' — "Baseline k/5", "Index after N more scored days",
+  never lapsed (SCIENCE.md §2.9 row "Area level, grade P"). Enforced: core
+  'C13: rescoring & forming' walks a grade-P area through calibrating →
+  forming → personal index → lapsed on both view models.
+
 - **2026-10-31 · Brain Lab · a Vite-only global read at module load crashes
   every Node script that imports the registry.** Twice in one build: Mirror
   Twins read `import.meta.env.DEV` at module scope, and Symbol Coding
@@ -697,4 +736,12 @@ they gain enforcement, delete entries obsoleted by code removal.
   the runner's filling bar over a test's own draining countdown; five
   promoted entries above. A full scored Arithmetic Sprint run was driven
   end to end through the real runner (recorded, results card, dashboard).
+- 2026-11-03 — owner validation round on the Brain Lab MVP: C13 (slow is a
+  score) across five benchmarks with a persisted rescore of stored runs,
+  and the grade-P 'forming' state; two promoted entries above. Verified end
+  to end at 390×844 on a seeded v1 store reproducing both reports: four
+  slow v1 Symbol Coding runs and a timeout-heavy Shape–Color run revived on
+  load (Calibrating ×3 + Baseline 1/5), the Flexibility card, hero and
+  dashboard tile reading "Baseline 1/5", zero console errors. Mirror Twins'
+  turn-back staying out of the scored block is by design (C3).
 

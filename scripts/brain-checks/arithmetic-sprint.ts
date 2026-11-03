@@ -20,13 +20,17 @@ import {
   CYCLE_LENGTH,
   ITEM_COUNT,
   META,
-  MIN_SUBMISSIONS,
+  MIN_ACCURACY_PCT,
+  STOP_FACTOR,
+  STOP_MAX_MS,
+  STOP_MIN_MS,
+  BLOCK_MS,
   PRACTICE_ITEMS,
   BLOCK_MINUTES,
   referenceZ
 } from '../../src/brain/arithmetic-sprint/logic/protocol';
 import { generateItems, generatePractice, POOLS, type Op, type Problem } from '../../src/brain/arithmetic-sprint/logic/items';
-import { scoreRun, validityFlags, TRIAL_COLUMNS, type Submission } from '../../src/brain/arithmetic-sprint/logic/scoring';
+import { rescoreRun, scoreRun, submissionsFromLog, validityFlags, TRIAL_COLUMNS, type Submission } from '../../src/brain/arithmetic-sprint/logic/scoring';
 import { indexFromZ } from '../../src/platform/brain/timing';
 
 const u = (n: number) => n % 10;
@@ -166,7 +170,8 @@ export const check: BrainCheck = ({ bad, rng }) => {
   if (BLOCK_MINUTES !== 2) bad(`block is ${BLOCK_MINUTES} min, not 2.0`);
   if (ITEM_COUNT !== 120 || CYCLE_LENGTH !== 8) bad('pre-generated sequence is not 120 items in cycles of 8');
   if (PRACTICE_ITEMS !== 4) bad('practice is not 4 items');
-  if (MIN_SUBMISSIONS !== 8) bad('minimum submissions is not 8');
+  if (MIN_ACCURACY_PCT !== 85) bad('accuracy floor is not 85%');
+  if (STOP_FACTOR !== 4 || STOP_MIN_MS !== 30_000 || STOP_MAX_MS !== 60_000) bad('the C13 stop rule is not 4 × pace within 30–60 s');
   if (META.runIn !== 3) bad(`R = ${META.runIn}, §2.12 says 3`);
   if (Math.abs(META.noiseFloor.abs - 4.0 * Math.sqrt(1 - 0.81)) > 0.05) bad(`noise floor ${META.noiseFloor.abs} ≠ SEM_ref ≈ 1.7`);
   if (!META.practiceProne || META.stateSensitive || META.interruption !== 'A' || META.perWeek !== 2) bad('§2.12 flags (practice-prone, state, class A, 2×/week) drifted');
@@ -246,12 +251,17 @@ export const check: BrainCheck = ({ bad, rng }) => {
     [P('add', false, 41, 22, 63), 63, 1100, 4500],
     [P('add', true, 29, 23, 52), 52, 1700, 5500]
   ];
-  let t0 = 0;
-  const subs: Submission[] = script.map(([item, typed, fd, rt], order) => {
-    const s: Submission = { order, item, typed, firstDigitMs: fd, rtMs: rt, edits: order === 2 ? 1 : 0, onsetMs: t0 };
-    t0 += rt;
-    return s;
-  });
+  // one problem every 12 s (each answered within its 12 s), so the run fills the 2-minute block —
+  // onsets feed only the stop rule; every metric below reads the RTs
+  const subs: Submission[] = script.map(([item, typed, fd, rt], order) => ({
+    order,
+    item,
+    typed,
+    firstDigitMs: fd,
+    rtMs: rt,
+    edits: order === 2 ? 1 : 0,
+    onsetMs: order * 12_000
+  }));
   const out = scoreRun(subs);
   const m = out.metrics;
   const expect: Record<string, number> = {
@@ -276,36 +286,88 @@ export const check: BrainCheck = ({ bad, rng }) => {
   // CPM = C / 2 on random scripted runs from real items
   for (let run = 0; run < 50; run++) {
     const items = generateItems((r() * 0xffffffff) >>> 0);
-    const n = 8 + Math.floor(r() * 40);
-    const rs: Submission[] = items.slice(0, n).map((item, order) => ({
-      order,
-      item,
-      typed: r() < 0.9 ? item.answer : item.answer + 1,
-      firstDigitMs: 500 + r() * 2000,
-      rtMs: 1500 + r() * 6000,
-      edits: 0,
-      onsetMs: order * 4000
-    }));
+    const rs: Submission[] = [];
+    let t = 0;
+    for (const item of items) {
+      const rtMs = 1500 + r() * 6000;
+      if (t + rtMs >= BLOCK_MS) break;
+      rs.push({ order: rs.length, item, typed: r() < 0.9 ? item.answer : item.answer + 1, firstDigitMs: 500 + r() * 1000, rtMs, edits: 0, onsetMs: t });
+      t += rtMs;
+    }
+    const n = rs.length;
     const c = rs.filter((s) => s.typed === s.item.answer).length;
     const o = scoreRun(rs);
     if (o.metrics.cpm !== c / 2) bad(`CPM ${o.metrics.cpm} ≠ C/2 = ${c / 2}`);
-    if (o.valid !== (c * 100 >= 85 * n)) bad(`validity wrong for ${c}/${n}`);
+    // answering without a stop, validity is the accuracy floor alone (one wrong answer is always pardoned)
+    if (o.valid !== (n - c <= 1 || c * 100 >= 85 * n)) bad(`validity wrong for ${c}/${n}`);
     if (o.valid) for (const [id, v] of Object.entries(o.metrics)) if (!Number.isFinite(v)) bad(`valid run: ${id} not finite`);
     if (o.valid && Object.keys(o.metrics).length !== 8) bad('a valid run must report all 8 declared metrics');
   }
 
   /* ---------- validity rules ---------- */
-  const flags = (n: number, c: number) => validityFlags(n, c).join(',');
-  if (flags(7, 7) !== 'too-few') bad('7 answers must be invalid (too-few)');
+  /** n answers, the first c right, at a steady pace that fills the block (the last stretch to the lock = one interval) */
+  const paced = (n: number, c: number, everyMs = BLOCK_MS / (n + 1)): Submission[] =>
+    generateItems(7)
+      .slice(0, n)
+      .map((item, order) => ({ order, item, typed: order < c ? item.answer : item.answer + 1, firstDigitMs: 300, rtMs: everyMs, edits: 0, onsetMs: order * everyMs }));
+  const flags = (n: number, c: number) => validityFlags(paced(n, c)).join(',');
   if (flags(8, 7) !== '') bad('8 answers at 87.5% must be valid');
   if (flags(20, 17) !== '') bad('exactly 85% must be valid');
   if (flags(20, 16) !== 'rushed') bad('80% must be invalid (rushed)');
   if (flags(0, 0) !== 'too-few') bad('an empty run must be invalid (too-few)');
-  if (validityFlags(120, 120, true).join(',') !== 'too-fast') bad('a run that exhausts the 120 items must be invalid (too-fast)');
+  if (validityFlags(paced(120, 120), true).join(',') !== 'too-fast') bad('a run that exhausts the 120 items must be invalid (too-fast)');
   const fast = scoreRun(subs, { exhausted: true });
   if (fast.valid || !fast.flags?.includes('too-fast')) bad('an exhausted sequence scored valid');
-  const few = scoreRun(subs.slice(0, 7));
-  if (few.valid || !few.flags?.includes('too-few')) bad('a 7-answer run scored valid');
+
+  /* ---------- C13: slow is a score, never a reason to discard a run ---------- */
+  // v1 discarded every run under 8 answers — about 1.5 SD below the reference mean
+  if (flags(7, 7) !== '') bad(`7 careful answers in 2 minutes were discarded (${flags(7, 7)})`);
+  const slow = scoreRun(paced(6, 6));
+  if (!slow.valid || slow.metrics.cpm !== 3) bad(`a slow, careful run (6 right, one every 17 s) was not scored: ${slow.flags?.join()}`);
+  if (!(slow.metrics.cpm < scoreRun(paced(20, 20)).metrics.cpm)) bad('a slow run did not score below a faster one');
+  // one slip never invalidates a short run (5 of 6 = 83%); two of six do
+  if (flags(6, 5) !== '') bad(`one slip in six answers invalidated the run (${flags(6, 5)})`);
+  if (flags(6, 4) !== 'rushed') bad('two wrong of six (67%) was valid');
+  // the stop rule follows the player's own pace: 35 s is a stop at one answer per 5 s, a hesitation at one per 15 s
+  const withStretch = (everyMs: number, stretchMs: number): Submission[] => {
+    const out: Submission[] = [];
+    const items = generateItems(11);
+    let t = 0;
+    for (let k = 0; t + everyMs < BLOCK_MS; k++) {
+      const gap = k === 3 ? stretchMs : everyMs;
+      if (t + gap >= BLOCK_MS) break;
+      out.push({ order: k, item: items[k], typed: items[k].answer, firstDigitMs: 300, rtMs: gap, edits: 0, onsetMs: t });
+      t += gap;
+    }
+    return out;
+  };
+  if (!validityFlags(withStretch(5_000, 35_000)).includes('long-gap')) bad('a 35-s stop did not invalidate a 5-s-an-answer run');
+  if (validityFlags(withStretch(15_000, 35_000)).length) bad(`a 35-s item invalidated a 15-s-an-answer run (${validityFlags(withStretch(15_000, 35_000)).join()})`);
+  if (!validityFlags(withStretch(15_000, 61_000)).includes('long-gap')) bad('a 61-s stretch was not a stop at a slow pace');
+  // stopping before the lock is a stop too
+  {
+    const early = paced(10, 10, 5_000); // ten answers in the first 50 s, then 70 s of nothing
+    if (!validityFlags(early).includes('long-gap')) bad('70 silent seconds before the lock were not a stop');
+  }
+
+  /* ---------- rescoring a v1 run (scoring version 2) ---------- */
+  {
+    const v1 = scoreRun(paced(7, 7)); // v1 stored it as invalid (too-few)
+    const out = rescoreRun({ trialLog: v1.trialLog ?? [], metrics: v1.metrics, flags: ['too-few'], valid: false, scoringVersion: 1 });
+    if (!out || !out.valid || out.metrics.cpm !== 3.5) bad(`a v1 7-answer run was not rescored to valid: ${JSON.stringify(out?.flags)}`);
+    if (out && JSON.stringify(out.metrics) !== JSON.stringify(v1.metrics)) bad('rescoring changed the metrics of a v1 run');
+    // the log rebuilds the submissions exactly (every logged answer reproduces its `correct` cell)
+    const back = submissionsFromLog(out?.trialLog ?? []);
+    if (!back || back.length !== 7 || back.some((x, i) => x.typed !== paced(7, 7)[i].typed || x.item.answer !== paced(7, 7)[i].item.answer))
+      bad('the trial log does not rebuild its submissions');
+    const all = submissionsFromLog(scoreRun(subs).trialLog ?? []);
+    if (!all || JSON.stringify(scoreRun(all).metrics) !== JSON.stringify(scoreRun(subs).metrics)) bad('rescoring the scripted run differs from scoring it live');
+    // a log whose answers disagree with their `correct` cells is never rescored; an exhausted run stays invalid
+    const tampered = (v1.trialLog ?? []).map((row, i) => (i === 0 ? [...row.slice(0, 5), 0, ...row.slice(6)] : row));
+    if (rescoreRun({ trialLog: tampered, metrics: {}, flags: [], valid: false, scoringVersion: 1 }) !== null) bad('a self-contradicting log was rescored');
+    const ex = rescoreRun({ trialLog: scoreRun(paced(120, 120), { exhausted: true }).trialLog ?? [], metrics: {}, flags: ['too-fast'], valid: false, scoringVersion: 1 });
+    if (!ex || ex.valid || !ex.flags?.includes('too-fast')) bad('rescoring revived an exhausted run');
+  }
 
   /* ---------- reference: CPM only, 50 + 10z ---------- */
   const idx = (cpm: number) => indexFromZ(referenceZ({ cpm }));
@@ -330,5 +392,5 @@ export const check: BrainCheck = ({ bad, rng }) => {
   if (!mismatches({ ...m, cpm: 9 }, expect).length) bad('the scripted-run comparison missed CPM = C instead of C / 2');
   if (!mismatches({ ...m, rtCorrect: 3.0 }, expect).length) bad('the scripted-run comparison missed a fast submission left in the RT median');
 
-  return `${drawn} items over ${SESSIONS} sessions obey the 8 class rules, cycles of 8 (2 per operation, 50% complex), no repeats, size alternation; scripted CPM ${m.cpm} = 9/2; validity + reference examples hold; 10 deliberately broken inputs caught`;
+  return `${drawn} items over ${SESSIONS} sessions obey the 8 class rules, cycles of 8 (2 per operation, 50% complex), no repeats, size alternation; scripted CPM ${m.cpm} = 9/2; validity + reference examples hold; C13: slow runs scored (6 @ 17 s), stops pace-relative, v1 runs rescore; 10 deliberately broken inputs caught`;
 };

@@ -25,7 +25,7 @@ import {
   type Side,
   type TrialSpec
 } from '../../src/brain/shape-color-switch/logic/protocol';
-import { CODE, classify, fromLogRow, rtForSum, scoreRun, switchCosts, toLogRow, type TrialRecord } from '../../src/brain/shape-color-switch/logic/scoring';
+import { CODE, classify, fromLogRow, outcomeOf, rescoreRun, rtForSum, scoreRun, switchCosts, toLogRow, type TrialRecord } from '../../src/brain/shape-color-switch/logic/scoring';
 import type { BrainCheck } from './types';
 
 function longestRun<T>(xs: readonly T[]): number {
@@ -187,7 +187,7 @@ export const check: BrainCheck = async ({ bad, rng }) => {
   const naiveSum = scripted.reduce((a, t) => a + (t.resp === -1 ? 0 : t.rt), 0) / 1000; // forgets the timeout
   if (close(26 / naiveSum, s.metrics.rcs)) bad('the RCS check cannot tell a scorer that drops timeouts');
 
-  // validity: > 3 anticipations → 'too-fast'; accuracy < 70 % → 'rushed'
+  // validity: > 3 anticipations → 'too-fast'; answers no better than guessing → 'at-chance'
   const anticip = base.trials.map((t, i) => rec(t, t.side, i < 4 ? 120 : 800));
   const sa = scoreRun(anticip);
   if (sa.valid || !sa.flags.includes('too-fast')) bad('4 anticipations must invalidate the run (too-fast)');
@@ -195,9 +195,36 @@ export const check: BrainCheck = async ({ bad, rng }) => {
   const at = (nWrong: number) => scoreRun(base.trials.map((t, i) => rec(t, i < nWrong ? ((1 - t.side) as Side) : t.side, 800)));
   if (!at(9).valid) bad('21 / 30 correct (70 %) must be valid');
   const low = at(10);
-  if (low.valid || !low.flags.includes('rushed')) bad('20 / 30 correct must invalidate the run (rushed)');
+  if (low.valid || !low.flags.includes('at-chance')) bad('20 / 30 correct (66.7 %) must invalidate the run (at-chance)');
+  if (low.flags.includes('rushed')) bad('the v1 "rushed" flag is still produced');
   if (scoreRun(scripted.slice(0, 29)).valid) bad('an incomplete block must be invalid');
-  if (scoreRun(base.trials.map((t) => rec(t, -1, 2500))).valid) bad('an all-timeout run must be invalid');
+  const none = scoreRun(base.trials.map((t) => rec(t, -1, 2500)));
+  if (none.valid || !none.flags.includes('too-few')) bad(`an all-timeout run must be invalid as too few answers (${none.flags.join()})`);
+
+  // C13: slow is a score, never a reason to discard a run. v1 counted a timeout as a wrong card,
+  // so this careful player — 20 right of 20 answered, 10 pictures left to time out — was "rushed" (66.7 %)
+  const slowRun = (timeouts: number, rt = 2000) =>
+    scoreRun(base.trials.map((t, i) => (i % 3 === 2 && i / 3 < timeouts ? rec(t, -1, PROTOCOL.deadlineMs) : rec(t, t.side, rt))));
+  const slow = slowRun(10);
+  if (!slow.valid || slow.metrics.timeouts !== 10) bad(`a slow, careful run (10 timeouts, 20/20 answered) was discarded: ${slow.flags.join()}`);
+  if (!close(slow.metrics.rcs, 20 / (20 * 2 + 10 * 2.5))) bad(`slow run RCS ${slow.metrics.rcs}, want 20 / 65 s`);
+  if (!(slow.metrics.lnRcs < s.metrics.lnRcs)) bad('the slow run did not score below the scripted one');
+  // a timeout is never read as a guess: 10 answers, all right, 20 timeouts — still a measurement, lower still
+  const slower = scoreRun(base.trials.map((t, i) => (i % 3 === 0 ? rec(t, t.side, 2300) : rec(t, -1, PROTOCOL.deadlineMs))));
+  if (!slower.valid || !(slower.metrics.lnRcs < slow.metrics.lnRcs)) bad(`a very slow run (10 answers, 20 timeouts): ${slower.valid} ${slower.flags.join()}`);
+  // … but a guesser among the answers is caught whatever the timeouts: 12 right of 20 answered (60 %)
+  const guess = scoreRun(base.trials.map((t, i) => (i % 3 === 2 ? rec(t, -1, PROTOCOL.deadlineMs) : rec(t, i % 5 < 2 ? ((1 - t.side) as Side) : t.side, 900))));
+  if (guess.valid || !guess.flags.includes('at-chance')) bad(`answers at guessing level beside timeouts were scored (${guess.flags.join()})`);
+
+  // rescoring a v1 run (scoring version 2): the slow run as v1 stored it — invalid, 'rushed' — comes back valid, metrics identical
+  {
+    const recs = base.trials.map((t, i) => (i % 3 === 2 && i / 3 < 10 ? rec(t, -1, PROTOCOL.deadlineMs) : rec(t, t.side, 2000)));
+    const live = outcomeOf(recs);
+    const out = rescoreRun({ trialLog: live.trialLog ?? [], metrics: live.metrics, flags: ['rushed'], valid: false, scoringVersion: 1 });
+    if (!out || !out.valid || JSON.stringify(out.metrics) !== JSON.stringify(live.metrics)) bad(`a v1 'rushed' slow run was not rescored to valid: ${JSON.stringify(out?.flags)}`);
+    if (rescoreRun({ trialLog: [], metrics: {}, flags: [], valid: false, scoringVersion: 1 }) !== null) bad('an empty log was rescored');
+    if (rescoreRun({ trialLog: [[0, 1, 0]], metrics: {}, flags: [], valid: false, scoringVersion: 1 }) !== null) bad('a malformed log was rescored');
+  }
 
   // switch costs on a hand-built sequence (trial 1 and post-error trials excluded)
   const L: Layout = { aLeft: true };
@@ -221,5 +248,5 @@ export const check: BrainCheck = async ({ bad, rng }) => {
     if (fs.readFileSync(dir + f, 'utf8').includes('Math.random')) bad(`Math.random in src/brain/shape-color-switch/${f}`);
   }
 
-  return `${SEEDS} seeds: 24/6 cues, trial 1 shape, colour ≥ 2 apart, pictures 15/15, sides balanced per cue, all incongruent; deterministic; RCS 26/26.45 s = ${s.metrics.rcs.toFixed(4)} (ln ${s.metrics.lnRcs.toFixed(4)}); validity + switch costs + log round-trip; audit catches ${broken.length} broken blocks`;
+  return `${SEEDS} seeds: 24/6 cues, trial 1 shape, colour ≥ 2 apart, pictures 15/15, sides balanced per cue, all incongruent; deterministic; RCS 26/26.45 s = ${s.metrics.rcs.toFixed(4)} (ln ${s.metrics.lnRcs.toFixed(4)}); validity + C13 (slow runs scored, chance on answers given) + rescoring + switch costs + log round-trip; audit catches ${broken.length} broken blocks`;
 };

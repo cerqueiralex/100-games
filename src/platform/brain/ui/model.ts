@@ -19,6 +19,13 @@ export type AreaState =
   | 'level'
   /** only run-in runs so far: the latest session index, labelled "Calibrating" */
   | 'calibrating'
+  /**
+   * personal-only (grade P) area, calibration done, its baseline still
+   * forming: no index exists yet BY DEFINITION (a personal index is measured
+   * from the frozen baseline — SCIENCE.md §2.1, §2.9), so the area shows how
+   * far along the baseline is — never "lapsed"
+   */
+  | 'forming'
   /** scored before, but nothing in the last 14 days — the level has lapsed */
   | 'stale'
   /** never measured (or the area has no benchmark in this build) */
@@ -52,6 +59,7 @@ export function areaView(a: AreaSummary): AreaView {
   };
   if (a.grade === 'P') {
     if (finite(s.level.personal)) return { state: 'level', value: s.level.personal, personal: true, ...base };
+    if (s.latest && s.runInComplete && !s.baseline) return { state: 'forming', value: null, personal: true, ...base };
   } else if (finite(s.level.index)) {
     return { state: 'level', value: s.level.index, personal: false, ...base };
   }

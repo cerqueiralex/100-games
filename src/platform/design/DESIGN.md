@@ -1215,7 +1215,10 @@ between Games and Profile behind the monochrome `BrainIcon`.
   and above-baseline is not `--good` either — a green "up" beside an
   uncoloured "down" would make the colour itself the verdict, and Spatial
   already wears green. A calibrating test reads "Calibrating · 2 of 3",
-  neutral, with no verdict at all; "reliably" appears only when the §2.6
+  neutral, with no verdict at all; a personal-only (grade P) area whose
+  baseline is still forming reads "Baseline 2/5" with "Index after 3 more
+  scored days" and its step dots — progress, never "Lapsed", which is kept
+  for an area with nothing scored in 14 days; "reliably" appears only when the §2.6
   two-week rule says so, and an improvement in a practice-prone area always
   carries the practice qualifier. Associations, never causes: "below your
   typical range today", never "you are tired".

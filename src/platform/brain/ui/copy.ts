@@ -195,9 +195,36 @@ export function calibratingShort(done: number, runIn: number): string {
   return `Calibrating ${Math.min(done, runIn)}/${runIn}`;
 }
 
-/** the baseline-forming line (between the run-in and a frozen baseline) */
+/**
+ * the baseline-forming note (between the run-in and a frozen baseline) —
+ * every surface prints "Baseline forming k/5" right above it, so it never
+ * repeats that label
+ */
 export function baselineFormingCopy(k: number): string {
-  return `Baseline forming ${Math.min(k, BASELINE_N)}/${BASELINE_N} — one scored run per day builds it, then it is frozen.`;
+  const left = Math.max(0, BASELINE_N - Math.min(k, BASELINE_N));
+  return `One scored run a day builds it${left ? ` (${left} to go)` : ''}; then it is frozen, so later days have something fixed to be compared with.`;
+}
+
+/** "Baseline 2/5" — the short label while a personal-only area's baseline forms (area card, chips) */
+export function baselineFormingShort(k: number): string {
+  return `Baseline ${Math.min(k, BASELINE_N)}/${BASELINE_N}`;
+}
+
+/** the area card's line for a personal-only area whose baseline is forming: when its index will exist */
+export function personalIndexAfter(k: number): string {
+  const left = Math.max(1, BASELINE_N - k);
+  return `Index after ${left} more scored ${left === 1 ? 'day' : 'days'}`;
+}
+
+/**
+ * A personal-only (grade P) area between calibration and its frozen
+ * baseline (SCIENCE.md §2.1, §2.9): there is no number yet BY DEFINITION —
+ * a personal index is measured from that baseline — so say why, and how far
+ * along it is, instead of reading as lapsed.
+ */
+export function personalFormingCopy(k: number): string {
+  const left = Math.max(0, BASELINE_N - Math.min(k, BASELINE_N));
+  return `No published reference exists for this test, so its index is personal — 50 is your own baseline. It appears once ${BASELINE_N} scored runs on different days have set that baseline${left ? ` (${left} to go)` : ''}. One run a day counts; more runs that day are stored as practice.`;
 }
 
 /** the check-in context flags (SCIENCE.md §2.8 — context icons, never a verdict) */
@@ -231,16 +258,17 @@ export function flagCopy(flag: string): string {
     rushed: 'Accuracy was too low to score — speed alone does not measure the skill.',
     'low-accuracy': 'Accuracy was too low to score — speed alone does not measure the skill.',
     careless: 'Too many answers came in under a second and a half — a run of guesses cannot be scored.',
-    'at-chance': 'Accuracy was at chance level, so the run did not measure the skill.',
+    'at-chance': 'The answers you gave were too close to guessing, so the run did not measure the skill. Unanswered items never count against this.',
     'not-comparable': 'The screen was too small to draw the test at its standard size.',
     'too-many-false-starts': 'Too many taps came before the counter started, so the run could not be scored.',
     'too-many-timeouts': 'Too many trials ended without an answer to score this run.',
     'unstable-timing': 'The display stalled on several trials, so their timing could not be trusted.',
-    'long-gap': 'More than 5 seconds passed without an answer during the timed block, so the run is not comparable with your others.',
+    'long-gap': 'You stopped answering for a long stretch during the timed block — far longer than your own pace — so the run is not comparable with your others.',
     'items-exhausted': 'Every prepared item was used before time ran out, so the run could not continue at its standard length.',
     // quality notes on a valid run — kept with the run, never a reason to doubt it on their own
     'responding-before-the-counter': 'A few taps came before the counter started. They were not counted as responses.',
     'probable-mis-taps': 'A few responses came in under 200 ms — probably mis-taps. They still count.',
+    rescored: 'Re-checked under the updated validity rules: a slow pace no longer stops a run from counting, so this run is now scored.',
     'double-taps': 'Some taps came too close together and were ignored as double taps.',
     'practice-below-criterion': 'Practice ended below its usual criterion — keep that in mind when reading this run.',
     'no-digit-matches': 'No answers were recorded in the number-matching part, so the finger-speed comparison is missing for this run.',

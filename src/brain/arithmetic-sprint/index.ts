@@ -3,6 +3,7 @@ import { ArithmeticSprintDemo } from './ArithmeticSprintDemo';
 import { ArithmeticSprintTest } from './ArithmeticSprintTest';
 import { arithmeticSprintIcon } from './icon';
 import { META, referenceZ } from './logic/protocol';
+import { rescoreRun } from './logic/scoring';
 
 /**
  * Calculation benchmark — SCIENCE.md §1.7 "Calculation: arithmetic fluency
@@ -109,13 +110,15 @@ export const arithmeticSprintTest: BrainTestDefinition = {
   ownTimerBar: true,
   perWeek: META.perWeek,
   protocolVersion: 1,
-  scoringVersion: 1,
+  /** v2 (2026-11-03): C13 validity — no minimum number of answers, a pace-relative stop rule; v1 runs are rescored from their logs */
+  scoringVersion: 2,
   referenceVersion: 1,
+  rescore: rescoreRun,
   science: {
     summary:
       'Arithmetic fluency — the speed and accuracy of whole-number mental arithmetic — measured in the format published fluency tests share: as many correct answers as possible in a fixed time. The items follow the Math4Speed class rules (two-digit addition and subtraction with and without a carry or borrow, single-digit and 1-digit × teen multiplication, and the matching divisions), regenerated from each run’s seed so there is no list to memorise, and mixed in order like the computerised BGU-MF. It is a learned skill that also draws on processing speed and working memory, so gains are first of all skill at this task.',
     scoring:
-      'CPM = correct answers ÷ 2 minutes; accuracy, median times and per-operation rates are diagnostics. The index is 50 + 10z against 10.1 ± 4.0 CPM (grade C, approximate): that sample was young and wrote answers by hand in single-operation blocks, so typing in mixed order is expected to score lower by an unknown amount. Change from your own baseline is the primary signal; a run with fewer than 8 answers, or accuracy below 85%, is invalid.',
+      'CPM = correct answers ÷ 2 minutes; accuracy, median times and per-operation rates are diagnostics. The index is 50 + 10z against 10.1 ± 4.0 CPM (grade C, approximate): that sample was young and wrote answers by hand in single-operation blocks, so typing in mixed order is expected to score lower by an unknown amount. Change from your own baseline is the primary signal. A slow run is a low CPM, never an invalid one (SCIENCE.md C13): a run is invalid only with no answer, accuracy below 85% (a single wrong answer alone excepted), or a stop of 30–60 s without an answer.',
     deviations: [
       'Mixed-order 2-minute block (cycles of 8: every operation twice, half of them complex) instead of Math4Speed’s handwritten single-operation blocks — a principled derivative, not a normed instrument.',
       'Answers are typed on an on-screen phone keypad and submitted with ✓ (as in the online Math4Speed and the BGU-MF), not handwritten; up to 3 digits, compared as numbers.',
@@ -128,7 +131,7 @@ export const arithmeticSprintTest: BrainTestDefinition = {
       'Timing: each problem is drawn inside the animation frame that stamps its onset; keys register on pointerdown with the event timestamp, and a key stamped before the current problem’s onset is ignored.',
       'The block ends 120.0 s after the first problem’s onset; the problem on screen then is discarded, not scored as an error.',
       'If a run gets through all 120 pre-generated items before the 120 s are up (at least one answer a second, beyond any honest pace), the block ends there and the run is invalid (“too-fast”).',
-      'Accuracy below 85% makes the run invalid (“rushed”) rather than only flagged (SCIENCE.md A24); fewer than 8 answers is invalid (“too-few”). Answers faster than 400 ms still count toward CPM but are left out of the time medians.',
+      'Accuracy below 85% makes the run invalid (“rushed”) rather than only flagged (SCIENCE.md A24), though a single wrong answer alone never invalidates a run [DC]. Scoring v2 (SCIENCE.md C13 — a slow run is a low score, never an invalid one): there is no minimum number of answers (v1 required 8, an ability floor about 1.5 SD below the reference mean); a run with no answer at all is invalid (“too-few”), and so is a stop — no submission for longer than 4 × the run’s own median interval, held between 30 and 60 s, counted from the first onset and up to the 120-s lock (“long-gap”) [DC]. Answers faster than 400 ms still count toward CPM but are left out of the time medians.',
       'Per-operation rates count every submission (correct ÷ summed submit time); the cross-session RT diagnostics (last 7 valid runs, per operation × complexity) are left to the trial log.'
     ],
     references: [

@@ -334,7 +334,7 @@ export function BrainDashboard({
           </div>
           <p className="bd-mini-note">
             {anyLevel
-              ? 'A gap means no scored run in the last 14 days. Tap an area for its detail.'
+              ? 'A gap means no level yet: still calibrating, a personal baseline still forming, or no scored run in the last 14 days. Tap an area for its detail.'
               : 'Your profile fills in as each area finishes calibrating. Tap an area for its detail.'}
           </p>
         </div>

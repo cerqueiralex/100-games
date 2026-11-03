@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 import App from './App';
 import './styles/global.css';
 import { registerSW } from 'virtual:pwa-register';
+import { ensureScoringCurrent } from './platform/brain/rescore';
 
 registerSW({ immediate: true });
 
@@ -12,6 +13,9 @@ const params = new URLSearchParams(location.search);
 const Harness = import.meta.env.DEV && params.has('harness') ? lazy(() => import('./platform/brain/Harness')) : null;
 
 function render() {
+  // a Brain Lab benchmark whose scoring changed re-judges the runs stored under
+  // its old rules — once, persisted, before any view reads them (rescore.ts)
+  ensureScoringCurrent();
   createRoot(document.getElementById('root')!).render(
     Harness ? (
       <Suspense fallback={null}>

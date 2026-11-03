@@ -1,6 +1,6 @@
 # Brain Lab: Science Dossier
 
-`src/platform/brain/SCIENCE.md`. This is the scientific rulebook for the Brain Lab tab: every benchmark, score and claim follows it. Dossier version 1 (protocol v1, scoring v1, reference set v1), dated 2026-10-30.
+`src/platform/brain/SCIENCE.md`. This is the scientific rulebook for the Brain Lab tab: every benchmark, score and claim follows it. Dossier version 1 (protocol v1, scoring v1, reference set v1), dated 2026-10-30; revised 2026-11-03 — convention C13 (slow is a score) and scoring v2 for Processing Speed, Calculation, Flexibility, Spatial and Analysis (Appendix A31).
 
 > It consolidates six domain research reports and one methodology report produced by web research in 2026. Where the reports disagree, Appendix A records how the conflict was resolved and why. Any change to a protocol, formula, reference value or claim MUST update this file in the same commit and bump the matching version (§2.11).
 
@@ -131,6 +131,12 @@
 - **C10. Device and input.** Store a device fingerprint (§2.11). A change starts a new segment (§2.3).
 - **C11. Validity semantics.** Invalid sessions are kept and shown with their reason, and are excluded from every level, baseline, σ_w, verdict, the Mean and all insights. Flags annotate a session without excluding it, unless the rule says otherwise.
 - **C12. Order.** On days with several benchmarks, use one canonical order [DC]: check-in → Reaction → Processing Speed → Attention → Flexibility → Memory → Calculation → Spatial → Precision → Analysis.
+- **C13. Slow is a score, never a reason to discard a run.** A validity rule may reject a run only when the run did not measure the construct — never because the person is slow or scored low (owner report, 2026-11-03; Appendix A31) [DC]:
+  - **Allowed reasons:** an interruption (C5); responding before the stimulus or faster than the task can honestly be done (anticipations, false starts, an exhausted item pool); answers too close to guessing; no answer at all; and a **stop** — a stretch without any response that is long against the person's OWN pace in that run: more than 4 × the run's median interval between responses, held within the test's window (10–20 s for Processing Speed, 30–60 s for Calculation).
+  - **Never a reason:** a minimum score or count of answers, timeouts, or a time cap that ends a block early. A timeout is scored by the paradigm's own rule (an error, a lapse, a slow trial), a low count is the measurement, and a block the cap cuts short is scored from what was answered, with its lower precision shown.
+  - **Accuracy floors are judged on the answers given.** In forced-choice tests (Spatial, Flexibility) the floor sits near chance and a timeout never counts as a wrong answer for validity. Where accuracy is the player's to control by taking more time (Processing Speed, Calculation) the floor stands, but a single wrong answer alone never invalidates a run: on a handful of answers a percentage floor is a hair trigger.
+  - **Why.** A speed floor censors exactly the people and the days the measurement exists for. For a slow player no baseline can ever form; for one near the floor only the fast days count, which biases the baseline upward and turns every ordinary later day into "below your typical range". The analytics already absorb an odd run (a median baseline, a MAD-based σ_w, Theil–Sen trends), so when a rule cannot tell slowness from disengagement, the run is scored.
+  - **Proof.** Each benchmark's fidelity check runs a scripted slow-but-careful player at the slowest pace its protocol allows: that run must be valid and score below a faster one.
 
 ---
 
@@ -336,7 +342,7 @@
 | Timed block | No correctness feedback, only a neutral key animation. The next problem appears on the next frame after ✓. ⌫ edits. An empty ✓ is ignored. No skip |
 | Adaptive rule | None. A fixed item distribution is what makes sessions comparable |
 | Stop rule | Input locks at 120.0 s. The item on screen at time-out is discarded and not counted as an error |
-| Validity | Interruption class A. Fewer than 8 submissions → invalid. Accuracy below 85% → invalid ("rushed") [DC]. Submissions less than 400 ms after onset are flagged and dropped from RT statistics |
+| Validity | Interruption class A. No minimum number of answers (C13): no answer at all → invalid; a stop — no submission for longer than 4 × the run's median interval, held within 30–60 s — → invalid [DC]. Accuracy below 85% → invalid ("rushed"), a single wrong answer alone excepted [DC]. Submissions less than 400 ms after onset are flagged and dropped from RT statistics. Scoring v2: v1 also required 8 submissions (Appendix A31) |
 | Log per item | Class, operands, typed answer, correctness, first-digit latency, submit RT, number of edits |
 | Duration | About 155 s |
 
@@ -409,7 +415,7 @@
 | Answer set | 8 options = all 2³ correct/incorrect combinations over 3 probe attributes. Rule-governed attributes are used first, topped up with constant ones. A wrong value for a rule attribute is a typical misapplication: repeating the adjacent cell, stepping the wrong way, taking another row's value, or applying a different logic operator. A wrong value for a constant attribute is the adjacent level. Every value appears in exactly 4 options and every pair of values in exactly 2 [V: I-RAVEN; HeiQ]. The correct slot is uniformly random. Stroke counts are balanced on logic items |
 | Flow | First run: an illustrated tutorial of the five rule families with one worked example each, then practice with feedback until 3 items are correct [V: MaRs-IB criterion]. Teaching the rules up front limits later gains from rule discovery (Schneider 2020). Every run: 1 unscored warm-up (D2), then 12 scored items. Each trial: 500 ms blank [V] → matrix and options appear together → 30 s response window [V]; a timeout counts as incorrect. No feedback; an optional review screen follows the block [DC] |
 | Adaptive rule | Start θ0 = median θ of the last 5 valid sessions − 0.5; the first-ever session starts at −0.5 [DC]. Update the EAP estimate after each response. The next item comes from the class whose b is closest to θ̂ − 0.2, because 3PL information peaks at b + ln[(1 + √(1 + 8c))/2]/a ≈ b + 0.19 [D]. The same rule combination never appears twice in a row |
-| Stop rule | 12 scored items, or a 240 s session cap (the current item finishes). The session is scored if at least 9 items are valid; otherwise it is invalid [DC] |
+| Stop rule | 12 scored items, or a 240 s session cap (the current item finishes). A session the cap cuts short is scored from the items it answered, its SE showing the lower precision (C13); only a session with no valid item is invalid [DC]. Scoring v2: v1 required 9 valid items, which the slowest pace the 30 s window allows (8 items before the cap) can never reach (Appendix A31) |
 | Exclusions | A response under 1,500 ms is a rapid guess and is excluded from θ. 3 or more rapid guesses → invalid ("careless") [DC]. Interruption class B: if the page is hidden during an item, void it and replace it with an item from the same class |
 | Duration | About 180 s; the cap is 240 s |
 
@@ -626,7 +632,7 @@
 | Coding block | Each tap registers on pointerdown. The next glyph is fully visible on the next frame, with no inter-item interval. Only a neutral press animation; no correctness feedback, no skip, no going back |
 | Adaptive rule | None |
 | Stop rule | Input locks at 90.0 s (15.0 s for the motor baseline). The item on screen is discarded |
-| Exclusions and validity | Taps arriving less than 120 ms after the previous registered response are ignored as double taps and logged; flag the session if more than 5 are ignored [DC]. Interruption class A. Invalid if fewer than 20 answers are correct (the MS sherpa outlier rule) [S], if accuracy is below 80% [DC], or if any gap between responses exceeds 5 s [DC] |
+| Exclusions and validity | Taps arriving less than 120 ms after the previous registered response are ignored as double taps and logged; flag the session if more than 5 are ignored [DC]. Interruption class A. No minimum score (C13): the MS sherpa rule of 20 correct [S] is a cohort outlier rule and is not applied to one person tracking themselves. Invalid with no answer at all, if accuracy is below 80% with more than one wrong answer [DC], or at a stop — a stretch without a response longer than 4 × the run's median interval between responses, held within 10–20 s, counted from the first item's onset to the 90 s lock [DC]. Scoring v2: v1 also invalidated fewer than 20 correct and any gap over 5 s (Appendix A31) |
 | Log | Per item: glyph, digit, response, RT, position in its set. Per session: device, app version, frame-interval distribution (a software slowdown once corrupted sSDMT data; Lam 2022) |
 | Duration | About 140 s |
 
@@ -701,7 +707,7 @@
 | Blocks | Practice: 5 mixed trials with ✓/✗ and a one-line rule reminder [V: count]; repeat once if fewer than 4 of 5 are correct [DC]. Test: 30 trials, 24 cued "shape" (80%) and 6 cued "color" (20%) [V]. Order [DC]: trial 1 is a shape trial; no two colour trials are adjacent, and colour trials are separated by at least 2 shape trials where possible (about 6 switches into colour and 6 back); the two stimulus identities appear 15 times each; the correct side is balanced within each cue type |
 | Adaptive rule | None |
 | Stop rule | After trial 30 |
-| Exclusions and validity | RT under 200 ms is an anticipation, scored as an error and counted [DC]. Interruption class A. Invalid if there are more than 3 anticipations or accuracy is below 70% [DC] |
+| Exclusions and validity | RT under 200 ms is an anticipation, scored as an error and counted [DC]. Interruption class A. Invalid if there are more than 3 anticipations, with no answer at all, or when accuracy on the ANSWERED trials is below 70% [DC]. A timeout lowers the score (it adds 2.5 s and is not correct) but never counts as a wrong answer for validity (C13). Scoring v2: v1 counted timeouts as wrong (Appendix A31) |
 | Cue language | The cue word follows the user's language, locked for the whole series [DC] |
 | Duration | About 100–110 s |
 
@@ -765,7 +771,7 @@
 | Timeline | 300 ms blank with a fixation dot → both figures appear together (onset = rAF timestamp) → response, or a 7,000 ms timeout (Ganis & Kievit used 7,500 ms) → 150 ms neutral acknowledgement → next trial [DC] |
 | Response | Two equal-width buttons in the bottom tools card: "Same" on the left and "Mirror" on the right, at least 56 px tall, each with an icon and a label. Desktop keys: F = same, J = mirror. The mapping never changes [DC] |
 | Exclusions | RT under 250 ms is an anticipation; it is excluded and the trial is re-queued once [DC]. A timeout is an error with RT 7,000 ms. Class B: if the page is hidden or the orientation changes, discard and re-queue the trial |
-| Validity | Accuracy ≥ 65% (chance is 50%; raised from 60% on 2026-10-31 — over 40 trials a pure guesser reaches 60% in ~13% of runs, 65% in ~4%) and no more than 20% of trials excluded or timed out; otherwise invalid. Quality flags (do not invalidate): RT-vs-angle slope ≤ 0; accuracy at 0° below 75% |
+| Validity | Accuracy ≥ 65% on the ANSWERED pairs (chance is 50%; raised from 60% on 2026-10-31 — over 40 trials a pure guesser reaches 60% in ~13% of runs, 65% in ~4%) and no more than 20% of trials lost to anticipations; otherwise invalid, as is a run with no answer. A timeout is an error at 7 s in the score but never invalidates the run (C13). Scoring v2: v1 counted timeouts as wrong answers and as exclusions (Appendix A31). Quality flags (do not invalidate): RT-vs-angle slope ≤ 0; accuracy at 0° below 75% |
 | Adaptive rule and stop rule | None; a fixed 40 scored trials |
 | Duration | About 150–160 s; the first run takes about 3 minutes |
 
@@ -924,6 +930,7 @@ raw primary metric x (one valid session)
   - the user explicitly resets the baseline, for example after illness or a long break.
   Old segments are kept and shown, but analytics never pool across segments. Sessions on a device other than the primary one are stored and shown greyed out.
 - **Version changes.** Changes to the scoring or reference version rescore history. They do not start a new segment.
+  - A scoring change re-judges every stored run whose trial log is still kept, once, from that log, and persists the result (`rescore.ts`): logs are trimmed after a test's 12 newest runs, so a verdict recomputed on each read would flip back the day its log went. A run without a log keeps its stored verdict. A run the new rules accept but the old ones discarded is marked "rescored", so the person can see why it now counts, and a baseline the re-judged runs complete is frozen like any other.
 
 ### 2.4 Personal noise σ_w
 
@@ -1033,6 +1040,7 @@ raw primary metric x (one valid session)
 | Session result (raw score plus reference index) | 1 valid session. Run-in results are labelled "Calibrating — practice is still raising your score" |
 | Area level | At least 1 valid post-run-in session in the last 14 days |
 | Personal baseline | R run-in sessions plus 5 valid sessions on 5 different days |
+| Area level, grade P | The personal baseline — a personal index is measured from it. Until then the area shows the baseline's progress (k of 5 scored days), never a lapsed level |
 | Today vs typical | A completed baseline |
 | Weekly verdict | A baseline and 1 evaluated week for "possibly"; 2 consecutive evaluated weeks for "reliably" |
 | Four-week trend label | At least 8 valid post-run-in sessions spanning at least 21 days |
@@ -1416,9 +1424,9 @@ reasoning item bank (MaRs-IB): novel, open-access abstract reasoning items for a
     - **Practice:** 10 items every session (the sSDMT authors' recommendation), rather than 9 the first time and 3 warm-ups later.
     - **Inter-item interval:** none. A 150 ms interval would add about 8 s of dead time per block [D] and move the scale away from the sSDMT.
     - **Glyph pool:** at least 36 rather than 24, since each session uses 18.
-    - **Minimum score:** invalid below 20 correct (a sourced rule) rather than below 15 responses.
+    - **Minimum score:** invalid below 20 correct (a sourced rule) rather than below 15 responses. Superseded by C13 (scoring v2, A31): there is no minimum score.
     - **Accuracy cut-off:** 80%.
-    - **Inactivity:** the 5 s rule was adopted from the other spec.
+    - **Inactivity:** the 5 s rule was adopted from the other spec. Superseded by C13 (A31): a stop is judged against the run's own pace, within 10–20 s.
 - **A8. KSS vs SSS.**
   - **Conflict.** The methodology report recommends the KSS. The framework report cites the copyright notice in the KSS chapter, which prohibits reproduction or adaptation without written consent (Shahid 2012, KSS chapter).
   - **Resolution.** The SSS by default; the KSS only with written permission.
@@ -1485,6 +1493,9 @@ reasoning item bank (MaRs-IB): novel, open-access abstract reasoning items for a
 - **A30. The user's dominant language.**
   - **Conflict.** The framework report assumed PT-BR, which is not established.
   - **Resolution.** The language is chosen at first run and locked for each series.
+- **A31. Validity floors on speed (owner report, 2026-11-03).**
+  - **Conflict.** The owner, a slow but careful player, could never finish calibrating Processing Speed: every run was invalid as "too few correct" (under 20, the MS sherpa outlier rule) and for gaps over 5 s. An audit found the same class of rule in four more benchmarks: Calculation's 8-answer floor (about 1.5 SD below the reference mean), Flexibility's 70% floor counting timeouts as wrong answers ("rushed"), Spatial's timeouts counted both as errors and as exclusions, and Analysis's 9-item minimum, which the slowest pace the 30 s window allows (8 items before the 240 s cap) can never meet. The MS sherpa rule cleans population data; applied to one person it censors their true level.
+  - **Resolution.** Convention C13: a slow run is a low score, never an invalid one. The five tests move to scoring v2 (no new segment, §2.3). Runs stored under v1 are re-judged from their trial logs once and persisted, and a revived run carries the note "rescored". v2 never invalidates a run v1 accepted, except through Calculation's new stop rule, which takes over the one legitimate job of the 8-answer floor: catching a run that stopped. Alertness Check (40 valid stimuli, which binds only at a mean response of over about 2 s — repeated non-responses, not slow reactions), Block Span (3 inactivity timeouts of 15 s), Target Ring (movement times over 2.5 s excluded) and Attention (net score ≤ 0) already met C13 and are unchanged.
 
 ---
 
@@ -1541,6 +1552,10 @@ reasoning item bank (MaRs-IB): novel, open-access abstract reasoning items for a
 - PS matches its formula.
 - The test stops on the first response after 180 s.
 - A 30,000 ms timeout counts as a valid stimulus and a lapse.
+
+**C13 (every benchmark whose rules could discard a slow run)**
+- A scripted slow-but-careful player at the slowest pace the protocol allows is valid and scores below a faster one; a guesser and a stopped run are still invalid.
+- A test above scoring v1 ships `rescore`; its check proves a v1 run is rescored from its log with identical metrics, and the core check proves the stored migration (revive, retire, leave log-less runs alone, idempotent, completed baselines frozen).
 
 **Processing Speed**
 - The glyph pool has at least 36 glyphs, and no key contains rotation or mirror pairs (90°, 180°, 270° and reflections).
@@ -1683,7 +1698,7 @@ Colours (area palette slots), layout, motion, sounds, button sizes and the [DC] 
 
 ## Appendix E: Deviations as built (2026-10-31)
 
-Every benchmark lists, in its own definition (`science.deviations` in `src/brain/<id>/index.ts`, shown on its benchmark page), each place where the build departs from the source paradigm or from §1 of this dossier, with the reason. This appendix mirrors those lists so the rulebook states what actually ships. Items that go BEYOND §1 (choices the dossier did not make — e.g. Block Span's `too-few`/`at-chance` floors and single warm-up on runs 2–3, Arithmetic Sprint's and Symbol Coding's invalid "items exhausted" run, Mirror Twins' literal reading of the arm-contact rule) were made by the implementers at build time and were ACCEPTED by the owner on 2026-10-31 (the same review raised Mirror Twins' accuracy floor from 60% to 65%). Every protocol stays at version 1: none had shipped, so no stored run was scored under the old rules. A change to any of them is a protocol change: update the definition and this appendix together and bump `protocolVersion` (§1.4 conventions).
+Every benchmark lists, in its own definition (`science.deviations` in `src/brain/<id>/index.ts`, shown on its benchmark page), each place where the build departs from the source paradigm or from §1 of this dossier, with the reason. This appendix mirrors those lists so the rulebook states what actually ships. Items that go BEYOND §1 (choices the dossier did not make — e.g. Block Span's `too-few`/`at-chance` floors and single warm-up on runs 2–3, Arithmetic Sprint's and Symbol Coding's invalid "items exhausted" run, Mirror Twins' literal reading of the arm-contact rule) were made by the implementers at build time and were ACCEPTED by the owner on 2026-10-31 (the same review raised Mirror Twins' accuracy floor from 60% to 65%). Every protocol stays at version 1. Since 2026-11-03 five benchmarks are at scoring v2 (C13, Appendix A31): their validity lines changed, and runs stored under v1 are rescored from their trial logs. A change to a protocol item bumps `protocolVersion` (a new segment); a change to scoring or validity bumps `scoringVersion` (history rescored, §2.3). Either way, update the definition and this appendix together.
 
 ### Alertness Check (Reaction) — `alertness-check`, protocol v1
 
@@ -1714,7 +1729,7 @@ Every benchmark lists, in its own definition (`science.deviations` in `src/brain
 - On a computer the number keys 1–9 answer as well as the on-screen pad; both register on key-down or pointer-down with the event's own timestamp [DC].
 - Sizes follow the phone rather than fixed pixels: the target glyph is about 108–136 px tall (the dossier says about 96 px) and the key glyphs about 32 px (about 28 px), in 9 key cells at least 36 px wide, with keypad keys 56–68 px tall [DC].
 - Taps less than 120 ms after the previous registered response are ignored and logged, as are taps that arrive before an item's frame ran; more than 5 ignored taps across both timed parts flags the run (double-taps) without invalidating it [DC].
-- Validity: invalid with fewer than 20 correct (the MS sherpa outlier rule), accuracy below 80% [DC], any gap over 5 s without a response, counted from the first item's onset to the first answer and from the last answer to the 90-s lock as well [DC], or all 200 items used before 90 s [DC]. Hiding the page, losing focus for over 1 s or rotating invalidates the run (class A, enforced by the runner).
+- Validity (scoring v2 — SCIENCE.md C13, a slow run is a low score, never an invalid one): there is no minimum score. The MS sherpa rule of 20 correct is a cohort outlier rule and is not applied, because for one person tracking themselves it discards every run of a slow, careful player [DC]. A run is invalid with no answer at all, accuracy below 80% (a single wrong answer alone never invalidates a run) [DC], a stop — a stretch without a response longer than 4 × the run's own median interval between responses, held between 10 and 20 s, counted from the first item's onset and up to the 90-s lock as well [DC] — or all 200 items used before 90 s [DC]. Hiding the page, losing focus for over 1 s or rotating invalidates the run (class A, enforced by the runner).
 - The learning slope counts correct answers per minute (last 30 s minus first 30 s) [DC]; the coding ratio is reported as 0, with the flag no-digit-matches, when the motor baseline had no correct match. Both are diagnostics only.
 - The frame-interval distribution of the coding block is stored as one summary row (frames, median, 95th percentile, maximum, frames over 50 ms) rather than every interval, and the same row carries the app version that ran the session [DC].
 - The index uses a grade C literature anchor without age bands: Kiely et al. 2014 and Strober et al. 2020 age norms, minus the 8–12% phone offset, are a future calibration task.
@@ -1744,7 +1759,7 @@ Every benchmark lists, in its own definition (`science.deviations` in `src/brain
 - Blank intervals are 15 × 300 ms and 15 × 1,000 ms in shuffled order rather than independent coin flips, so every session has the same timing [DC].
 - ΣRT counts a timeout as 2.5 s and an anticipation as its own time — MTB’s exact handling is unverified [DC].
 - An anticipation is a tap under 200 ms after the picture, scored as an error; taps before the picture appears are ignored by scoring (logged) [DC].
-- Validity [DC]: a run is invalid with more than 3 anticipations or accuracy below 70 %, and when it is interrupted (class A).
+- Validity, scoring v2 [DC] (SCIENCE.md C13 — a slow run is a low score, never an invalid one): a run is invalid with more than 3 anticipations, with accuracy below 70 % on the answered trials (too close to guessing between the two cards), with no answer at all, and when it is interrupted (class A). A timeout lowers the score (it adds 2.5 s and is not correct) but never invalidates the run; v1 required 70 % of all 30 trials, counting every timeout as wrong, which discarded slow, careful runs as “rushed”.
 - Every-session warm-up: 5 mixed trials with a tick or cross, a one-line rule reminder and the right card outlined after an error; repeated once below 4 correct, after which the scored block starts regardless [DC: repeat rule].
 - First run only: an untimed, coached practice — 2 shape trials, 2 color trials, then one picture under both rules — where a wrong answer is shown and asked again (up to 3 tries) [DC].
 - A 3-2-1 countdown precedes the scored block (not part of the MTB description), identical in every session [DC].
@@ -1787,7 +1802,7 @@ Every benchmark lists, in its own definition (`science.deviations` in `src/brain
 - Timing: each problem is drawn inside the animation frame that stamps its onset; keys register on pointerdown with the event timestamp, and a key stamped before the current problem’s onset is ignored.
 - The block ends 120.0 s after the first problem’s onset; the problem on screen then is discarded, not scored as an error.
 - If a run gets through all 120 pre-generated items before the 120 s are up (at least one answer a second, beyond any honest pace), the block ends there and the run is invalid (“too-fast”).
-- Accuracy below 85% makes the run invalid (“rushed”) rather than only flagged (SCIENCE.md A24); fewer than 8 answers is invalid (“too-few”). Answers faster than 400 ms still count toward CPM but are left out of the time medians.
+- Accuracy below 85% makes the run invalid (“rushed”) rather than only flagged (SCIENCE.md A24), though a single wrong answer alone never invalidates a run [DC]. Scoring v2 (SCIENCE.md C13 — a slow run is a low score, never an invalid one): there is no minimum number of answers (v1 required 8, an ability floor about 1.5 SD below the reference mean); a run with no answer at all is invalid (“too-few”), and so is a stop — no submission for longer than 4 × the run’s own median interval, held between 30 and 60 s, counted from the first onset and up to the 120-s lock (“long-gap”) [DC]. Answers faster than 400 ms still count toward CPM but are left out of the time medians.
 - Per-operation rates count every submission (correct ÷ summed submit time); the cross-session RT diagnostics (last 7 valid runs, per operation × complexity) are left to the trial log.
 
 ### Mirror Twins (Spatial) — `mirror-twins`, protocol v1
@@ -1802,7 +1817,7 @@ Every benchmark lists, in its own definition (`science.deviations` in `src/brain
 - Three flat face tones (top, left-facing, right-facing) derived from the Spatial area colour with a 1.5 px darker edge; the reference sits on the left plate, the comparison on the right, with a fixation dot centred between them during the 300 ms blank.
 - The turn direction s is near-balanced inside every angle × answer cell (3/2 or 2/3) rather than drawn independently.
 - Anticipations (< 250 ms) are excluded and the trial re-queued once at the end of the block with a fresh figure of the same condition; a second anticipation loses the trial. A timed-out pair gets no acknowledgement (nothing was pressed).
-- Validity: invalid below 65% accuracy (raised from 60%: a pure guesser reaches 60% in about 13% of 40-trial runs, 65% in about 4%), or when anticipations plus timeouts exceed 20% of the 40 planned trials (8). Quality flags that never invalidate: no positive RT-vs-angle slope, accuracy at 0° under 75%, an angle with no correct answer (its median is then reported at the 7,000 ms ceiling).
+- Validity, scoring v2 (SCIENCE.md C13 — a slow run is a low score, never an invalid one): invalid below 65% accuracy on the answered pairs (raised from 60% on 2026-10-31: a pure guesser reaches 60% in about 13% of 40-trial runs, 65% in about 4%), when anticipations exceed 20% of the 40 planned trials (8), or with no answer at all. A timeout is an error at 7,000 ms in the score and never invalidates the run: v1 counted timeouts as wrong answers and as exclusions, which discarded slow, careful runs. Quality flags that never invalidate: no positive RT-vs-angle slope, accuracy at 0° under 75%, an angle with no correct answer (its median is then reported at the 7,000 ms ceiling).
 - Interruptions (class B): a pause or leaving the page voids the pair on screen and replaces it with a fresh figure of the same condition; the scored block resumes after a 3-2-1. More than 3 pauses or more than 60 s paused in the scored block makes the run invalid (limits chosen to match the Memory benchmark).
 - A 3-2-1 countdown precedes the scored block; the source protocol has none, and it changes nothing inside the block.
 - Scored-block feedback is neutral only — the pressed pad’s press flash, a quiet ring and a tap sound, identical for every answer. The every-run warm-up (4 pairs, one per angle, two same and two mirror) shows corrective feedback with a coach line: right, wrong, too slow and too quick each have their own words, glyph and sound, and a too-quick warm-up pair is shown once more with a new figure.

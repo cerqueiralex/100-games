@@ -2,6 +2,7 @@ import type { BrainTestDefinition } from '../../platform/brain/types';
 import ShapeColorSwitchTest from './ShapeColorSwitchTest';
 import ShapeColorSwitchDemo from './ShapeColorSwitchDemo';
 import { shapeColorSwitchIcon } from './icon';
+import { rescoreRun } from './logic/scoring';
 
 /**
  * Flexibility benchmark — SCIENCE.md §1.12. Grade P: no population norms
@@ -93,8 +94,10 @@ export const shapeColorSwitchTest: BrainTestDefinition = {
   interruption: 'A',
   perWeek: 2,
   protocolVersion: 1,
-  scoringVersion: 1,
+  /** v2 (2026-11-03): C13 validity — chance judged on the answers given, timeouts never invalidate; v1 runs are rescored from their logs */
+  scoringVersion: 2,
   referenceVersion: 1,
+  rescore: rescoreRun,
   science: {
     summary:
       'Cognitive flexibility — dropping one rule and applying another the moment the cue changes. This is a cued dimensional change card sort faithful to the Mobile Toolbox Shape-Color Sorting test: every picture matches one card by shape and the other by color, and a word says which rule applies, mostly "shape" with an occasional "color". The MTB version had a two-week retest ICC of .78, split-half reliability of .93–.94 and r ≈ .70 with the NIH Toolbox DCCS, with no significant practice effect (Novack et al. 2024).',
@@ -108,7 +111,7 @@ export const shapeColorSwitchTest: BrainTestDefinition = {
       'Blank intervals are 15 × 300 ms and 15 × 1,000 ms in shuffled order rather than independent coin flips, so every session has the same timing [DC].',
       'ΣRT counts a timeout as 2.5 s and an anticipation as its own time — MTB’s exact handling is unverified [DC].',
       'An anticipation is a tap under 200 ms after the picture, scored as an error; taps before the picture appears are ignored by scoring (logged) [DC].',
-      'Validity [DC]: a run is invalid with more than 3 anticipations or accuracy below 70 %, and when it is interrupted (class A).',
+      'Validity, scoring v2 [DC] (SCIENCE.md C13 — a slow run is a low score, never an invalid one): a run is invalid with more than 3 anticipations, with accuracy below 70 % on the answered trials (too close to guessing between the two cards), with no answer at all, and when it is interrupted (class A). A timeout lowers the score (it adds 2.5 s and is not correct) but never invalidates the run; v1 required 70 % of all 30 trials, counting every timeout as wrong, which discarded slow, careful runs as “rushed”.',
       'Every-session warm-up: 5 mixed trials with a tick or cross, a one-line rule reminder and the right card outlined after an error; repeated once below 4 correct, after which the scored block starts regardless [DC: repeat rule].',
       'First run only: an untimed, coached practice — 2 shape trials, 2 color trials, then one picture under both rules — where a wrong answer is shown and asked again (up to 3 tries) [DC].',
       'A 3-2-1 countdown precedes the scored block (not part of the MTB description), identical in every session [DC].',

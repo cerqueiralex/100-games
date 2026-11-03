@@ -35,12 +35,23 @@ export const PROTOCOL = {
   doubleTapMs: 120,
   /** more ignored double taps than this flags the session */
   doubleTapFlagOver: 5,
-  /** validity: at least 20 correct (the MS sherpa outlier rule) … */
-  minCorrect: 20,
-  /** … accuracy at least 80% [DC] … */
+  /**
+   * Validity, scoring v2 (SCIENCE.md C13 — slow is a score, never a reason to
+   * discard a run). There is NO minimum score: a low count is the
+   * measurement. v1 also required 20 correct (the MS sherpa outlier rule) and
+   * no gap over 5 s, which discarded every run of a slow, careful player.
+   * Accuracy at least 80% — a single slip alone never invalidates
+   * (meetsAccuracyFloor) [DC] …
+   */
   minAccuracy: 0.8,
-  /** … and no gap between responses longer than 5 s [DC] */
-  maxGapMs: 5_000
+  /**
+   * … and no stop: a stretch without a response longer than stopFactor × the
+   * run's own median interval between responses, clamped to
+   * [stopMinMs, stopMaxMs] (timing.ts stopThreshold) [DC].
+   */
+  stopFactor: 4,
+  stopMinMs: 10_000,
+  stopMaxMs: 20_000
 } as const;
 
 /** one session's alternate form — every list holds DIGITS 1..9; glyph = key[digit − 1] */

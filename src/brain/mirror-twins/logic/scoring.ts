@@ -19,8 +19,8 @@
  *  [10] slot      generation slot (the item is rebuilt from the run seed + slot + condition)
  */
 import { median } from '../../../platform/brain/timing';
-import type { BrainRunOutcome } from '../../../platform/brain/types';
-import { ANGLES, MAX_EXCLUDED_FRACTION, MAX_INTERRUPTIONS, MAX_PAUSED_MS, MIN_ACCURACY, SCORED_TRIALS, TIMEOUT_MS } from './protocol';
+import type { BrainRescoreInput, BrainRunOutcome } from '../../../platform/brain/types';
+import { ANGLES, MAX_ANTICIPATION_FRACTION, MAX_INTERRUPTIONS, MAX_PAUSED_MS, MIN_ACCURACY, SCORED_TRIALS, TIMEOUT_MS } from './protocol';
 
 export const STATUS = { answered: 0, timeout: 1, anticipation: 2, anticipationLost: 3, voided: 4 } as const;
 export type Status = (typeof STATUS)[keyof typeof STATUS];
@@ -116,10 +116,13 @@ const round = (x: number, d: number) => Math.round(x * 10 ** d) / 10 ** d;
  *  - medianRt = median RT of correct trials; ies = medianRt ÷ accuracy.
  *  - rt0…rt150 = median correct RT per angle; an angle with no correct trial
  *    is reported at the 7000 ms ceiling and flagged.
- * Invalid when accuracy < 65 %, when anticipations + timeouts exceed 20 % of
- * the 40 planned trials, or beyond the interruption limits (> 3 pauses or
- * > 60 s paused). Quality flags (kept, never invalidating): no positive
- * RT-vs-angle slope, accuracy at 0° under 75 %.
+ * Validity, scoring v2 (SCIENCE.md C13 — a slow run is a low score, never an
+ * invalid one): invalid below 65 % accuracy on the ANSWERED pairs ('at-
+ * chance'), when anticipations exceed 20 % of the 40 planned trials, with no
+ * answer at all, or beyond the interruption limits (> 3 pauses or > 60 s
+ * paused). Timeouts lower the score and never invalidate it. Quality flags
+ * (kept, never invalidating): no positive RT-vs-angle slope, accuracy at 0°
+ * under 75 %.
  */
 export function scoreRun({ rows, interruptions, pausedMs }: ScoreInput): BrainRunOutcome {
   const scored = rows.filter(isScoredRow);
@@ -154,23 +157,27 @@ export function scoreRun({ rows, interruptions, pausedMs }: ScoreInput): BrainRu
     valid = false;
     flags.push('too-many-interruptions');
   }
-  if (anticipations + timeouts > MAX_EXCLUDED_FRACTION * SCORED_TRIALS) {
+  if (anticipations > MAX_ANTICIPATION_FRACTION * SCORED_TRIALS) {
     valid = false;
-    flags.push(anticipations >= timeouts ? 'too-fast' : 'too-few');
+    flags.push('too-fast');
   }
-  if (scored.length && accuracy < MIN_ACCURACY) {
+  // C13: guessing is judged on the answers GIVEN — a timeout is a slow pair, not a guess
+  const answered = scored.length - timeouts;
+  if (answered > 0 && 100 * correct.length < MIN_ACCURACY * answered) {
     valid = false;
     flags.push('at-chance');
   }
-  if (!scored.length) {
+  if (!answered) {
     valid = false;
     if (!flags.length) flags.push('too-few');
   }
-  // quality flags (annotate, never invalidate)
-  if (missingAngle) flags.push('no-correct-answer-at-one-angle');
-  else if (perAngle.every(Number.isFinite) && !(rotationFit(perAngle).slope > 0)) flags.push('time-did-not-rise-with-angle');
-  const atZero = scored.filter((r) => r.angle === 0);
-  if (atZero.length && atZero.filter((r) => r.correct === 1).length / atZero.length < 0.75) flags.push('errors-on-unturned-pairs');
+  // quality flags (annotate, never invalidate) — about the pattern of the answers, so none without one
+  if (answered > 0) {
+    if (missingAngle) flags.push('no-correct-answer-at-one-angle');
+    else if (perAngle.every(Number.isFinite) && !(rotationFit(perAngle).slope > 0)) flags.push('time-did-not-rise-with-angle');
+    const atZero = scored.filter((r) => r.angle === 0);
+    if (atZero.length && atZero.filter((r) => r.correct === 1).length / atZero.length < 0.75) flags.push('errors-on-unturned-pairs');
+  }
 
   const sec = (ms: number) => `${(ms / 1000).toFixed(2)} s`;
   const highlights: { label: string; value: string }[] = [
@@ -194,6 +201,20 @@ export function scoreRun({ rows, interruptions, pausedMs }: ScoreInput): BrainRu
     highlights,
     trialLog: rows.map(toLogRow)
   };
+}
+
+/**
+ * Rescore a stored run under the current rules (scoring v1 → v2) from its
+ * trial log — every presentation of the scored block, voided ones included.
+ * The pause count is not in the log: a stored 'too-many-interruptions' flag
+ * carries it (and keeps the run invalid). The runner never records a
+ * class-B run without its log, so a log-less session is left as it is.
+ */
+export function rescoreRun(stored: BrainRescoreInput): BrainRunOutcome | null {
+  const rows = stored.trialLog.filter((r) => r.length >= 11);
+  if (!rows.length || rows.length !== stored.trialLog.length) return null;
+  const over = stored.flags.includes('too-many-interruptions');
+  return scoreRun({ rows: rows.map(fromLogRow), interruptions: over ? MAX_INTERRUPTIONS + 1 : 0, pausedMs: 0 });
 }
 
 /** the reference anchor (grade C): RCS 20.4 ± 6 correct/min, derived from Ganis & Kievit (2015) */

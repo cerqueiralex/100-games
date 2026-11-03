@@ -1,4 +1,5 @@
-import { median, quantile } from '../../../platform/brain/timing';
+import { median, meetsAccuracyFloor, quantile, stopThreshold } from '../../../platform/brain/timing';
+import type { BrainRescoreInput, BrainRunOutcome } from '../../../platform/brain/types';
 import { PROTOCOL } from './protocol';
 
 /**
@@ -69,6 +70,8 @@ export interface SymbolScore {
   ignored: number;
   /** the longest stretch without a registered coding response, block onset and lock included */
   longestGapMs: number;
+  /** how long a stretch may last before it counts as a stop — scaled to this run's own pace (C13) */
+  stopMs: number;
   /** all 200 coding items were used before the 90 s ran out */
   exhausted: boolean;
   /** correct answers per practice round */
@@ -85,11 +88,14 @@ export interface SymbolScore {
  *    block onset), ms;
  *  - diagnostics only: coding ratio SDS90 ÷ DM90 (0 when DM90 is 0) and the
  *    learning slope = correct per minute in the last 30 s − the first 30 s.
- * Invalid when fewer than 20 are correct, accuracy is below 80 %, any gap
- * without a response exceeds 5 s (from the first onset to the 90-s lock), or
- * all 200 items were used. Flags (not invalidating): more than 5 ignored
- * double taps, practice still below 8/10 after its repeat, no correct digit
- * match. Ignored taps never count as answers.
+ * Validity, scoring v2 (SCIENCE.md C13 — a slow run is a low score, never an
+ * invalid one): invalid with no answer at all ('too-few'), accuracy below
+ * 80 % with more than one wrong ('low-accuracy'), a STOP — a stretch without a
+ * response, first onset to the 90-s lock, longer than 4 × the run's own
+ * median interval clamped to 10–20 s ('long-gap') — or all 200 items used
+ * ('items-exhausted'). No minimum score. Flags (not invalidating): more than
+ * 5 ignored double taps, practice still below 8/10 after its repeat, no
+ * correct digit match. Ignored taps never count as answers.
  */
 export function scoreRun(log: readonly (readonly number[])[]): SymbolScore {
   const coding = log.filter((r) => r[COL.phase] === PHASE.coding && r[COL.status] === STATUS.registered && r[COL.t] < PROTOCOL.blockMs);
@@ -115,6 +121,9 @@ export function scoreRun(log: readonly (readonly number[])[]): SymbolScore {
     longestGapMs = Math.max(longestGapMs, t - prev);
     prev = t;
   }
+  // the player's own pace: intervals onset → first response and between responses
+  const intervals = times.map((t, i) => t - (i ? times[i - 1] : 0));
+  const stopMs = stopThreshold(intervals, PROTOCOL.stopMinMs, PROTOCOL.stopMaxMs, PROTOCOL.stopFactor);
 
   const gaps = correctTimes.map((t, i) => t - (i ? correctTimes[i - 1] : 0));
   const dm15 = motor.filter(isRight).length;
@@ -141,14 +150,50 @@ export function scoreRun(log: readonly (readonly number[])[]): SymbolScore {
   for (let i = 0; i < practiceCorrect.length; i++) practiceCorrect[i] = practiceCorrect[i] ?? 0;
 
   const flags: string[] = [];
-  if (correct < PROTOCOL.minCorrect) flags.push('too-few-correct');
-  if (accuracy < PROTOCOL.minAccuracy) flags.push('low-accuracy');
-  if (longestGapMs > PROTOCOL.maxGapMs) flags.push('long-gap');
+  if (!responses) flags.push('too-few');
+  else {
+    if (!meetsAccuracyFloor(correct, responses, PROTOCOL.minAccuracy)) flags.push('low-accuracy');
+    if (longestGapMs > stopMs) flags.push('long-gap');
+  }
   if (exhausted) flags.push('items-exhausted');
   const valid = flags.length === 0;
   if (ignored > PROTOCOL.doubleTapFlagOver) flags.push('double-taps');
   if (practiceCorrect.length && practiceCorrect[practiceCorrect.length - 1] < PROTOCOL.practicePass) flags.push('practice-below-criterion');
   if (dm90 === 0) flags.push('no-digit-matches');
 
-  return { metrics, valid, flags, responses, correct, errors, accuracy, dm15, ignored, longestGapMs, exhausted, practiceCorrect };
+  return { metrics, valid, flags, responses, correct, errors, accuracy, dm15, ignored, longestGapMs, stopMs, exhausted, practiceCorrect };
+}
+
+/**
+ * The run's outcome from its whole trial log — the ONE builder the live run
+ * and `rescore` share, so a rescored run is exactly what the same log would
+ * score today.
+ */
+export function outcomeOf(rows: number[][]): BrainRunOutcome {
+  const s = scoreRun(rows);
+  const m = s.metrics;
+  const highlights: { label: string; value: string }[] = [
+    { label: 'Accuracy', value: `${Math.round(m.accuracy)}%` },
+    { label: 'Number match', value: `${m.dm90} per 90 s` }
+  ];
+  if (Number.isFinite(m.medianGapMs)) highlights.push({ label: 'Median time per correct symbol', value: `${(m.medianGapMs / 1000).toFixed(2)} s` });
+  return {
+    metrics: m,
+    trials: s.responses,
+    valid: s.valid,
+    ...(s.flags.length ? { flags: s.flags } : {}),
+    highlights,
+    trialLog: rows
+  };
+}
+
+/**
+ * Rescore a stored run under the current rules (scoring v1 → v2). The trial
+ * log holds everything this test scores, so the outcome is rebuilt from it
+ * alone; the runner's own 'interrupted' runs carry no log and are never
+ * rescored. Null when the log holds no coding row (nothing to rescore).
+ */
+export function rescoreRun(stored: BrainRescoreInput): BrainRunOutcome | null {
+  if (!stored.trialLog.some((r) => r[COL.phase] === PHASE.coding)) return null;
+  return outcomeOf(stored.trialLog);
 }

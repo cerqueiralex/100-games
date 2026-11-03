@@ -4,7 +4,7 @@ import { MirrorTwinsDemo } from './MirrorTwinsDemo';
 import { MirrorTwinsTest } from './MirrorTwinsTest';
 import { FIT_UNITS, VIEW_UNITS } from './logic/geometry';
 import { ANGLES } from './logic/protocol';
-import { REF_MEAN, REF_SD, referenceZ } from './logic/scoring';
+import { REF_MEAN, REF_SD, referenceZ, rescoreRun } from './logic/scoring';
 
 /**
  * Mirror Twins — the Spatial benchmark (SCIENCE.md §1.13): Shepard–Metzler
@@ -87,8 +87,10 @@ export const mirrorTwinsTest: BrainTestDefinition = {
   interruption: 'B',
   perWeek: 2,
   protocolVersion: 1,
-  scoringVersion: 1,
+  /** v2 (2026-11-03): C13 validity — chance judged on the answers given, timeouts never invalidate; v1 runs are rescored from their logs */
+  scoringVersion: 2,
   referenceVersion: 1,
+  rescore: rescoreRun,
   science: {
     summary:
       'Visuospatial processing (CHC Gv) through its best-studied component, mental rotation: deciding whether two differently oriented 3D figures are the same object or mirror images (Shepard & Metzler 1971). Response time rises roughly linearly with the angle between them, the signature of turning one figure in your mind, which gives every run a built-in check. Figures are generated from each run’s seed and checked for chirality, so no item repeats across sessions and every mirror pair has a right answer.',
@@ -105,7 +107,7 @@ export const mirrorTwinsTest: BrainTestDefinition = {
       'Three flat face tones (top, left-facing, right-facing) derived from the Spatial area colour with a 1.5 px darker edge; the reference sits on the left plate, the comparison on the right, with a fixation dot centred between them during the 300 ms blank.',
       'The turn direction s is near-balanced inside every angle × answer cell (3/2 or 2/3) rather than drawn independently.',
       'Anticipations (< 250 ms) are excluded and the trial re-queued once at the end of the block with a fresh figure of the same condition; a second anticipation loses the trial. A timed-out pair gets no acknowledgement (nothing was pressed).',
-      'Validity: invalid below 65% accuracy (raised from 60%: a pure guesser reaches 60% in about 13% of 40-trial runs, 65% in about 4%), or when anticipations plus timeouts exceed 20% of the 40 planned trials (8). Quality flags that never invalidate: no positive RT-vs-angle slope, accuracy at 0° under 75%, an angle with no correct answer (its median is then reported at the 7,000 ms ceiling).',
+      'Validity, scoring v2 (SCIENCE.md C13 — a slow run is a low score, never an invalid one): invalid below 65% accuracy on the answered pairs (raised from 60% on 2026-10-31: a pure guesser reaches 60% in about 13% of 40-trial runs, 65% in about 4%), when anticipations exceed 20% of the 40 planned trials (8), or with no answer at all. A timeout is an error at 7,000 ms in the score and never invalidates the run: v1 counted timeouts as wrong answers and as exclusions, which discarded slow, careful runs. Quality flags that never invalidate: no positive RT-vs-angle slope, accuracy at 0° under 75%, an angle with no correct answer (its median is then reported at the 7,000 ms ceiling).',
       'Interruptions (class B): a pause or leaving the page voids the pair on screen and replaces it with a fresh figure of the same condition; the scored block resumes after a 3-2-1. More than 3 pauses or more than 60 s paused in the scored block makes the run invalid (limits chosen to match the Memory benchmark).',
       'A 3-2-1 countdown precedes the scored block; the source protocol has none, and it changes nothing inside the block.',
       'Scored-block feedback is neutral only — the pressed pad’s press flash, a quiet ring and a tap sound, identical for every answer. The every-run warm-up (4 pairs, one per angle, two same and two mirror) shows corrective feedback with a coach line: right, wrong, too slow and too quick each have their own words, glyph and sound, and a too-quick warm-up pair is shown once more with a new figure.',

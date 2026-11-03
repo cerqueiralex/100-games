@@ -25,10 +25,26 @@ export const MAX_DIGITS = 3;
 /** first-run practice: one untimed simple item per operation */
 export const PRACTICE_ITEMS = 4;
 
-/** validity (C11): fewer than 8 submissions → invalid ('too-few') */
-export const MIN_SUBMISSIONS = 8;
-/** validity: accuracy below 85% → invalid ('rushed', SCIENCE.md A24) */
+/**
+ * Validity, scoring v2 (SCIENCE.md C13 — slow is a score, never a reason to
+ * discard a run). There is NO minimum number of answers: v1 discarded runs
+ * with fewer than 8 (one every 15 s), which cuts in about 1.5 SD below the
+ * reference mean — an ability floor. Only a run with no answer at all is
+ * nothing to score ('too-few').
+ *
+ * Accuracy below 85% → invalid ('rushed', SCIENCE.md A24) — a single wrong
+ * answer alone never invalidates a run (timing.ts meetsAccuracyFloor) [DC].
+ */
 export const MIN_ACCURACY_PCT = 85;
+/**
+ * … and no STOP: a stretch without a submission longer than STOP_FACTOR × the
+ * run's own median interval, clamped to [STOP_MIN_MS, STOP_MAX_MS] — wider
+ * than Symbol Coding's because one complex item honestly takes a slow
+ * player many seconds ('long-gap', timing.ts stopThreshold) [DC].
+ */
+export const STOP_FACTOR = 4;
+export const STOP_MIN_MS = 30_000;
+export const STOP_MAX_MS = 60_000;
 /** a submission this soon after onset is implausible (≥ 2 keys + ✓): dropped from RT statistics */
 export const FAST_MS = 400;
 

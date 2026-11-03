@@ -66,6 +66,8 @@ export function levelCaption(v: AreaView): string {
       return 'Personal';
     case 'calibrating':
       return 'Calibrating';
+    case 'forming':
+      return `After baseline · ${Math.min(v.sum?.baselineProgress ?? 0, BASELINE_N)}/${BASELINE_N}`;
     case 'stale':
       return 'No run in 14 days';
     default:

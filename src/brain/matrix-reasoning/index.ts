@@ -3,6 +3,7 @@ import { zFrom } from '../../platform/brain/timing';
 import { MatrixReasoningTest } from './MatrixReasoningTest';
 import { MatrixReasoningDemo } from './MatrixReasoningDemo';
 import { matrixReasoningIcon } from './icon';
+import { rescoreRun } from './logic/protocol';
 
 /**
  * Matrix Reasoning — the Analysis benchmark (SCIENCE.md §1.8): generated 3×3
@@ -91,13 +92,15 @@ export const matrixReasoningTest: BrainTestDefinition = {
   interruption: 'B',
   perWeek: 1,
   protocolVersion: 1,
-  scoringVersion: 1,
+  /** v2 (2026-11-03): C13 validity — a run the time cap cuts short is scored, not discarded; v1 runs are rescored from their logs */
+  scoringVersion: 2,
   referenceVersion: 1,
+  rescore: rescoreRun,
   science: {
     summary:
       'Fluid reasoning: inferring the relations that govern a figural pattern you have never seen and applying them to complete it. Matrices are the canonical language-free marker of it; this version builds every item from Carpenter’s rule types as operationalised in the Sandia generator, so there are no fixed items to memorise and no copyrighted content. Eight options per item are built so that elimination, counting and other strategies that ignore the matrix stay at chance, and 12 items are chosen adaptively so each session works near your level.',
     scoring:
-      'θ is the expected-a-posteriori ability under a 3PL model (a = 1, c = 1/8, a fixed difficulty b per class derived from Sandia norming accuracy, prior N(0, 1), quadrature −4…4 in 0.05 steps); its SE is the posterior SD, about 0.55 after 12 items. Answers under 1.5 s are excluded as rapid guesses; 3 or more of them, or fewer than 9 valid items, make the run invalid. The reference index is 50 + 10θ (grade C, approximate): θ = 0 is the difficulty an average participant of the Sandia sample (80 college students) solved 56% of the time. Change from your own baseline is the primary signal, and early gains are partly practice on the test (run-in of 3 sessions).',
+      'θ is the expected-a-posteriori ability under a 3PL model (a = 1, c = 1/8, a fixed difficulty b per class derived from Sandia norming accuracy, prior N(0, 1), quadrature −4…4 in 0.05 steps); its SE is the posterior SD, about 0.55 after 12 items. Answers under 1.5 s are excluded as rapid guesses, and 3 or more of them make the run invalid. A run the 240-s cap cuts short is scored from the items it answered — a slow run is a low score, never an invalid one (SCIENCE.md C13) — and its SE, shown as ± index points, carries the lower precision. The reference index is 50 + 10θ (grade C, approximate): θ = 0 is the difficulty an average participant of the Sandia sample (80 college students) solved 56% of the time. Change from your own baseline is the primary signal, and early gains are partly practice on the test (run-in of 3 sessions).',
     deviations: [
       'Our implementation of the paradigm, not the original instrument: items come from our own generator following the Sandia rule set and MaRs-IB timing, so scores are not interchangeable with Sandia, MaRs-IB, Raven or ICAR scores.',
       'Attributes and levels are design choices: 5 shapes ordered by number of sides, 5 sizes (40–100% of the cell in 15% steps), 5 shades of the theme’s ink (luminance only, never hue — MaRs-IB’s colour-vision caveat), 8 rotations of 45° made visible by a marker dot, 1–4 copies, 9 sub-grid positions, and a ring of 6 rays as the logic layer.',

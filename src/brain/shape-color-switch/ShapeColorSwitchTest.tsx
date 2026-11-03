@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { sfx } from '../../platform/audio';
-import type { BrainRunOutcome, BrainTestProps } from '../../platform/brain/types';
+import type { BrainTestProps } from '../../platform/brain/types';
 import { now, revealOnFrame } from '../../platform/brain/timing';
 import { Countdown, PhaseCard, ResponseButton, useFeedback } from '../../platform/components/fx';
 import { CheckIcon, ClockIcon, CloseIcon } from '../../platform/design/icons';
 import { haptic } from '../../platform/motion';
 import { generateGuided, generatePractice, generateTest } from './logic/generate';
 import { CUE_WORD, PROTOCOL, SHAPE, cardAt, picParts, type Cue, type Pic, type Side, type TrialSpec } from './logic/protocol';
-import { CODE, classify, scoreRun, toLogRow, type TrialRecord } from './logic/scoring';
+import { CODE, classify, outcomeOf, type TrialRecord } from './logic/scoring';
 import { COLOR_NAME, PRACTICE_PAIR, Pictogram, TEST_PAIR, type ShapeName } from './pictograms';
 
 /**
@@ -299,15 +299,7 @@ export default function ShapeColorSwitchTest({ mode, firstRun, seed, onProgress,
   const finish = (recs: TrialRecord[]) => {
     if (done.current) return;
     done.current = true;
-    const score = scoreRun(recs);
-    const outcome: BrainRunOutcome = {
-      metrics: score.metrics,
-      trials: recs.length,
-      valid: score.valid,
-      ...(score.flags.length ? { flags: score.flags } : {}),
-      highlights: score.highlights,
-      trialLog: recs.map(toLogRow)
-    };
+    const outcome = outcomeOf(recs);
     setStage('finished');
     cb.current.onProgress(1);
     cb.current.onFinish(outcome);

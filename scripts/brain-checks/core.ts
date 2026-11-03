@@ -68,6 +68,11 @@ import { DEFAULT_PROFILE, appendResult, saveProfile } from '../../src/platform/s
 import { GAMES } from '../../src/platform/registry';
 import { DUR } from '../../src/platform/motion';
 import { dayKey } from '../../src/platform/progress/progress';
+import { ensureScoringCurrent, rescoreSessions } from '../../src/platform/brain/rescore';
+import { areaView } from '../../src/platform/brain/ui/model';
+import { buildAreaView } from '../../src/platform/brain/ui/dashModel';
+import { flagCopy, personalFormingCopy, personalIndexAfter } from '../../src/platform/brain/ui/copy';
+import { PHASE as SC_PHASE, STATUS as SC_STATUS, trialRow as scRow } from '../../src/brain/symbol-coding/logic/scoring';
 
 type Ctx = BrainCheckContext;
 
@@ -1969,6 +1974,125 @@ function checkCoach({ bad }: Ctx): string {
   return 'fresh profile → calibrate; a reliable decline tops the report with benign causes first; focus = clearly low graded areas only (grade P never, gaps < ½ SD = balanced); no duplicate game; short sleep noticed; every insight explains its trigger and cites references.ts; deterministic';
 }
 
+/**
+ * C13 and the owner's report of 2026-11-03: (1) a personal-only (grade P)
+ * area between calibration and its frozen baseline shows how far along the
+ * baseline is — it once fell through to "Lapsed / No scored run in 14 days"
+ * the day it scored; (2) a scoring-version bump re-judges stored runs from
+ * their trial logs once, persisted — reviving runs the old rules discarded,
+ * leaving log-less and current runs alone, freezing a baseline the revived
+ * runs complete; (3) every test above scoring v1 ships its `rescore`.
+ */
+function checkRescoreAndForming({ bad }: Ctx): string {
+  /* ---- (1) the forming state of a personal-only area ---- */
+  const flex = BRAIN_DOMAINS.find((d) => d.id === 'flexibility');
+  if (!flex) {
+    bad('no flexibility area to test the forming state with');
+    return 'skipped';
+  }
+  const p = stubTest('flexibility', { runIn: 3, reference: null, noiseFloor: { abs: 0.05 } });
+  const views = (ss: BrainSession[], now: number) => {
+    const store = storeOf(ss);
+    const a: A.AreaSummary = { domain: flex, test: p, summary: A.summarizeTest(p, store, now), grade: 'P' };
+    return { view: areaView(a), dash: buildAreaView(a, store) };
+  };
+  // the owner's day: six runs back to back → 3 calibration runs, the day's scored run, 2 practice runs
+  const six = [0, 1, 2, 3, 4, 5].map((i) => sess(p, at(0, 9, i * 5), 0.1 + i * 0.01));
+  const day0 = views(six, at(0, 12));
+  if (day0.view.state !== 'forming' || day0.view.value !== null || day0.view.baselineProgress !== 1)
+    bad(`six runs on day 1 must read "Baseline forming 1/5" with no number (got ${day0.view.state} ${day0.view.value} ${day0.view.baselineProgress}/5)`);
+  if (day0.dash.status !== 'forming' || day0.dash.levelKind !== 'forming') bad(`the dashboard calls a forming baseline '${day0.dash.levelKind}' (status ${day0.dash.status})`);
+  if (views(six.slice(0, 2), at(0, 12)).view.state !== 'calibrating') bad('two runs of a 3-run calibration must still read calibrating');
+  const after3 = views(six.slice(0, 3), at(0, 12)).view;
+  if (after3.state !== 'forming' || after3.baselineProgress !== 0) bad(`calibration done, no scored run yet: ${after3.state} ${after3.baselineProgress}/5 (want forming 0/5)`);
+  // five scored days set the baseline → a personal index; then 20 idle days → lapsed for real
+  const five = [...six.slice(0, 3), ...[1, 2, 3, 4, 5].map((d) => sess(p, at(d, 10), 0.1 + d * 0.01))];
+  const lv = views(five, at(5, 12));
+  if (lv.view.state !== 'level' || !lv.view.personal || lv.dash.levelKind !== 'personal') bad(`five scored days must give the personal index (got ${lv.view.state} / ${lv.dash.levelKind})`);
+  if (views(five, at(26, 12)).view.state !== 'stale') bad('a set baseline with nothing in 14 days must still read lapsed');
+  // a graded area in the same situation keeps its reference level from the first scored run
+  const g = stubTest('attention', { runIn: 3 });
+  const gs = storeOf([0, 1, 2, 3].map((i) => sess(g, at(0, 9, i * 5), 50)));
+  const gv = areaView({ domain: BRAIN_DOMAINS.find((d) => d.id === 'attention')!, test: g, summary: A.summarizeTest(g, gs, at(0, 12)), grade: 'C' });
+  if (gv.state !== 'level') bad(`a graded area after calibration must show its level (got ${gv.state})`);
+  // the words: steps left, never "lapsed"
+  if (!/4 to go/.test(personalFormingCopy(1)) || /laps|stale/i.test(personalFormingCopy(1))) bad(`forming copy: "${personalFormingCopy(1)}"`);
+  if (personalIndexAfter(1) !== 'Index after 4 more scored days' || personalIndexAfter(4) !== 'Index after 1 more scored day') bad('the area card line miscounts the days left');
+
+  /* ---- (2a) the pure rescore: what changes, what never does ---- */
+  const r = stubTest('speed', {
+    runIn: 1,
+    scoringVersion: 2,
+    // log [[1, x]] → valid with x; [[0, x]] → invalid; [[9, …]] → the rescore throws
+    rescore: (st) => {
+      if (st.trialLog[0][0] === 9) throw new Error('a broken rescore');
+      const ok = st.trialLog[0][0] === 1;
+      return { metrics: { x: st.trialLog[0][1] }, trials: 1, valid: ok, ...(ok ? {} : { flags: ['still-bad'] }) };
+    }
+  });
+  const lookup = (id: string) => (id === r.id ? r : undefined);
+  const v1 = (t: number, over: Partial<BrainSession>) => sess(r, at(0, 9, t), 40, { scoringVersion: 1, ...over });
+  const input = [
+    v1(0, { id: 'revive', valid: false, runType: 'invalid', flags: ['too-few-correct'], trialLog: [[1, 40]] }),
+    v1(1, { id: 'no-log', valid: false, runType: 'invalid', flags: ['too-few-correct'] }),
+    v1(2, { id: 'still-invalid', valid: false, runType: 'invalid', trialLog: [[0, 41]] }),
+    v1(3, { id: 'retire', trialLog: [[0, 42]] }),
+    v1(4, { id: 'throws', valid: false, runType: 'invalid', trialLog: [[9, 0]] }),
+    v1(5, { id: 'current', valid: false, runType: 'invalid', scoringVersion: 2, trialLog: [[1, 43]] }),
+    v1(6, { id: 'interrupted', valid: false, runType: 'invalid', flags: ['interrupted'] }),
+    sess(r, at(0, 9, 7), 44, { id: 'unknown', testId: 'from-a-newer-build', scoringVersion: 1, valid: false, trialLog: [[1, 44]] })
+  ];
+  const frozenInput = show(input);
+  const { store: out, report } = rescoreSessions(storeOf(input), lookup);
+  if (show(input) !== frozenInput) bad('rescoreSessions mutated its input');
+  const byId = new Map(out.sessions.map((x) => [x.id, x]));
+  const rv = byId.get('revive');
+  if (!rv?.valid || rv.scoringVersion !== 2 || rv.runType === 'invalid' || rv.flags?.join() !== 'rescored' || rv.metrics.x !== 40)
+    bad(`a run the new rules accept was not revived and marked: ${show(rv)}`);
+  for (const id of ['no-log', 'throws', 'current', 'interrupted', 'unknown'])
+    if (show(byId.get(id)) !== show(input.find((x) => x.id === id))) bad(`the '${id}' run must be left exactly as stored`);
+  const si = byId.get('still-invalid');
+  if (si?.valid || si?.scoringVersion !== 2 || si.flags?.join() !== 'still-bad') bad('a run still invalid under the new rules must carry its new reason and version');
+  if (byId.get('retire')?.valid || byId.get('retire')?.runType !== 'invalid') bad('a run the new rules reject must stop counting');
+  if (report.changed !== 3 || report.revived !== 1 || report.retired !== 1) bad(`report ${show(report)} (want 3 changed, 1 revived, 1 retired)`);
+  if (rescoreSessions(out, lookup).report.changed !== 0) bad('rescoring is not idempotent');
+
+  /* ---- (2b) a baseline the revived runs complete is frozen and stored ---- */
+  const q = stubTest('spatial', { runIn: 1, scoringVersion: 2, rescore: (st) => ({ metrics: { x: st.trialLog[0][1] }, trials: 1, valid: true }) });
+  const days = [0, 1, 2, 3, 4, 5].map((d) => sess(q, at(d, 10), 10 + d, { valid: false, runType: 'invalid', scoringVersion: 1, trialLog: [[1, 10 + d]] }));
+  const fb = rescoreSessions(storeOf(days), (id) => (id === q.id ? q : undefined)).store;
+  const b = fb.baselines.find((x) => x.testId === q.id);
+  if (!b || b.value !== 13 || b.sessionIds.join() !== days.slice(1).map((x) => x.id).join()) bad(`revived runs completing a baseline must freeze it (median 13 of days 2–6), got ${show(b)}`);
+  if (A.classifyRuns(q, fb.sessions, fb.resets, fb.baselines).map((x) => x.role).join(' ') !== 'run-in baseline baseline baseline baseline baseline') bad('revived runs are not classified as calibration + baseline');
+
+  /* ---- (2c) the real thing: the owner's slow Symbol Coding run, through the live registry and storage ---- */
+  const sc = BRAIN_TESTS.find((t) => t.id === 'symbol-coding');
+  if (!sc) bad('symbol-coding is not registered');
+  else
+    withMemoryStorage(() => {
+      // 19 symbols right, one every 4.5 s: v1 discarded it twice (fewer than 20 correct; every gap over 5 s)
+      const log = [
+        ...Array.from({ length: 19 }, (_, k) => scRow(SC_PHASE.coding, k, 2, 1, 1, 4500 * (k + 1), 900, k % 9, SC_STATUS.registered)),
+        [SC_PHASE.frames, 5400, 16.7, 17.1, 33.4, 0, 0, 0, 0]
+      ];
+      const slow = sess(sc, at(0, 9), 19, { valid: false, runType: 'invalid', scoringVersion: 1, flags: ['too-few-correct', 'long-gap'], trialLog: log });
+      S.saveBrain(storeOf([slow]));
+      const rep = ensureScoringCurrent();
+      const after = S.loadBrain().sessions[0];
+      if (rep.revived !== 1 || !after?.valid || after.scoringVersion !== sc.scoringVersion || !after.flags?.includes('rescored') || after.metrics.sds90 !== 19)
+        bad(`the slow v1 Symbol Coding run was not revived and persisted: ${show({ rep, valid: after?.valid, v: after?.scoringVersion, flags: after?.flags })}`);
+      if (A.summarizeTest(sc, S.loadBrain(), at(0, 10)).runInDone !== 1) bad('the revived run does not count as the first calibration run');
+      if (ensureScoringCurrent().changed !== 0) bad('a second pass over a current store changed it');
+    });
+
+  /* ---- (3) the contract: a test above scoring v1 rescores its history ---- */
+  for (const t of BRAIN_TESTS) if (t.scoringVersion > 1 && typeof t.rescore !== 'function') bad(`${t.id} is at scoring v${t.scoringVersion} without a rescore`);
+  if (flagCopy('rescored') === 'Rescored.' || !/count/.test(flagCopy('rescored'))) bad('the rescored note has no plain-words copy');
+
+  const bumped = BRAIN_TESTS.filter((t) => t.scoringVersion > 1).map((t) => t.id);
+  return `grade-P area: calibrating → forming k/5 (never lapsed) → personal index → lapsed only when idle; rescore revives/retires/leaves alone, idempotent, freezes completed baselines; the owner's slow v1 Symbol Coding run revived through storage; ${bumped.length} tests at scoring v2+ all rescore (${bumped.join(', ')})`;
+}
+
 export const CORE_CHECKS: CoreCheck[] = [
   { name: 'dossier', run: checkDossier },
   { name: 'areas', run: checkAreas },
@@ -1986,6 +2110,7 @@ export const CORE_CHECKS: CoreCheck[] = [
   { name: 'store write path', run: checkWritePath },
   { name: 'backup', run: checkBackup },
   { name: 'runs & baselines', run: checkRunsAndBaselines },
+  { name: 'C13: rescoring & forming', run: checkRescoreAndForming },
   { name: 'verdicts & trends', run: checkVerdictsAndTrends },
   { name: 'Mean, Today & plan', run: checkComposites },
   { name: 'state, sleep & streak', run: checkStateAndSleep },

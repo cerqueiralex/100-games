@@ -55,10 +55,20 @@ export const MAX_ANGLE_RUN = 2;
 export const PHI_MIN = 20;
 export const PHI_MAX = 70;
 
-/** validity (SCIENCE.md §1.13 "Validity") and the class-B interruption limits [DC] */
-/** 65%, not the dossier's first 60%: over 40 two-choice trials a pure guesser reaches 60% in ~13% of runs, 65% in ~4% (owner decision, 2026-10-31) */
+/**
+ * Validity (SCIENCE.md §1.13 "Validity") and the class-B interruption limits
+ * [DC]. 65%, not the dossier's first 60%: over 40 two-choice trials a pure
+ * guesser reaches 60% in ~13% of runs, 65% in ~4% (owner decision,
+ * 2026-10-31). Scoring v2 (SCIENCE.md C13 — a slow run is a low score, never
+ * an invalid one): the floor is judged on the ANSWERED pairs. A timeout is an
+ * error at 7000 ms in the score, never a wrong answer for validity: v1
+ * counted timeouts as wrong answers AND as exclusions (more than 8 of
+ * anticipations + timeouts invalidated a run), so a slow mental rotator was
+ * discarded twice over.
+ */
 export const MIN_ACCURACY = 65;
-export const MAX_EXCLUDED_FRACTION = 0.2;
+/** more anticipations (< 250 ms) than this share of the 40 planned pairs → invalid ('too-fast') */
+export const MAX_ANTICIPATION_FRACTION = 0.2;
 export const MAX_INTERRUPTIONS = 3;
 export const MAX_PAUSED_MS = 60_000;
 

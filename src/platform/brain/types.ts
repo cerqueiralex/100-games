@@ -196,6 +196,18 @@ export interface BrainRunOutcome {
   trialLog?: number[][];
 }
 
+/** What a stored run hands its test's `rescore` (BrainTestDefinition). */
+export interface BrainRescoreInput {
+  trialLog: number[][];
+  /** the metrics as stored (a rescore may keep ones its log cannot rebuild) */
+  metrics: Record<string, number>;
+  /** the stored flags — carry what the log does not hold (e.g. 'too-many-interruptions', 'time-cap') */
+  flags: string[];
+  valid: boolean;
+  /** the scoring version the run was recorded (or last rescored) under */
+  scoringVersion: number;
+}
+
 /** Props every benchmark component receives from the BrainRunner. */
 export interface BrainTestProps {
   /**
@@ -293,6 +305,17 @@ export interface BrainTestDefinition {
   protocolVersion: number;
   /** bump when metric computation changes — history is rescored, no new segment */
   scoringVersion: number;
+  /**
+   * Re-score a STORED run from its trial log once `scoringVersion` has moved
+   * past the version it was recorded under (SCIENCE.md §2.3: "changes to the
+   * scoring version rescore history"). Pure: it gets the stored fields and
+   * returns the run's outcome under the CURRENT rules, or null when the log
+   * cannot reproduce it. Required for every test whose scoringVersion is
+   * above 1 (validate). rescore.ts applies it once and persists the result —
+   * trial logs are trimmed after newer runs, so a recomputed verdict must be
+   * stored, never recomputed on each read.
+   */
+  rescore?: (stored: BrainRescoreInput) => BrainRunOutcome | null;
   /** bump when the reference anchor changes — indices recomputed from raw metrics */
   referenceVersion: number;
   science: {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BrainDomainId } from '../types';
 import type { AreaSummary, ClassifiedRun, TestSummary } from '../analytics';
-import { formatMetric, refZOfValue, runIndex, summarizeAreas } from '../analytics';
+import { BASELINE_N, formatMetric, refZOfValue, runIndex, summarizeAreas } from '../analytics';
 import { getBrainDomain, IMPLEMENTATION_NOTE } from '../domains';
 import { indexFromZ } from '../timing';
 import { sfx } from '../../audio';
@@ -14,6 +14,7 @@ import { areaView, baselineStatus, relativeDay, trackRuns } from './model';
 import {
   calibratingCopy,
   baselineFormingCopy,
+  personalFormingCopy,
   C6_BEFORE,
   gradeCopy,
   NOT_MEASURED,
@@ -195,6 +196,14 @@ export function AreaPage({
             <span className="bl-area-level-text">
               <strong>Calibrating {view.runInDone}/{view.runIn}</strong>
               <span className="bl-note">{calibratingCopy(view.runInDone, view.runIn)}</span>
+            </span>
+          ) : view.state === 'forming' ? (
+            <span className="bl-area-level-text">
+              <strong>
+                Baseline forming {Math.min(view.baselineProgress, BASELINE_N)}/{BASELINE_N}
+              </strong>
+              <StepDots done={view.baselineProgress} total={BASELINE_N} color="var(--area)" />
+              <span className="bl-note">{personalFormingCopy(view.baselineProgress)}</span>
             </span>
           ) : view.state === 'stale' ? (
             <span className="bl-area-level-text">

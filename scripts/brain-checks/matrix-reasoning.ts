@@ -34,7 +34,7 @@ import {
   type Cell,
   type Item
 } from '../../src/brain/matrix-reasoning/logic/model';
-import { KIND_SCORED, KIND_VOID_SCORED, PROTOCOL, scoreRun, thetaSoFar } from '../../src/brain/matrix-reasoning/logic/protocol';
+import { KIND_SCORED, KIND_VOID_SCORED, PROTOCOL, rescoreRun, scoreRun, thetaSoFar } from '../../src/brain/matrix-reasoning/logic/protocol';
 import { explainItem, describeCell } from '../../src/brain/matrix-reasoning/logic/explain';
 import { WORKED_EXAMPLES, DEMO_CELLS, DEMO_OPTIONS, DEMO_ANSWER } from '../../src/brain/matrix-reasoning/logic/examples';
 
@@ -357,8 +357,33 @@ export const check: BrainCheck = ({ bad, rng }) => {
   /* ---------- validity rules, and checks that catch broken input ---------- */
   const careless = scoreRun([...log.slice(2, 12), row(1, 3, true, 800), row(1, 3, false, 700), row(1, 4, true, 1200)], { interrupted: false, capped: false });
   if (careless.valid || !careless.flags?.includes('careless')) bad('3 rapid guesses must invalidate the run as "careless"');
+  // C13: slow is a score, never a reason to discard a run. At the slowest pace the window allows
+  // (every item used to its 30 s), the 240-s cap completes 8 items — v1's 9-item floor discarded that run
   const few = scoreRun(log.slice(2, 10), { interrupted: false, capped: true });
-  if (few.valid || !few.flags?.includes('too-few-items')) bad('fewer than 9 valid items must invalidate the run');
+  if (!few.valid || !few.flags?.includes('time-cap') || few.flags?.includes('too-few-items')) bad(`a run the time cap cut to 8 items was not scored (${few.flags?.join()})`);
+  if (!(few.metrics.se > out.metrics.se) || !Number.isFinite(few.metrics.theta)) bad('a shorter run must report a finite θ with a larger SE');
+  {
+    let t = 0;
+    let n = 0;
+    while (t < PROTOCOL.capMs) {
+      t += PROTOCOL.blankMs + PROTOCOL.windowMs;
+      n++;
+    }
+    if (n !== 8) bad(`the slowest pace completes ${n} items before the cap (SCIENCE.md says 8)`);
+    const slowest = scoreRun(Array.from({ length: n }, () => row(KIND_SCORED, 3, false, PROTOCOL.windowMs, { timeout: true })), { interrupted: false, capped: true });
+    if (!slowest.valid) bad(`the slowest possible run (8 timeouts at the cap) was discarded (${slowest.flags?.join()})`);
+  }
+  const none = scoreRun([row(KIND_SCORED, 3, true, 900), row(KIND_SCORED, 3, true, 800)], { interrupted: false, capped: true });
+  if (none.valid) bad('a run with no valid item must stay invalid');
+  // rescoring (scoring version 2): the capped 8-item run as v1 stored it comes back valid, metrics identical
+  {
+    const live = scoreRun(log.slice(2, 10), { interrupted: false, capped: true });
+    const back = rescoreRun({ trialLog: live.trialLog ?? [], metrics: live.metrics, flags: ['too-few-items', 'time-cap'], valid: false, scoringVersion: 1 });
+    if (!back || !back.valid || JSON.stringify(back.metrics) !== JSON.stringify(live.metrics)) bad(`a v1 capped run was not rescored to valid: ${JSON.stringify(back?.flags)}`);
+    const intr = rescoreRun({ trialLog: live.trialLog ?? [], metrics: live.metrics, flags: ['interrupted'], valid: false, scoringVersion: 1 });
+    if (!intr || intr.valid) bad('rescoring revived an interrupted run');
+    if (rescoreRun({ trialLog: [[1, 2]], metrics: {}, flags: [], valid: false, scoringVersion: 1 }) !== null) bad('a malformed log was rescored');
+  }
   const broke = scoreRun(log, { interrupted: true, capped: false });
   if (broke.valid || !broke.flags?.includes('interrupted')) bad('a run past the interruption limit must be invalid');
   const empty = scoreRun([], { interrupted: false, capped: false });

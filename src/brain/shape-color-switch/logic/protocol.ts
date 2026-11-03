@@ -41,8 +41,16 @@ export const PROTOCOL = {
   practiceTrials: 5,
   practicePass: 4,
   practiceRounds: 2,
-  /** validity: more anticipations than this, or accuracy below this, invalidates the run */
+  /** validity: more anticipations than this invalidates the run ('too-fast') */
   maxAnticipations: 3,
+  /**
+   * validity, scoring v2 (SCIENCE.md C13): below this accuracy ON THE
+   * ANSWERED TRIALS the answers are too close to guessing between the two
+   * cards ('at-chance') [DC]. A timeout is a slow trial for the score (2.5 s,
+   * not correct), never a wrong answer for validity: v1 took 70% of all 30
+   * trials, counting every timeout as wrong, so a slow, careful player was
+   * thrown out as "rushed".
+   */
   minAccuracy: 0.7
 } as const;
 
