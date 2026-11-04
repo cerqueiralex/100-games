@@ -5020,11 +5020,36 @@ console.log('— Landmark catalogue (streaks & profile trophies) —');
     const spread = LANDMARKS.find((d) => d.id === 'share-app');
     if (!spread?.secret || spread.feat !== FEATS.sharedApp)
       bad('Spread the Word must be a secret unlocked by the share-app feat');
-    // a secret's art must not leak through its kind: the mystery plate is
-    // drawn for ANY hidden def before the kind switch
-    const lmArt = (await import('node:fs')).readFileSync('src/platform/components/Landmarks.tsx', 'utf8');
-    if (!/if \(hidden\) \{\s*return \(/.test(lmArt) || lmArt.indexOf('if (hidden) {') > lmArt.indexOf('switch (def.kind)'))
-      bad('LandmarkArt must draw the mystery plate for every hidden secret BEFORE switching on the kind');
+    // Hidden art must be identical even when secrets have different kinds
+    // or palette slots. Exercise the renderer's actual pixel data.
+    const { landmarkPixels, LANDMARK_GRID, resolvePixelColor } = await import('../src/platform/design/landmarkPixels');
+    // the share card paints these same runs on canvas, whose fillStyle keeps
+    // the PREVIOUS color when it rejects a value: every sprite color must
+    // resolve to a plain rgb() without the browser parsing var()/color-mix()
+    const lmTokens = (await import('node:fs')).readFileSync(
+      fileURLToPath(new URL('../src/platform/design/tokens.css', import.meta.url)),
+      'utf8'
+    );
+    const tokenValue = (name: string) =>
+      new RegExp(`${name}:\\s*([^;]+);`).exec(lmTokens)?.[1] ?? `MISSING ${name}`;
+    const mystery = JSON.stringify(landmarkPixels(LANDMARKS[0], true));
+    for (const def of LANDMARKS) {
+      for (const color of new Set([...landmarkPixels(def), ...landmarkPixels(def, true)].map((p) => p.color))) {
+        const flat = resolvePixelColor(color, tokenValue);
+        if (!/^rgb\(\d{1,3}, \d{1,3}, \d{1,3}\)$/.test(flat))
+          bad(`${def.id}: sprite color ${color} does not resolve to a plain rgb() for the canvas card (got ${flat})`);
+      }
+      if (JSON.stringify(landmarkPixels(def, true)) !== mystery)
+        bad(`${def.id}: hidden art leaks the landmark identity`);
+      const pixels = landmarkPixels(def);
+      if (!pixels.length) bad(`${def.id}: missing pixel art`);
+      for (const pixel of pixels) {
+        if (![pixel.x, pixel.y, pixel.width].every(Number.isInteger) || pixel.width < 1 ||
+            pixel.x < 0 || pixel.y < 0 || pixel.x + pixel.width > LANDMARK_GRID || pixel.y >= LANDMARK_GRID)
+          bad(`${def.id}: art falls outside the integer pixel grid`);
+        if (/undefined|NaN/.test(pixel.color)) bad(`${def.id}: invalid pixel color`);
+      }
+    }
   }
 
   // the two cross-category trophies re-measure the live registry

@@ -33627,6 +33627,13 @@ button.bs-ship-row.dock.placed {
   transform: translateY(2px);
 }
 
+/* Integer-size sprites keep every pixel equally wide at the display sizes. */
+.lm-pixel-art {
+  display: block;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+
 /* the colored art plate; --lm is the landmark's content-palette color */
 .lm-plate {
   width: 56px;

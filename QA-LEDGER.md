@@ -10,6 +10,22 @@ they gain enforcement, delete entries obsoleted by code removal.
 
 ## Promoted to standards (enforced — the rule exists because of the bug)
 
+- **2026-11-04 · landmarks · pixel sprites: a canvas that keeps the last
+  color, and a count wider than its panel.** Caught in review before the
+  pixel-art trophies shipped. (1) The share card painted sprite colors
+  straight into `ctx.fillStyle`, and the shade/highlight runs are
+  `color-mix()` strings. Chrome parses them; a canvas that rejects a value
+  does not throw, it silently KEEPS the previous fill, so any engine without
+  canvas `color-mix` would paint those runs in some other color. Rule:
+  resolve tokens and mixes in JS (`resolvePixelColor`) before anything
+  reaches a canvas. Enforced: validate resolves every sprite's colors, plain
+  and hidden, and requires a plain `rgb()`. (2) The plays board was 16
+  pixels wide, with a 14-pixel face, and the top rung's "1000" is 15 pixels
+  of 3×5 font, so its outer digit columns landed on the face and the outline.
+  The board is now 19 wide. Rule (DESIGN.md "Streak & landmarks"): a count
+  must fit its panel on the ladder's LONGEST rung — check the last tier, not
+  the first.
+
 - **2026-11-03 · Brain Lab · validity floors that measured speed, not
   engagement, discarded every run of a slow player.** The owner, slow but
   careful at Symbol Coding, could never finish calibrating: every run came

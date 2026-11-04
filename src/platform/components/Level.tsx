@@ -277,9 +277,11 @@ export function XpBar({ percent, label }: { percent: number; label?: string }) {
  * but players want to see the lifetime total they have banked.
  *
  * `badges` is a SLOT, not an import: the earned-landmark panel that renders
- * there lives in Landmarks.tsx, which already imports RankCrown from this
- * file. Pulling LandmarkArt the other way would close a module cycle for a
- * purely visual arrangement; the page composes the two instead.
+ * there lives in Landmarks.tsx, which pulls in AppState and the share cards.
+ * It became a slot when Landmarks imported RankCrown from this file (an
+ * import back would have closed a cycle); the pixel sprites dropped that
+ * import, and the slot stays so the level card never depends on the gallery.
+ * The page composes the two.
  *
  * The two corners hold the player's two crowns, and they are deliberately
  * opposite ends of the same shelf: RANK crown right (what your level is

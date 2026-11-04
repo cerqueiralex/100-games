@@ -11,6 +11,7 @@ This folder is the single source of truth for the platform's look and feel.
 | `gameIcons.tsx` | Game identity icons — colorful sticker SVGs for home cards |
 | `profileColors.ts` | The profile colors, the contrast helpers (`contrast`, `legibleOn`) and the chart ramps |
 | `rankMaterials.ts` | The rank crowns' textures — one table, two renderers |
+| `landmarkPixels.ts` | The landmark trophies' 24 × 24 pixel sprites — one source, SVG and canvas renderers |
 | `avatars.tsx` | Emoji and sprite avatars behind one `<Avatar>` |
 | `DESIGN.md` | The rules for the LOOK (this file) |
 | `GAME-QUALITY.md` | **The premium floor** — the rules for the FEEL: input, feedback, motion, legibility, flow, accessibility, performance |
@@ -109,12 +110,21 @@ rendered on a neutral `--surface-2` plate on the home cards.
 
 ### Streak & landmarks (profile trophies)
 
-The play-streak flame (`components/Streak.tsx`) and the landmark trophy
-art (`components/Landmarks.tsx`) are game CONTENT, like memory-card
-faces: sticker-style SVGs colored from the **content palette
-(`--play-*` tokens) with `--ink` outlines**, so they stay colorful and
-identical on every surface theme — no opt-out needed, everything is
-tokens. Rules:
+The play-streak flame (`components/Streak.tsx`) and landmark trophies are
+content. Achievement and easter egg art is hand-drawn on a **24 × 24 pixel
+grid** in `landmarkPixels.ts`, using the content palette (`--play-*`), fixed
+dark outlines, and flat highlight/shadow colors. `LandmarkArt` paints the
+pixel runs as crisp SVG rectangles; exported achievement cards paint the
+same runs on canvas, with every color resolved to a plain `rgb()` first
+(`resolvePixelColor`) — a canvas silently keeps the PREVIOUS fill when it
+rejects a value, so a `color-mix()` the engine cannot parse would repaint
+the shade and highlight runs in some other color. Numbers and initials use a
+3 × 5 pixel alphabet, never font glyphs, and a count must fit its panel on
+the ladder's LONGEST rung (the plays board is 19 wide because "1000" is 15
+pixels of label and spilled out of a 16-wide one). Badge, gallery and modal
+sprites use integer scales (24, 48, 72px). Keep each family's silhouette
+distinct and every tier parameterized. Level achievement crowns use their
+fixed `--rank-*` material colors. Rules:
 
 - The streak flame burns in `--xp` (orange by default — the player's
   profile color once they pick one), so the flame, the level ring and the
@@ -136,14 +146,14 @@ tokens. Rules:
   it is what tells a player what to chase. `LandmarkBadges`, the row at
   the foot of the level card, is the DISPLAY CASE: unlocked only, in
   catalogue order (not newest-first, so the families stay grouped and a
-  wall of unlabelled 26px art still reads as a collection), rendering
+  wall of unlabelled 24px art still reads as a collection), rendering
   nothing at all when nothing is earned. Never let the case grow locked
   plates or meters — it would become a second, worse copy of the gallery,
   and its "badges earned" count would stop being a count of what you own.
   Validate-enforced.
 - **Easter eggs are the ONE exception to "locked stays visible", and only
   half of one.** A secret keeps its shape: while unfound it renders a
-  dashed mystery egg with a `?`, the title reads `???`, the subtitle
+  pixel mystery egg with a `?`, the title reads `???`, the subtitle
   reads `Hidden`, and the detail modal shows a tease instead of a
   requirement and NO meter — a meter on a secret is a description of the
   secret. What stays visible is that it EXISTS: its own "Easter eggs"
@@ -162,8 +172,11 @@ tokens. Rules:
   two (`def.count`); two speed trophies are one stopwatch wearing
   `def.seconds`; two backup trophies are one drive with the arrow
   reversed. A kind whose art cannot be told apart from another kind's at
-  26px (the badge row) is the bug to avoid — that is why the clean-win
-  RUN is a rosette and not a second hexagon.
+  24px (the badge row) is the bug to avoid — that is why the clean-win
+  RUN is a rosette and not a second shield, and why the clean-win TOTAL,
+  which shares the tier sweeps' shield, wears a tick over a dark count band
+  that squares off its bottom (a sweep keeps the pointed tip and a Roman
+  numeral).
 
 ### Share cards follow the player's theme
 
@@ -243,9 +256,10 @@ neighbours in the header and on the profile):
   level is printed once: a dial that shows "7" over a caption reading
   "Level 7" is a duplicated readout, not emphasis. The badge case arrives
   through a `badges` **slot**, not an import: it lives in Landmarks.tsx,
-  which already imports `RankCrown` from Level.tsx, and pulling
-  `LandmarkArt` back the other way would close a module cycle for a purely
-  visual arrangement. The page composes the two. Each row inside the card
+  and the slot keeps the level card from depending on the gallery module
+  (it dates from when Landmarks imported `RankCrown` from Level.tsx and an
+  import back was a cycle; the pixel sprites dropped that import). The page
+  composes the two. Each row inside the card
   is separated by the same `border-top` divider, so the card reads as one
   panel of stacked rows rather than three cards fused together.
 - **`XpEarned`** — the block inside the results modal. Total in `--xp` with
@@ -349,7 +363,7 @@ nothing else.
   declared once in `tokens.css` alongside `--good`/`--bad`. A rank is an
   achievement: Gold that turned beige on the light theme would stop being
   gold. This is the same reasoning that keeps `--xp` off the accent.
-- **One badge everywhere**: a white crown on the material disc with the
+- **Rank identity badges** (home, level panel, ladder, level share card): a white crown on the material disc with the
   darker rim every extruded token wears (`RankCrown`). The crown is
   *stroked* in the rim color as well as filled white, because on the pale
   materials a bare white glyph on a bright disc disappears — one formula
